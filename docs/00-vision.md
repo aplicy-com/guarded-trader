@@ -74,6 +74,33 @@ Failure is an acceptable outcome of this experiment. An unbounded loss of
 principal beyond the configured hard limits, or a silent/undetected halt,
 is not — those are the conditions this entire docs set exists to prevent.
 
+## What Phase 2 taught us
+
+Phase 2's baseline strategy (`Baseline4h` — a simple, hand-written EMA
+cross with an ATR stop, built specifically to validate the execution path
+rather than to find alpha, `docs/phase-2-plan.md` §2 work package 2C)
+showed **no real edge over a genuine 2-year sample**: Sharpe −0.01 to
+0.19 depending on basis, max drawdown 65–72%, net roughly flat after fees
+(`docs/research/03-baseline-backtest.md`, "Re-run on 2-year Binance
+data"). A short ~4-month backtest on the same strategy had looked
+positive; the longer sample reversed that.
+
+This is presented here not as a footnote but as the first real evidence
+for this project's own thesis. **The gates did exactly what they exist
+to do** (§"Success criteria" above) — Gate 1 (`08-paper-exit-criteria.md`)
+caught this before the strategy ever reached paper trading, let alone
+live capital: no capital was ever at risk, no promotion decision was ever
+close, and the short-window result's apparent promise was exposed as an
+artifact (small-sample noise, a Sharpe-basis ambiguity, and force-exit
+trades that dominated the headline number — all three now closed as
+explicit Gate 1 rules, `docs/08-paper-exit-criteria.md`) rather than
+something that reached a human relying on it. A system that requires a
+demonstrated edge before deploying capital, and that treats "no edge
+found yet" as a normal, loggable outcome rather than a reason to lower
+the bar, is the entire point of this experiment — this is what that looks
+like in practice, on the very first strategy, before any money was ever
+on the line.
+
 ## TBD
 
 - Exact quantitative long-run "success" threshold beyond Phase 4 (e.g.
