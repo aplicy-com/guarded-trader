@@ -125,13 +125,17 @@ it to be decided ad hoc in Phase 3.
   that catch what static analysis misses, not a guarantee that static
   analysis alone is sufficient.
 - Requires building and maintaining a sandboxed execution environment
-  (Phase 2/3 work, not yet built) — tracked as a TBD, not deferred
+  (Phase 3 work, not yet built) — tracked as a TBD, not deferred
   indefinitely.
 
 ## More information
 
 Sandbox runtime implementation (Docker-in-Docker vs. a pre-built,
-network-disabled base image) — TBD (Phase 2/3). Exact static-analysis
+network-disabled base image) — TBD (Phase 3). Exact static-analysis
 tooling (custom AST walker vs. an existing Python sandboxing/linting
-library) — TBD (Phase 2/3). See risk register L8 and
+library) — TBD (Phase 3). Re-tagged from "Phase 2/3" during Phase 2
+closure (work package 2F): this entire admission gate is Conductor/
+research-loop scope, which does not exist until Phase 3 — Phase 2's
+`Baseline4h` strategy was hand-written, never LLM-generated, so nothing
+in Phase 2 exercises this control. See risk register L8 and
 `04-architecture/security.md`.

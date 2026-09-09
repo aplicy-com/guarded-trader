@@ -234,8 +234,10 @@ not an assumption. See risk register M7.
   **aborts startup** (does not begin or resume trading) and sends an
   alert identifying the pair and the unexplained balance.
 - AC5.4: Clearing an AC5.3 abort requires an explicit human action
-  (documented in a runbook — TBD (Phase 2), extend
-  `06-runbooks/start-stop.md`) that either records the pre-existing
+  (documented in a runbook — TBD (Phase 3), re-tagged from Phase 2: this
+  is Conductor's own startup check, and Conductor does not exist until
+  Phase 3, so there is nothing to write the clearance runbook against
+  yet; extend `06-runbooks/start-stop.md`) that either records the pre-existing
   balance as explicitly excluded from the system's capital, or confirms
   it was moved out of the account before restart — never an automatic
   retry that just proceeds.
@@ -302,24 +304,26 @@ unaffected; ledger audit of monthly spend vs. budget.
 |---|---|---|---|
 | NFR1 | **Auditability / replayability** — every LLM prompt/response and every order-path decision is logged with enough fidelity to reconstruct why a trade happened. | Prompt/response logged with content hash; strategy versions pinned to git commit; ledger links each order to the strategy version and (if applicable) research-loop run that produced it. | Log/ledger review; replay of a sampled decision, Phase 3+. |
 | NFR2 | **Key scoping** — the exchange API key used by the running system can never withdraw funds. | Key created with query + trade only, no withdrawal, IP-whitelisted (see `04-architecture/security.md`). | Verified at key creation and at each rotation (`06-runbooks/key-rotation.md`). |
-| NFR3 | **Secrets hygiene** — no secret ever enters the git history. | `.gitignore` covers `.env`/keys; secrets live in env vars / 1Password only; pre-commit secret scan — tooling TBD (Phase 2). | Pre-commit hook + manual review before first public push. |
+| NFR3 | **Secrets hygiene** — no secret ever enters the git history. | `.gitignore` covers `.env`/keys; secrets live in env vars / 1Password only; pre-commit secret scan — gitleaks (`.pre-commit-config.yaml`, resolved Phase 2). | Pre-commit hook + manual review before first public push. |
 | NFR4 | **Reliability / heartbeat** — a silent failure (host asleep, process crashed, network down) is detected, not just an active error. | Heartbeat signal expected on a fixed interval; alert fires on missed heartbeat. Exact interval TBD (Phase 3). | Manual drill: kill the process and confirm alert fires. |
 | NFR5 | **Overfitting defence** — strategies promoted to paper/live are not curve-fit to backtest data. | ≤6 tunable parameters per strategy; anchored + rolling walk-forward validation; reject if out-of-sample Sharpe < 50% of in-sample Sharpe; conservative fee/slippage assumptions in backtests (research review §4). | Enforced in the promotion-gate code path (Phase 3), reviewed per strategy. |
 | NFR6 | **Legal/tax record-keeping** — every trade produces a record sufficient for Canadian tax reporting. | Ledger stores CAD-equivalent fair value at time of each fill, cost basis, and disposition, exportable as a report. | Manual review with an accountant before first live trade with real profit; see `03-risk-register.md` T1–T2. |
 | NFR7 | **Open-source readiness** — the repo is safe to make public at any commit. | No secrets, no PII beyond the operator's own attribution, licence present, docs coherent standalone. | Reviewed before each push if the repo is public; see `CLAUDE.md` §5. |
-| NFR8 | **Maintainability** — every architectural change is traceable to a decision record. | ADR exists for any change to execution engine, exchange, order-authority model, host, frequency policy, or licence. | PR review checklist — TBD (Phase 2, once PRs exist). |
+| NFR8 | **Maintainability** — every architectural change is traceable to a decision record. | ADR exists for any change to execution engine, exchange, order-authority model, host, frequency policy, or licence. | PR review checklist — TBD, genuinely blocked on there being a PR workflow at all: no git remote is configured yet (confirmed 2026-09-09, `git remote -v` empty), so there are no PRs to check against. Not a Phase 2 docs-closure blocker; revisit once a remote exists. |
 
 ## TBD summary
 
 - Exact `daily_profit_cap` value and `daily_loss_limit` / `max_drawdown` /
   consecutive-loss thresholds beyond the drafts above — TBD (Phase 3), to
   be finalized in `08-paper-exit-criteria.md` before first paper run.
-- CAD vs USD principal/quote currency — TBD (Phase 2), see research review
-  §7.1.
+- ~~CAD vs USD principal/quote currency~~ — resolved Phase 2: USD, see
+  [`ADR-0008`](05-adr/0008-usd-quote-currency.md).
 - Heartbeat interval and alert channel timing — TBD (Phase 3).
-- Pre-commit secret-scanning tool choice — TBD (Phase 2).
+- ~~Pre-commit secret-scanning tool choice~~ — resolved Phase 2: gitleaks
+  (`.pre-commit-config.yaml`).
 - R5 startup-abort clearance runbook (extending `06-runbooks/start-stop.md`)
-  — TBD (Phase 2).
+  — TBD (Phase 3), re-tagged from Phase 2 (Conductor-dependent, see AC5.4
+  above).
 - R3 `manual_move_threshold` final value (draft $25) — TBD (Phase 3),
   confirm alongside `daily_profit_cap`.
 - R6 `monthly_llm_budget` draft value — TBD (Phase 3).

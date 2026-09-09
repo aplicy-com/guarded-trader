@@ -34,7 +34,7 @@ the paper window stage:
 | Walk-forward method | Anchored **and** rolling, both run | Research review §4 |
 | In-sample Sharpe (absolute floor) | ≥ 1.0, **computed on the daily-equity-curve basis** (Freqtrade's "Sharpe (daily wallet balance)" figure, not its trade-return-distribution "Sharpe (closed trades)" figure) | Required **before** the ratio test below is even applied. The OOS/IS ratio is meaningless when IS Sharpe is negative or near zero — a strategy with IS Sharpe 0.05 trivially "passes" a 50%-of-IS test with an OOS Sharpe of 0.03, which is not evidence of anything. A strategy that never demonstrated a real in-sample edge doesn't get to the ratio question at all. The basis is pinned explicitly because the work package 2C review found the two Freqtrade Sharpe figures gave materially different pass/fail answers on a short sample (0.97 vs. 1.81 — one under the floor, one over) — that ambiguity is not acceptable in a go/no-go gate. Daily-equity basis is chosen because it is time-weighted (reflects actual equity-curve smoothness/risk over the window) rather than an unweighted distribution over trade returns, which a low trade count can distort heavily. |
 | Out-of-sample Sharpe vs. in-sample Sharpe | OOS ≥ 50% of IS (only evaluated once IS Sharpe ≥ 1.0 above), **same daily-equity-curve basis as above** | Research review §4 (reject if below) |
-| Backtest fee/slippage assumptions | ≥ live-observed Kraken taker fee (~0.26%) plus a slippage buffer — exact buffer TBD (Phase 2/3) | Avoid over-optimistic backtests (M4, M5 in risk register) |
+| Backtest fee/slippage assumptions | ≥ live-observed Kraken taker fee (~0.26%) plus a slippage buffer — **resolved: 0.10%** (0.36% total, applied on both entry and exit), established in work package 2C and used for every `Baseline4h` backtest run since (`docs/research/03-baseline-backtest.md`) | Avoid over-optimistic backtests (M4, M5 in risk register) |
 | Minimum backtest history | TBD (Phase 3) — enough bars at 4h/1d resolution to cover at least one full market regime | Regime-shift defence (M5) |
 | No single-trade dominance | No single trade, and no force-exit group (see below) taken as a whole, may account for more than 30% of net profit | A strategy whose entire reported edge rides on one trade (or one favourable data cutoff) hasn't demonstrated a repeatable edge — it has demonstrated one lucky outcome dressed up in a headline P&L number. **The work package 2C review found the original run failed this outright**: its 3 force-exit trades totalled $20.01 against a $18.44 reported net profit (108.6% — the force-exit group alone exceeded the *entire* net profit figure), and the single largest trade in that run ($11.09, SOL/USD, one of those force-exit trades) was 60.2% of net profit on its own. Neither would have been visible from the net P&L figure alone. |
 
@@ -158,8 +158,9 @@ signal at this sample size; a short window of P&L is the weaker one.
 
 ## TBD summary
 
-- Exact backtest fee/slippage buffer (Gate 1).
-- Minimum backtest history length (Gate 1).
+- ~~Exact backtest fee/slippage buffer (Gate 1)~~ — resolved: 0.10%, see
+  above.
+- Minimum backtest history length (Gate 1) — TBD (Phase 3).
 - Exact tolerance/range definition for the "Backtest consistency" check
   (Gate 2) — TBD (Phase 3).
 - Full Gate 3 (25%→100%) criteria (Phase 4).

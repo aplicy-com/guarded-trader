@@ -1,9 +1,9 @@
 # Runbook — Key rotation
 
 **What this covers:** rotating the Kraken API key, the Telegram bot token,
-and the Anthropic API key. Do this on a regular cadence (TBD Phase 2 —
-suggest every 90 days as a starting default) and immediately any time you
-suspect a leak (risk register S1).
+and the Anthropic API key. Rotate every **90 days** (resolved, work
+package 2F — no credential-specific reason to differ between the three)
+and immediately any time you suspect a leak (risk register S1).
 
 **General principle for all three:** create the new credential, verify it
 works, switch the running system to it, **then** revoke the old one —
@@ -44,8 +44,10 @@ overlap with two valid ones.
 8. Once confirmed working, go back to Kraken and revoke the **old** key.
 9. Re-enable trading: `/resume kill_switch` (see
    [`kill-switch.md`](kill-switch.md)).
-10. Update your rotation-tracking note (last rotated date) — TBD (Phase 2)
-    where this is tracked; until then, a personal note is fine.
+10. Update the last-rotated date in that credential's 1Password entry
+    notes field (resolved, work package 2F — no separate tracking tool
+    needed; 1Password is already the system of record for the credential
+    itself).
 
 ## Telegram bot token rotation
 
@@ -87,6 +89,7 @@ overlap with two valid ones.
 
 ## TBD
 
-- Formal rotation-cadence tracking mechanism — TBD (Phase 2).
+- ~~Formal rotation-cadence tracking mechanism~~ — resolved: 90-day
+  cadence, tracked in each credential's 1Password entry notes.
 - Manual research-loop trigger for step 4 of the Anthropic rotation — TBD
   (Phase 3).

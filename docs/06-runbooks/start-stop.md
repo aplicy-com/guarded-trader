@@ -39,8 +39,6 @@ before travel, before a host update).
    ```
    docker compose -f infra/docker-compose.yml up -d
    ```
-   (Exact compose file path TBD Phase 2 — update this step once
-   `infra/README.md` is filled in.)
 7. Check that both services are running:
    ```
    docker compose -f infra/docker-compose.yml ps

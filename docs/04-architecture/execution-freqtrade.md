@@ -51,9 +51,16 @@ config now rejects it outright at startup. Each strategy file sets its own
 tuning travels with the strategy version it was validated against, same as
 `minimal_roi`/`stoploss`.
 
-Exact numeric thresholds for each protection mirror the values finalized
-in [`08-paper-exit-criteria.md`](../08-paper-exit-criteria.md) and R4 —
-TBD (Phase 2) until first configured.
+Exact numeric thresholds for 3 of the 4 protections are resolved (work
+package 2C): `Baseline4h`'s `protections` class attribute sets
+`CooldownPeriod` (2 candles), `StoplossGuard` (3 stops / 6 candles →
+3-candle lock), and `MaxDrawdown` (10% over 48 candles → 3-candle lock).
+`LowProfitPairs` is **not yet configured** — it needs real trade history
+to set a meaningful "low profit" threshold against, which doesn't exist
+yet for a strategy that has only been backtested, never run live/dry-run.
+Re-tagged TBD (Phase 2D) — configure once work package 2D's dry-run has
+produced enough trades to calibrate a threshold, rather than picking an
+arbitrary number now.
 
 ## Strategy versioning
 
@@ -83,10 +90,19 @@ TBD (Phase 2) until first configured.
   pair the strategy also trades — aborts startup and alerts the operator
   rather than letting the system size positions off, or potentially sell,
   a balance it never bought. See risk register M7 and
-  `06-runbooks/start-stop.md` (TBD Phase 2 extension for clearing this
-  abort).
+  `06-runbooks/start-stop.md` (TBD Phase 3 extension for clearing this
+  abort — re-tagged from Phase 2, this is Conductor's own check and
+  Conductor doesn't exist until Phase 3).
 - Per-trade risk: 1–2% of equity, ATR-based sizing (research review §4) —
-  exact % TBD (Phase 2) per strategy backtest.
+  **not implemented as designed in work package 2C.** `Baseline4h` uses
+  Freqtrade's default equal-weight `stake_amount: unlimited` across up to
+  3 open slots (`config.dry_run.json`), not true per-trade %-of-equity
+  ATR sizing — kept simple deliberately for a path-validation baseline
+  (`docs/research/03-baseline-backtest.md`). ATR is used for the *stop
+  distance*, not position *size*. Re-tagged TBD (Phase 3) — real
+  %-risk sizing is more naturally Conductor's `max_deployed_capital` (R2)
+  computation, or a deliberate revision to a future promoted strategy, not
+  a Phase 2 baseline concern.
 - Timeframe: 4h/1d bars only, no tick-level or sub-hourly strategies (see
   [`ADR-0005`](../05-adr/0005-low-frequency-only.md)).
 - Order preference: maker where the strategy allows, to minimize fee drag
@@ -101,10 +117,14 @@ is not a derivative work of Freqtrade and remains under Apache-2.0 (see
 
 ## TBD
 
-- Exact per-pair minimum notional sizes on Kraken and whether they're
-  compatible with $100-scale positions — TBD (Phase 2), see risk register
-  E6.
-- Quote currency (USD vs CAD pairs) — TBD (Phase 2), research review
-  §7.1.
-- Exact protection thresholds — TBD (Phase 2), pending
-  `08-paper-exit-criteria.md` finalization.
+- ~~Exact per-pair minimum notional sizes on Kraken~~ — resolved,
+  `docs/research/02-kraken-market-facts.md` (see risk register E6).
+- ~~Quote currency (USD vs CAD pairs)~~ — resolved: USD, see
+  [`ADR-0008`](../05-adr/0008-usd-quote-currency.md).
+- Exact protection thresholds — resolved for 3 of 4 (`CooldownPeriod`,
+  `StoplossGuard`, `MaxDrawdown`, see "Built-in protections enabled"
+  above); `LowProfitPairs` TBD (Phase 2D).
+- Per-trade %-risk ATR position sizing — not implemented, TBD (Phase 3),
+  see "Position and risk sizing" above.
+- R5 startup-abort clearance runbook — TBD (Phase 3), see "Position and
+  risk sizing" above.

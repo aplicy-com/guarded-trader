@@ -54,15 +54,17 @@ Chosen option: **Kraken**, spot trading, accessed by Freqtrade via CCXT.
 - Key-scoping model directly supports our security requirements.
 
 **Bad / accepted trade-offs:**
-- Exact per-pair minimum order sizes and current fee tiers are not yet
-  verified against $100-scale positions — **TBD (Phase 2)**, tracked as
-  risk register E6.
+- ~~Exact per-pair minimum order sizes and current fee tiers are not yet
+  verified against $100-scale positions~~ — resolved,
+  `docs/research/02-kraken-market-facts.md`, tracked as risk register E6.
 - Kraken's regulatory/registration status in Canada is not yet verified
-  as of this decision — **TBD (Phase 2)**, tracked as risk register T3.
-  If that status changes materially before Phase 2 setup, this ADR should
-  be revisited before funding the account.
-- Quote currency (USD vs. CAD pairs) is not yet decided — **TBD (Phase
-  2)**, research review §7.1.
+  as of this decision — still open, tracked as risk register T3.
+  Per `docs/phase-2-plan.md` §0, this specifically blocks **2E (API key
+  creation)**, not Phase 2 dry-run setup — dry-run uses only public market
+  data, no account/key required. Revisit this ADR before funding the
+  account if that status changes materially before then.
+- ~~Quote currency (USD vs. CAD pairs) is not yet decided~~ — resolved:
+  USD, see [`ADR-0008`](0008-usd-quote-currency.md).
 
 ## More information
 

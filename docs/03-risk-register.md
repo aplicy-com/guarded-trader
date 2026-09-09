@@ -21,6 +21,7 @@ in the phase noted. **Accepted** — residual risk knowingly carried.
 | M5 | Regime change — a strategy validated in one market regime (e.g. trending) fails when conditions shift (e.g. chop, high-vol bear). | High | Medium | Anchored + rolling walk-forward validation before promotion; scheduled re-validation every 4–6 weeks; reject/demote on OOS Sharpe collapse (NFR5). | Research loop | Mitigated (design) — implemented Phase 3 |
 | M6 | Stablecoin or quote-asset de-peg / failure affects the value or liquidity of held balances. | Low | High | Prefer well-established quote assets; principal is small enough ($100) that total loss is bounded; monitor exchange notices. | Operator | Accepted |
 | M7 | Pre-existing personal holdings in the same Kraken account (bought before the project, gifted, or otherwise not system-acquired) get sized into `max_deployed_capital` as if they were working profit, or get sold by a strategy that has no way of knowing they weren't the bot's to trade. | Medium | High | R5 (account isolation): capital sizing counts only ledger-recorded, system-bought balances; startup check aborts and alerts if a whitelisted pair holds an unexplained balance, rather than silently absorbing or trading it. | Conductor | Mitigated (design) — implemented Phase 2 |
+| M8 | The principal is funded in CAD (Interac e-Transfer) but traded entirely in USD-quoted pairs (`ADR-0008`) — the system carries incidental CAD/USD exchange-rate exposure on the principal itself, on top of the trading strategy's own exposure to the traded assets. | Low | Low | Principal is small ($100) which bounds absolute exposure; conversion happens once at funding time, not per-trade; NFR6's CAD-equivalent ledger valuation already tracks the CAD value of the account regardless, so the exposure is visible, not hidden. | Operator | Accepted — flagged during ADR-0008 (work package 2F); not separately mitigated beyond the small principal size |
 
 ## Execution risk
 
@@ -31,7 +32,7 @@ in the phase noted. **Accepted** — residual risk knowingly carried.
 | E3 | Freqtrade's local order/position state desyncs from the exchange's actual state (e.g. partial fill, missed webhook). | Medium | Medium | Reconcile positions against exchange state on every process start; alert on any mismatch rather than silently trusting local state. | Conductor | Mitigated (design) — implemented Phase 2/3 |
 | E4 | A bad deploy or config error causes a runaway order loop (Knight Capital reference case: $440M lost in 45 minutes). | Low | High | Hard turnover cap enforced by the risk engine regardless of strategy signals; kill switch tested before every deploy; short canary/observation window after any deploy before leaving it unattended. | Ops | Mitigated (design) |
 | E5 | Host clock drift causes exchange request-signature failures or misaligned backtest/live bar timing. | Low | Low | NTP time sync enabled on the host; monitored as part of the heartbeat/observability stack. | Ops | Mitigated (design) — implemented Phase 2 |
-| E6 | Freqtrade minimum order size (notional) for a given pair is not met by the position size the risk budget allows at $100 principal. | Medium | Medium | Verify Kraken per-pair minimums during Phase 2 setup; size positions and choose pairs accordingly; documented as an open question in research review §7.1. | Ops | Open — TBD (Phase 2) |
+| E6 | Freqtrade minimum order size (notional) for a given pair is not met by the position size the risk budget allows at $100 principal. | Medium | Medium | Verified live against Kraken (`docs/research/02-kraken-market-facts.md`, work package 2B): every whitelisted pair clears a $30 stake with 20% headroom above its effective minimum notional. | Ops | Mitigated (confirmed 2026-09-09) |
 
 ## LLM / research-loop risk
 
@@ -44,18 +45,18 @@ in the phase noted. **Accepted** — residual risk knowingly carried.
 | L5 | LLM API cost overrun from an unbounded or malfunctioning nightly research loop. | Medium | Low | Nightly token/spend budget with a hard cutoff; alert on overrun; exact budget TBD (Phase 3, research review §7.4). | Ops | Open — TBD (Phase 3) |
 | L6 | LLM vendor outage or rate-limiting blocks a night's research loop. | Medium | Low | Research loop failure is non-blocking for live trading — the live path is 100% deterministic Freqtrade and does not depend on the LLM being reachable; loop retries the next scheduled run. | Conductor | Mitigated (design) |
 | L7 | The nightly research loop's cumulative LLM API cost, over time, exceeds the $100 principal the system manages — the compute cost of running the experiment becomes larger than the capital at risk. | Medium | Low | R6 (research-loop cost ceiling): monthly budget with an 80% alert and a 100% hard stop; the hard stop pauses only the research loop, never trading (ADR-0003). Cost is tracked and reported honestly alongside trading results (`00-vision.md`), so this stays a visible trade-off rather than a hidden one. | Operator | Mitigated (design) — implemented Phase 3 |
-| L8 | LLM-generated strategy code executes arbitrary Python inside the backtest/paper pipeline — a candidate could, in principle, read secrets from the environment, make outbound network calls, or write to disk, entirely independent of whether its trading logic is any good. Order-placement authority (ADR-0003) does not by itself constrain what the code is *capable of* before that boundary is ever reached. | Medium | High | Candidate code admission (ADR-0007): static analysis (import whitelist; `os`/`subprocess`/`socket`/`requests`/file-writes forbidden) before any execution; backtest/walk-forward run inside a throwaway, network-disabled sandbox with no exchange credentials, secrets, or ledger access; mandatory human `/approve` before any code version's first paper entry and every live allocation change. | Conductor | Mitigated (design) — implemented Phase 2/3 |
+| L8 | LLM-generated strategy code executes arbitrary Python inside the backtest/paper pipeline — a candidate could, in principle, read secrets from the environment, make outbound network calls, or write to disk, entirely independent of whether its trading logic is any good. Order-placement authority (ADR-0003) does not by itself constrain what the code is *capable of* before that boundary is ever reached. | Medium | High | Candidate code admission (ADR-0007): static analysis (import whitelist; `os`/`subprocess`/`socket`/`requests`/file-writes forbidden) before any execution; backtest/walk-forward run inside a throwaway, network-disabled sandbox with no exchange credentials, secrets, or ledger access; mandatory human `/approve` before any code version's first paper entry and every live allocation change. | Conductor | Mitigated (design) — implemented Phase 3 (re-tagged from "Phase 2/3": this is entirely Conductor/research-loop scope, which does not exist until Phase 3 — Phase 2's `Baseline4h` was hand-written, never LLM-generated, so this control has nothing to gate yet) |
 
 ## Security risk
 
 | ID | Risk | Likelihood | Impact | Mitigation | Owner | Status |
 |---|---|---|---|---|---|---|
-| S1 | Exchange API key or other secret leaks via the repo, logs, or a shared screen. | Medium | High | Secrets only in env vars / 1Password, never committed; `.gitignore` covers `.env` and key files; pre-commit secret scanning (tool TBD Phase 2); repo reviewed before any public push. | Operator | Mitigated (design) — implemented Phase 2 |
+| S1 | Exchange API key or other secret leaks via the repo, logs, or a shared screen. | Medium | High | Secrets only in env vars / 1Password, never committed; `.gitignore` covers `.env` and key files; gitleaks pre-commit hook (`.pre-commit-config.yaml`); repo reviewed before any public push. | Operator | Mitigated (design) — implemented Phase 2 |
 | S2 | Exchange API key is over-scoped (has withdrawal permission) by mistake. | Low | High | Key created with query + trade only, withdrawal explicitly disabled, IP-whitelisted; scope verified at creation and at every rotation (`06-runbooks/key-rotation.md`). | Operator | Mitigated (design) |
 | S3 | Host (Mac, later mini-PC) is compromised via malware or an unpatched vulnerability. | Low | High | OS auto-updates enabled; no unnecessary exposed ports; remote access via Tailscale rather than public-facing ports (`04-architecture/security.md`); minimal installed software on the trading host. | Ops | Mitigated (design) — implemented Phase 2 |
 | S4 | Telegram bot token leaks, allowing an unauthorized party to issue control commands (including, in the worst case, attempting to disable safety controls). | Low | High | Token stored as a secret, never committed; chat/user ID allowlist enforced in Conductor before executing any command; kill switch/flatten are the only destructive-adjacent commands and both only ever *reduce* risk, never increase it. | Conductor | Mitigated (design) — implemented Phase 3 |
 | S5 | A dependency (PyPI package used by Freqtrade, Conductor, or CI) is compromised (supply-chain attack). | Low | Medium | Pinned versions with a lockfile; automated dependency-update alerts (Dependabot or equivalent); diffs reviewed before accepting an upgrade, especially for packages with exchange/network access. | Ops | Mitigated (design) — implemented Phase 2 |
-| S6 | Local database (ledger, Freqtrade state) is not encrypted at rest and the host is lost or stolen. | Low | Medium | Full-disk encryption on the trading host (FileVault on Mac, LUKS on mini-PC); no secrets stored in the ledger DB itself (secrets live only in env/1Password). | Ops | Open — TBD (Phase 2) |
+| S6 | Local database (ledger, Freqtrade state) is not encrypted at rest and the host is lost or stolen. | Low | Medium | Full-disk encryption on the trading host (FileVault on Mac, LUKS on mini-PC); no secrets stored in the ledger DB itself (secrets live only in env/1Password). | Ops | Mitigated (confirmed 2026-09-09 — `fdesetup status` reports FileVault On on the current Mac host) |
 
 ## Operational risk
 
@@ -72,23 +73,36 @@ in the phase noted. **Accepted** — residual risk knowingly carried.
 
 | ID | Risk | Likelihood | Impact | Mitigation | Owner | Status |
 |---|---|---|---|---|---|---|
-| T1 | CRA classifies the trading activity as business income rather than capital gains (or vice-versa), materially changing tax treatment and filing obligations. | Medium | Medium | Consult an accountant before the first live trade with real profit; keep complete, contemporaneous records from day one regardless of eventual classification (NFR6). | Operator | Open — TBD (Phase 2), confirm classification before going live |
+| T1 | CRA classifies the trading activity as business income rather than capital gains (or vice-versa), materially changing tax treatment and filing obligations. | Medium | Medium | Consult an accountant before the first live trade with real profit; keep complete, contemporaneous records from day one regardless of eventual classification (NFR6). | Operator | Open — question list ready (`docs/09-tax-questions.md`, work package 2F); re-tagged from Phase 2 to **block Phase 4 entry** (before live capital/first real trade), not Phase 2 docs closure — Phase 2 is dry-run only with zero taxable events |
 | T2 | Insufficient records (cost basis, disposition value in CAD at time of trade) to support a CRA filing. | Medium | Medium | Ledger records CAD-equivalent fair value, cost basis, and disposition for every fill from the first live trade; exportable report format defined before going live. | Conductor | Mitigated (design) — implemented Phase 3 |
-| T3 | Kraken's regulatory/registration status in Canada changes, restricting access or requiring asset migration. | Low | Medium | Monitor Kraken's Canadian compliance status periodically; principal is small ($100) which bounds exposure to this risk; a documented exchange-migration path exists in principle — TBD (Phase 4) if/when needed. | Operator | Open — TBD (Phase 2), verify current registration status |
-| T4 | Applicable GST/HST or other tax treatment on trading activity/fees is unclear. | Low | Low | Consult an accountant; not expected to be material at $100 principal, but the question should be settled before scaling, if the project ever scales. | Operator | Open — TBD (Phase 2) |
+| T3 | Kraken's regulatory/registration status in Canada changes, restricting access or requiring asset migration. | Low | Medium | Monitor Kraken's Canadian compliance status periodically; principal is small ($100) which bounds exposure to this risk; a documented exchange-migration path exists in principle — TBD (Phase 4) if/when needed. | Operator | Open — residency/registration status pending Kraken support (external, operator-tracked, not resolvable from this repo); per `docs/phase-2-plan.md` §0 this blocks **2E specifically (API key creation)**, not Phase 2 dry-run or docs closure |
+| T4 | Applicable GST/HST or other tax treatment on trading activity/fees is unclear. | Low | Low | Consult an accountant; not expected to be material at $100 principal, but the question should be settled before scaling, if the project ever scales. | Operator | Open — question added to `docs/09-tax-questions.md`; re-tagged from Phase 2 to block Phase 4 entry, same reasoning as T1 |
 | T5 | Publishing this repository publicly inadvertently exposes personal financial details, account identifiers, or strategy details tied to real money. | Medium | Medium | Secrets excluded via `.gitignore`; no account numbers, balances, or personally identifying transaction data committed to tracked files; manual review before each push while the repo is public (`CLAUDE.md` §5). | Operator | Mitigated (design) |
 | T6 | Losses are not properly documented/claimable due to poor record-keeping, forfeiting a legitimate tax offset. | Low | Low | Same ledger/export mechanism as T2 covers losses as well as gains; reviewed with the same accountant consultation. | Conductor | Mitigated (design) |
 
 ## TBD summary
 
-Open items requiring resolution before the phase noted: E6 (Phase 2, min
-order sizes), L5 (Phase 3, nightly LLM budget), S6 (Phase 2, disk
-encryption), O4 (Phase 3, backup schedule), O6 (Phase 4, absence
-procedure), T1/T3/T4 (Phase 2, accountant + registration-status check).
+Resolved this phase (work packages 2B/2C/2F): E6 (min order sizes,
+confirmed live against Kraken), S6 (disk encryption, FileVault confirmed
+On).
+
+Open items requiring resolution before the phase noted: L5 (Phase 3,
+nightly LLM budget), O4 (Phase 3, backup schedule), O6 (Phase 4, absence
+procedure). T1/T4 (accountant consultation, GST/HST) are re-tagged from
+Phase 2 to **block Phase 4 entry** (before live capital) — Phase 2 is
+dry-run only, no taxable event exists yet; the question list is ready
+(`docs/09-tax-questions.md`). T3 (Kraken CA registration status) blocks
+**2E specifically** (API key creation), not Phase 2 broadly, per
+`docs/phase-2-plan.md` §0 — status itself is external and
+operator-tracked, not something this repo can resolve on its own.
+
 M7 is mitigated by design (R5) but its startup-abort clearance runbook is
-still TBD (Phase 2) — see `docs/02-requirements.md` R5. L7 is mitigated
-by design (R6) but its `monthly_llm_budget` value is still TBD (Phase 3)
-— see `docs/02-requirements.md` R6, same open item as L5's nightly budget.
-L8 is mitigated by design (ADR-0007) but its sandbox runtime and
-static-analysis tooling are still TBD (Phase 2/3) — see
-`docs/05-adr/0007-candidate-code-admission.md`.
+re-tagged **TBD (Phase 3)** (from Phase 2) — see `docs/02-requirements.md`
+R5 AC5.4: this is Conductor's own startup check, and Conductor doesn't
+exist until Phase 3. L7 is mitigated by design (R6) but its
+`monthly_llm_budget` value is still TBD (Phase 3) — see
+`docs/02-requirements.md` R6, same open item as L5's nightly budget. L8 is
+mitigated by design (ADR-0007) but its sandbox runtime and static-analysis
+tooling are re-tagged **TBD (Phase 3)** (from "Phase 2/3") — see
+`docs/05-adr/0007-candidate-code-admission.md`; this is entirely
+Conductor/research-loop scope, which Phase 2 never touches.
