@@ -49,8 +49,11 @@
     "ccxt_async_config": {},
     "pair_whitelist": [
       "BTC/USD",
+      "XRP/USD",
       "ETH/USD",
-      "SOL/USD"
+      "SOL/USD",
+      "LINK/USD",
+      "LTC/USD"
     ],
     "pair_blacklist": [
       "ADA/.*",

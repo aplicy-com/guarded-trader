@@ -32,10 +32,25 @@ the paper window stage:
 |---|---|---|
 | Tunable parameters | ≤ 6 | Overfitting defence, research review §4 / NFR5 |
 | Walk-forward method | Anchored **and** rolling, both run | Research review §4 |
-| In-sample Sharpe (absolute floor) | ≥ 1.0 | Required **before** the ratio test below is even applied. The OOS/IS ratio is meaningless when IS Sharpe is negative or near zero — a strategy with IS Sharpe 0.05 trivially "passes" a 50%-of-IS test with an OOS Sharpe of 0.03, which is not evidence of anything. A strategy that never demonstrated a real in-sample edge doesn't get to the ratio question at all. |
-| Out-of-sample Sharpe vs. in-sample Sharpe | OOS ≥ 50% of IS (only evaluated once IS Sharpe ≥ 1.0 above) | Research review §4 (reject if below) |
+| In-sample Sharpe (absolute floor) | ≥ 1.0, **computed on the daily-equity-curve basis** (Freqtrade's "Sharpe (daily wallet balance)" figure, not its trade-return-distribution "Sharpe (closed trades)" figure) | Required **before** the ratio test below is even applied. The OOS/IS ratio is meaningless when IS Sharpe is negative or near zero — a strategy with IS Sharpe 0.05 trivially "passes" a 50%-of-IS test with an OOS Sharpe of 0.03, which is not evidence of anything. A strategy that never demonstrated a real in-sample edge doesn't get to the ratio question at all. The basis is pinned explicitly because the work package 2C review found the two Freqtrade Sharpe figures gave materially different pass/fail answers on a short sample (0.97 vs. 1.81 — one under the floor, one over) — that ambiguity is not acceptable in a go/no-go gate. Daily-equity basis is chosen because it is time-weighted (reflects actual equity-curve smoothness/risk over the window) rather than an unweighted distribution over trade returns, which a low trade count can distort heavily. |
+| Out-of-sample Sharpe vs. in-sample Sharpe | OOS ≥ 50% of IS (only evaluated once IS Sharpe ≥ 1.0 above), **same daily-equity-curve basis as above** | Research review §4 (reject if below) |
 | Backtest fee/slippage assumptions | ≥ live-observed Kraken taker fee (~0.26%) plus a slippage buffer — exact buffer TBD (Phase 2/3) | Avoid over-optimistic backtests (M4, M5 in risk register) |
 | Minimum backtest history | TBD (Phase 3) — enough bars at 4h/1d resolution to cover at least one full market regime | Regime-shift defence (M5) |
+| No single-trade dominance | No single trade, and no force-exit group (see below) taken as a whole, may account for more than 30% of net profit | A strategy whose entire reported edge rides on one trade (or one favourable data cutoff) hasn't demonstrated a repeatable edge — it has demonstrated one lucky outcome dressed up in a headline P&L number. **The work package 2C review found the original run failed this outright**: its 3 force-exit trades totalled $20.01 against a $18.44 reported net profit (108.6% — the force-exit group alone exceeded the *entire* net profit figure), and the single largest trade in that run ($11.09, SOL/USD, one of those force-exit trades) was 60.2% of net profit on its own. Neither would have been visible from the net P&L figure alone. |
+
+**Force-exit trades and headline net P&L.** A trade still open when the
+backtest data window ends is closed by the backtesting engine itself
+(`exit_reason: force_exit`), not by the strategy's own entry/exit logic —
+it is an artifact of where the data happens to stop, not evidence about
+the strategy. **Force-exit trades are therefore excluded from the
+headline net P&L figure used to evaluate every criterion in this gate,
+and reported as a separate line item instead** (count, total profit,
+per-trade detail). A strategy's Gate 1 net P&L, Sharpe, and drawdown are
+all computed on the trade population the strategy actually chose to close
+by itself. This is not optional cosmetics: the work package 2C short-window
+run had 3 force-exit trades totalling more profit than the entire
+reported net P&L figure — without this rule, a favourable data cutoff
+alone could make an otherwise-losing strategy look profitable.
 
 ## Gate 2 — Paper window (dry-run)
 
