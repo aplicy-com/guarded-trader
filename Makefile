@@ -12,15 +12,20 @@ logs:
 	$(COMPOSE) logs -f --tail 200 freqtrade
 
 download-data:
-	$(COMPOSE) run --rm freqtrade download-data \
-		--config user_data/config.dry_run.json \
-		--timeframes 4h 1d \
-		--days 730
+	# Freqtrade's own `download-data` refuses to run for Kraken (its public
+	# OHLC endpoint doesn't serve historic klines — see
+	# docs/research/03-baseline-backtest.md "Data" section). This pulls the
+	# maximum real history Kraken's API actually serves via ccxt directly,
+	# through Freqtrade's own data handler.
+	$(COMPOSE) run --rm -v $(CURDIR):/repo --entrypoint python freqtrade \
+		/repo/scripts/fetch_kraken_ohlcv.py
 
 backtest:
 	$(COMPOSE) run --rm freqtrade backtesting \
 		--config user_data/config.dry_run.json \
-		--strategy Baseline4h
+		--strategy Baseline4h \
+		--fee 0.0036 \
+		--enable-protections
 
 shell:
 	$(COMPOSE) run --rm --entrypoint bash freqtrade
