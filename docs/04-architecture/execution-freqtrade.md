@@ -43,6 +43,14 @@ risk-limit checker, [`conductor.md`](conductor.md), is the second):
 | `CooldownPeriod` | Forces a pause after a protection trips, before re-evaluation | Supports AC4.6 (no silent auto-resume) |
 | `LowProfitPairs` | Locks out a pair whose recent trades show low/negative average profit | Overfitting/regime-shift defence (M5, NFR5) |
 
+Protections are configured in the **strategy**, not `config.dry_run.json` —
+Freqtrade 2026.8 deprecated the config-level `protections` key, and the
+config now rejects it outright at startup. Each strategy file sets its own
+`protections` class attribute (see
+`services/freqtrade/user_data/strategies/Baseline4h.py`), so protection
+tuning travels with the strategy version it was validated against, same as
+`minimal_roi`/`stoploss`.
+
 Exact numeric thresholds for each protection mirror the values finalized
 in [`08-paper-exit-criteria.md`](../08-paper-exit-criteria.md) and R4 —
 TBD (Phase 2) until first configured.

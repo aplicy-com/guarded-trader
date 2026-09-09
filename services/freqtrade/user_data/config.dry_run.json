@@ -66,27 +66,6 @@
       "method": "StaticPairList"
     }
   ],
-  "protections": [
-    {
-      "method": "CooldownPeriod",
-      "stop_duration_candles": 2
-    },
-    {
-      "method": "StoplossGuard",
-      "lookback_period_candles": 6,
-      "trade_limit": 3,
-      "stop_duration_candles": 3,
-      "only_per_pair": false,
-      "only_per_side": false
-    },
-    {
-      "method": "MaxDrawdown",
-      "lookback_period_candles": 48,
-      "trade_limit": 20,
-      "stop_duration_candles": 3,
-      "max_allowed_drawdown": 0.1
-    }
-  ],
   "telegram": {
     "enabled": false,
     "token": "",

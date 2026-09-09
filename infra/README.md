@@ -121,13 +121,24 @@ hook — see `../CLAUDE.md` §0.3.
 
 ## Known gaps (Phase 2 scope)
 
-- The `StoplossGuard`/`MaxDrawdown`/`CooldownPeriod` protections in
-  `config.dry_run.json` are Freqtrade's own **time-bound** locks — the
-  first of R4's two required independent layers
-  (`docs/02-requirements.md` AC4.4). They do not by themselves satisfy
-  AC4.2/AC4.6 (a durable halt requiring explicit human re-enable); that is
-  the Conductor's own check, Phase 3+. Do not treat this config alone as a
-  complete R4 implementation.
+- The `StoplossGuard`/`MaxDrawdown`/`CooldownPeriod` protections, set on
+  the `Baseline4h` strategy's `protections` class attribute (Freqtrade
+  2026.8 deprecated the config-level `protections` key — see
+  [`../docs/04-architecture/execution-freqtrade.md`](../docs/04-architecture/execution-freqtrade.md)),
+  are Freqtrade's own **time-bound** locks — the first of R4's two
+  required independent layers (`docs/02-requirements.md` AC4.4). They do
+  not by themselves satisfy AC4.2/AC4.6 (a durable halt requiring explicit
+  human re-enable); that is the Conductor's own check, Phase 3+. Do not
+  treat this alone as a complete R4 implementation.
 - `download-data` / `backtest` defaults are provisional; work packages 2B
   (market facts) and 2C (baseline strategy + backtest) refine the pair
   universe and cost assumptions used here.
+
+## Troubleshooting
+
+- **`make up` / `docker pull` hangs indefinitely** (image pull never
+  progresses, no error, no timeout): on macOS this has been caused by
+  Docker Desktop's "Use kernel networking for UDP" setting conflicting
+  with Tailscale. Fix: Docker Desktop → Settings → Resources → Network →
+  uncheck **"Use kernel networking for UDP"** → Apply & restart. Retry
+  `make up` after Docker Desktop finishes restarting.
