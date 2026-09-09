@@ -2,9 +2,12 @@
 
 Conductor is our own service (Python, FastAPI — decision D2 in the research
 review) that owns everything Freqtrade does not: the research loop, the
-ledger, promotion gates, the profit sweep, the kill switch, and the
+ledger, promotion gates, the daily profit fence, the kill switch, and the
 Telegram control surface. Freqtrade never talks to Claude, Telegram, or the
-sweep destination directly — everything routes through Conductor.
+sweep destination directly — and neither does Conductor: profit fencing is
+a ledger-only accounting operation, and the physical move of fenced funds
+to the sweep destination is always a manual, human action taken outside
+this system entirely (R3).
 
 ## Responsibilities
 
@@ -13,9 +16,9 @@ sweep destination directly — everything routes through Conductor.
 | Nightly research-loop worker | Once per night, assembles market/strategy-performance context, prompts Claude for candidate strategies/parameter changes/post-mortems, logs the full prompt+response with a content hash. |
 | Promotion-gate engine | Runs each candidate through backtest → walk-forward → (if it passes) marks it eligible for the 3-week paper stage → 25% → 100% allocation. Enforces NFR5 (overfitting defence) and the ≤6-parameter cap. Never skips a stage. |
 | Risk-limit checker | Independently re-derives daily loss, drawdown from peak, and consecutive-loss state from the ledger (not from Freqtrade's own view) and can halt Freqtrade via its REST API even if Freqtrade's own protections have not fired — the second layer required by R4/AC4.4. |
-| Profit-sweep job | Once per UTC day, computes working profit, compares to `daily_profit_cap`, and if exceeded, initiates the one-way transfer described in R3. |
-| Telegram bot handler | Authenticates commands against an allow-list of chat IDs; exposes kill switch, flatten, status, and re-enable; posts alerts (halts, sweep failures, heartbeat silence). |
-| Ledger | Postgres (TBD Phase 3) — append-mostly record of: principal, every fill, every halt/resume event with operator identity, every sweep, every promotion-gate decision, every LLM prompt/response hash. |
+| Profit-fence job | Once per UTC day, computes working profit and, if it exceeds `daily_profit_cap`, fences the excess in the ledger — a ledger-only operation, no exchange call (R3). Alerts the operator when cumulative fenced-but-unmoved profit crosses the manual-move threshold or a month has passed, but never initiates a transfer itself — the physical move off-exchange is always a manual, human action. |
+| Telegram bot handler | Authenticates commands against an allow-list of chat IDs; exposes kill switch, flatten, status, and re-enable; posts alerts (halts, missed fencing runs, manual-move due, heartbeat silence). |
+| Ledger | Postgres (TBD Phase 3) — append-mostly record of: principal, every fill, every halt/resume event with operator identity, every fencing event and manual transfer, every promotion-gate decision, every LLM prompt/response hash. |
 
 ## Nightly research-loop flow
 

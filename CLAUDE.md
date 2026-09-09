@@ -21,15 +21,18 @@ operator explicitly overrides them in writing in that session.
    comments. `.env.example` documents shape only, with empty values. If you
    generate a secret for local testing, it goes in `.env` (git-ignored) or
    the OS keychain/1Password, never in a tracked file.
-4. **Capital rules (R1–R5 in `docs/02-requirements.md`) are hard
+4. **Capital rules (R1–R6 in `docs/02-requirements.md`) are hard
    constraints on any code you write for the trading path**, not
    suggestions: one-time $100 principal with no top-ups; trading capital is
-   principal + working profit only; profit above the daily cap sweeps to an
-   account this system has no key for; hard loss limits halt trading and
-   require a human to re-enable; the system sizes and reconciles only
-   assets it bought itself, and aborts startup rather than silently
-   absorbing a pre-existing balance in a whitelisted pair (account
-   isolation, R5).
+   principal + working profit only; profit above the daily cap is fenced
+   in the ledger automatically (no exchange call, no withdrawal, ever —
+   physically moving it to a key-less account is always a manual, human
+   action, R3); hard loss limits halt trading and require a human to
+   re-enable; the system sizes and reconciles only assets it bought
+   itself, and aborts startup rather than silently absorbing a
+   pre-existing balance in a whitelisted pair (account isolation, R5); the
+   research loop has a monthly cost ceiling that can only ever pause
+   research, never trading (R6).
 
 ## 1. Working process
 
@@ -74,7 +77,7 @@ operator explicitly overrides them in writing in that session.
   research output" and "live order path" into the same code path.
 - **Tests are mandatory for anything that touches money**: position
   sizing, risk-limit checks, ledger arithmetic, promotion-gate logic,
-  profit-sweep calculations. Backtests and walk-forward runs are not a
+  profit-fencing calculations. Backtests and walk-forward runs are not a
   substitute for unit tests of the risk engine's own logic.
 - Strategy parameters are capped at ≤6 tunable parameters per strategy
   (overfitting defence, see research review §4) unless an ADR explicitly

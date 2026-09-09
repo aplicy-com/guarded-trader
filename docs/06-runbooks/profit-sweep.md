@@ -1,80 +1,116 @@
-# Runbook — Profit sweep
+# Runbook — Profit sweep (fence + manual move)
 
-**What this does:** once per UTC day, Conductor computes working profit
-and, if it's above the configured `daily_profit_cap`, transfers the excess
-to the sweep destination account — an account/wallet the running system
-holds **no API key for** (R3). This is normally fully automated; this
-runbook covers verifying it worked and handling failures.
+**What this does:** once per UTC day, Conductor automatically **fences**
+working profit above `daily_profit_cap` in the ledger — a ledger-only
+accounting operation that needs no exchange call and no API key
+capability beyond what the system already has (query + trade only, see
+NFR2). Fenced profit is immediately excluded from `max_deployed_capital`
+(R2) and can never be used for new positions. Separately, **moving fenced
+funds physically off the exchange is a manual action you perform
+yourself**, on Kraken's own interface, whenever cumulative
+fenced-but-unmoved profit crosses the configured threshold (draft: $25)
+or once a month, whichever comes first — the system never initiates a
+withdrawal, ever (R3, NFR2). This runbook covers verifying fencing
+worked, performing the manual move, and handling either going wrong.
 
-**When to use:** daily/periodic verification, or when you get a "sweep
-failed" alert.
+**When to use:** daily/periodic verification of fencing, performing a
+scheduled manual move, or when you get a fencing-related alert.
 
-## Routine verification (do this periodically, not just on failure)
+## Routine verification — fencing (automatic, do this periodically)
 
-1. Telegram: `/status` should include the timestamp and amount of the
-   last successful sweep.
-2. Open the sweep destination account directly (its own login — remember,
-   the trading system cannot reach it, so this step can *only* be done by
-   you, manually, outside the system).
-3. Compare the balance/transaction history there against the ledger's
-   record of swept amounts.
-   - Ledger export mechanism: TBD (Phase 3) — until implemented, check via
-     `/status` or the Conductor DB directly.
-4. If they match: done, nothing else to do.
-5. If they don't match (destination shows less than the ledger claims was
-   swept): **do not assume it's a display delay** on the first check —
-   wait a reasonable interval for exchange settlement (minutes to a few
-   hours depending on asset), check again. If still mismatched after that,
-   treat this as an incident — the ledger's belief about swept funds is
-   wrong, which is a data-integrity problem worth investigating with a
-   clear head, not at 2am unless something else is also wrong.
+1. Telegram: `/status` should show today's fenced amount (if any) and the
+   running cumulative fenced-but-unmoved total.
+2. Confirm fenced profit is reflected as excluded from
+   `max_deployed_capital` — `/status` should show trading capital =
+   principal + *unfenced* working profit only.
+3. If a day passes with profit above `daily_profit_cap` and `/status`
+   does **not** show a new fencing event, treat this as an incident (see
+   "If fencing didn't happen when it should have" below) — don't assume
+   it will "catch up on its own" without checking why.
 
-## If you receive a "sweep failed" alert
+## Performing a manual move (when threshold or monthly cadence is hit)
 
-1. Read the alert message for the specific reason given (e.g. "below
-   exchange minimum withdrawal", "network/API error", "destination
-   address rejected").
-2. **This is not urgent** — per R3 AC3.5, a failed sweep does not silently
-   retry into unbounded working profit; it fails closed. The money is
-   still safely inside the trading account, just not yet moved. No
-   position or capital is at risk because of a failed sweep by itself.
-3. If the reason was "below minimum withdrawal": no action needed until
-   enough profit accumulates to clear the minimum on a future sweep —
-   confirm this is genuinely a small, expected amount via `/status` before
-   dismissing it.
-4. If the reason was a network/API error: check Kraken's status page and
-   your host's network connectivity. If Kraken itself is down, this
-   resolves itself on the next scheduled sweep attempt once Kraken
-   recovers — no manual retry needed unless the alert repeats across
-   multiple days.
-5. If the reason was "destination address/account rejected" or anything
-   that sounds like a **configuration** problem (not a transient
-   condition): this needs a human fix before the next sweep can succeed.
-   - Check the sweep destination configuration (TBD Phase 3 — exact config
-     location to be documented once implemented).
-   - Do not "fix" this by weakening the sweep destination's isolation
-     (e.g. do not add an API key for it to make automation easier) — the
-     entire point of R3 is that this account is unreachable by the running
-     system. Fix the configuration error, not the isolation property.
-6. Once you believe the issue is fixed, either wait for the next scheduled
-   sweep or trigger one manually if that control exists (TBD Phase 3 —
-   document the manual-trigger command here once implemented).
-7. Confirm resolution via the routine verification steps above once the
-   next sweep completes.
+You'll get a Telegram alert when either condition is met: cumulative
+fenced-but-unmoved profit exceeds the configured threshold (draft $25),
+or a month has passed since the last transfer. **The alert is
+informational — there's no urgency.** Fenced funds are already excluded
+from trading capital and therefore already protected; this step is about
+getting them off the exchange, not about risk control.
+
+1. Log into Kraken directly (its own web/app interface — never through
+   this system; the system holds no capability to do this step for you).
+2. Check the current fenced-but-unmoved total via `/status`.
+3. Manually initiate a withdrawal from the trading account to the sweep
+   destination account, for the fenced amount, using Kraken's own
+   withdrawal flow.
+4. Record the transfer in the ledger (Conductor command for this: TBD
+   Phase 3 — until it exists, note it manually somewhere you'll remember:
+   amount, destination, and Kraken's transaction id).
+5. Once initiated, verify per the reconciliation steps below.
+
+## Routine verification — the manual move
+
+1. Open the sweep destination account directly (its own login — the
+   trading system holds no key for it, so this step can *only* be done by
+   you).
+2. Compare the balance/transaction history there against what you
+   recorded as transferred in step 4 above.
+3. If they match: done, nothing else to do.
+4. If they don't match (destination shows less than expected): **do not
+   assume it's a display delay** on the first check — wait a reasonable
+   interval for exchange settlement (minutes to a few hours), check
+   again. If still mismatched, treat this as an incident worth
+   investigating with a clear head — it is **not** urgent (the fenced
+   funds were already excluded from trading capital before you even
+   initiated the transfer), but it is worth understanding.
+
+## If fencing didn't happen when it should have
+
+This is a different, more important failure than a delayed manual move —
+fencing has no exchange dependency, so a missed fencing run almost always
+means the Conductor process itself didn't run that day (e.g. host was
+down at the UTC day boundary — see risk register O1).
+
+1. Check Conductor's logs / `/status` for the gap.
+2. Once Conductor is back up, the fencing job should catch up on its next
+   scheduled run — verify this actually happened rather than assuming it.
+3. Until it catches up, the un-fenced profit is still correctly counted
+   as working profit under R2 (not lost, not miscounted) — just not yet
+   protected from being risked on a new trade. This is a "fix it soon"
+   issue, not a "the money is at risk of disappearing" issue, and there
+   is no need to engage the kill switch over it alone.
+
+## If a manual move itself fails
+
+1. Read whatever error Kraken's own interface gives you (below minimum
+   withdrawal, network error, destination rejected, etc.) — this is a
+   normal exchange-side failure, not a system bug, since the system never
+   initiates this step in the first place.
+2. **This is not urgent.** Fenced funds are already excluded from
+   `max_deployed_capital` regardless of whether the physical transfer
+   succeeds — a failed manual move does not put trading capital at risk.
+3. Retry when convenient, or wait until the next monthly cadence if the
+   amount is small and the failure reason looks transient.
+4. Do not "fix" a repeatedly failing move by adding an API key for the
+   sweep destination to make it automatic — the entire point of R3 is
+   that this account is unreachable by the running system. Fix whatever
+   Kraken-side issue is blocking the manual transfer, not the isolation
+   property itself.
 
 ## Why this matters enough to have its own runbook
 
-The sweep is the mechanism that converts "the bot is up on paper" into
-actually-protected, actually-realized gains (R3 rationale). A silently
-broken sweep doesn't lose money directly, but it quietly defeats the whole
-point of the daily cap — working profit just keeps sitting inside
-`max_deployed_capital` (R2), exposed to the next bad trade instead of being
-protected. Treat repeated sweep failures as a priority to fix, even though
-no single failure is an emergency.
+Fencing is the mechanism that converts "the bot got lucky" into money the
+trading logic can never touch again (R3 rationale), and it happens
+automatically, with no exchange dependency, specifically so it can't fail
+the way an automated withdrawal could. The manual move is a separate,
+lower-urgency step for getting funds physically off the exchange — treat
+a missed manual move as routine housekeeping, and a missed **fencing**
+run as the thing actually worth investigating promptly.
 
 ## TBD
 
-- Ledger export/verification tooling — TBD (Phase 3).
-- Manual sweep-trigger command — TBD (Phase 3).
-- Exact `daily_profit_cap` value — TBD (Phase 3), see
-  `docs/02-requirements.md` R3 and `docs/08-paper-exit-criteria.md`.
+- Ledger export/verification tooling and a Conductor command to record a
+  manual transfer — TBD (Phase 3).
+- Exact `daily_profit_cap` and `manual_move_threshold` values — TBD
+  (Phase 3), see `docs/02-requirements.md` R3 and
+  `docs/08-paper-exit-criteria.md`.

@@ -26,14 +26,18 @@ flowchart TB
     Conductor -- "promoted strategy version,<br/>risk config, halt/resume" --> Freqtrade
     Freqtrade -- "fills, balances, order state" --> Conductor
     Freqtrade -- "orders (query/trade only key)" <--> Kraken
-    Conductor -- "daily profit sweep<br/>(one-way transfer)" --> SweepAcct
-    Conductor -- "alerts: halts, errors,<br/>heartbeat silence" --> Telegram
+    Operator -- "manual transfer via Kraken's own UI,<br/>triggered by threshold/monthly alert" --> SweepAcct
+    Conductor -- "alerts: halts, errors,<br/>fencing/move-due, heartbeat silence" --> Telegram
 ```
 
 **Key invariant visible in this diagram:** Claude has no arrow to Kraken,
 directly or indirectly through Freqtrade. Every arrow from Claude terminates
 at Conductor, which treats it as a proposal, not a command. See
-[`ADR-0003`](../05-adr/0003-llm-never-orders.md).
+[`ADR-0003`](../05-adr/0003-llm-never-orders.md). A second invariant:
+Conductor has no arrow to the sweep destination either — profit fencing is
+a ledger-only operation inside Conductor, and the only path to the sweep
+destination is the Operator acting manually via Kraken's own interface
+(R3).
 
 ## Container diagram
 
@@ -45,7 +49,7 @@ flowchart TB
             Loop["Nightly research-loop worker"]
             Gate["Promotion-gate engine<br/>(backtest→WF→paper→25%→100%)"]
             RiskCheck["Risk-limit checker<br/>(R4: daily/drawdown/consec-loss)"]
-            Sweep["Profit-sweep job"]
+            Fence["Profit-fence job"]
             Bot["Telegram bot handler"]
         end
 
@@ -62,9 +66,9 @@ flowchart TB
     Loop --> Gate
     Gate -- "promote/demote strategy" --> REST
     RiskCheck -- "halt / resume" --> REST
-    Sweep --> Ledger
+    Fence --> Ledger
     Bot --> RiskCheck
-    Bot --> Sweep
+    Bot --> Fence
     REST --> Protections
     Protections --> Strategy
     FreqtradeSvc -- "fills, state" --> Ledger
@@ -81,9 +85,9 @@ flowchart TB
 3. **Every money-relevant fact lives in the ledger**, not in memory or in
    an LLM's context window. Restarting any service must never lose halt
    state, principal record, or promotion stage.
-4. **Fail closed.** Any ambiguity (sweep failure, reconciliation mismatch,
-   heartbeat silence) defaults to halting or blocking new risk, never to
-   proceeding optimistically.
+4. **Fail closed.** Any ambiguity (a missed fencing run, reconciliation
+   mismatch, heartbeat silence) defaults to halting or blocking new risk,
+   never to proceeding optimistically.
 
 ## Related documents
 

@@ -43,6 +43,7 @@ in the phase noted. **Accepted** — residual risk knowingly carried.
 | L4 | Prompt injection via external data fed into the research loop (news headlines, on-chain data, social sentiment) attempts to alter the loop's behaviour or safety checks. | Medium | Medium | All fetched external content is treated as untrusted data, never as instructions, when composing prompts; safety/promotion-gate logic lives outside the LLM's control entirely (deterministic code, not a prompt instruction). | Conductor | Mitigated (design) — implemented Phase 3 |
 | L5 | LLM API cost overrun from an unbounded or malfunctioning nightly research loop. | Medium | Low | Nightly token/spend budget with a hard cutoff; alert on overrun; exact budget TBD (Phase 3, research review §7.4). | Ops | Open — TBD (Phase 3) |
 | L6 | LLM vendor outage or rate-limiting blocks a night's research loop. | Medium | Low | Research loop failure is non-blocking for live trading — the live path is 100% deterministic Freqtrade and does not depend on the LLM being reachable; loop retries the next scheduled run. | Conductor | Mitigated (design) |
+| L7 | The nightly research loop's cumulative LLM API cost, over time, exceeds the $100 principal the system manages — the compute cost of running the experiment becomes larger than the capital at risk. | Medium | Low | R6 (research-loop cost ceiling): monthly budget with an 80% alert and a 100% hard stop; the hard stop pauses only the research loop, never trading (ADR-0003). Cost is tracked and reported honestly alongside trading results (`00-vision.md`), so this stays a visible trade-off rather than a hidden one. | Operator | Mitigated (design) — implemented Phase 3 |
 
 ## Security risk
 
@@ -84,4 +85,6 @@ order sizes), L5 (Phase 3, nightly LLM budget), S6 (Phase 2, disk
 encryption), O4 (Phase 3, backup schedule), O6 (Phase 4, absence
 procedure), T1/T3/T4 (Phase 2, accountant + registration-status check).
 M7 is mitigated by design (R5) but its startup-abort clearance runbook is
-still TBD (Phase 2) — see `docs/02-requirements.md` R5.
+still TBD (Phase 2) — see `docs/02-requirements.md` R5. L7 is mitigated
+by design (R6) but its `monthly_llm_budget` value is still TBD (Phase 3)
+— see `docs/02-requirements.md` R6, same open item as L5's nightly budget.

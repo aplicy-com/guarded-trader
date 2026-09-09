@@ -41,6 +41,11 @@ layer) driving **Freqtrade** (the execution/risk engine) against **Kraken**
   goal is a safe, well-instrumented, honest experiment — boring
   infrastructure, low turnover, long validation periods (research review
   §5).
+- **Not free to run.** The $100 principal is not this project's real
+  budget. The nightly LLM research loop has its own ongoing compute cost,
+  entirely independent of trading capital and capped separately (R6) —
+  and that cost is tracked and reported as honestly as the trading results
+  are, not treated as a rounding error.
 
 ## Success criteria
 

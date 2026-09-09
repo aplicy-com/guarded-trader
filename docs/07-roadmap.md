@@ -35,8 +35,11 @@ register, ADRs, runbooks, licence. No code that connects to an exchange.
 
 **Entry gate:** Phase 1 exit gate met, **and** Kraken account residency
 updated to Canada (Payward Canada) with Interac e-Transfer funding
-available — see risk register T3; this must be true before principal
-funding and live-adjacent setup in this phase.
+available — see risk register T3. This must be true before any
+live-adjacent setup in this phase (key creation, account configuration);
+it is not itself a funding step — principal funding is a deliberate,
+explicit Phase 4 action (see Phase 4 entry gate), not something this
+phase triggers.
 
 **Scope:**
 - `infra/` docker-compose for Freqtrade (and a placeholder for Conductor,
@@ -74,14 +77,14 @@ funding and live-adjacent setup in this phase.
 
 **Scope:**
 - Conductor service: ledger, promotion-gate engine, risk-limit checker
-  (independent second layer for R4), profit-sweep job, Telegram bot.
+  (independent second layer for R4), profit-fence job, Telegram bot.
 - Nightly research loop wired to Claude, full prompt/response logging.
 - `docs/08-paper-exit-criteria.md` finalized with concrete numbers before
   the first strategy is evaluated against them.
 - At least one strategy taken through backtest → walk-forward → 3-week
   paper against the finalized exit criteria.
 - Sweep destination account/wallet established (no API key issued to the
-  running system) and profit-sweep drilled per
+  running system) and the fence-then-manual-move flow drilled per
   `docs/06-runbooks/profit-sweep.md`.
 - Kill switch and nuclear protocol drilled (simulated, in dry-run) per
   their runbooks — not just written, actually exercised.

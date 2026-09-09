@@ -3,7 +3,7 @@
 Format per requirement: **Statement**, **Rationale**, **Acceptance
 criteria** (testable), **Verification method**. R1–R4 are the four capital
 rules given in the Phase 1 brief; R5 is a follow-up isolation requirement;
-NFRs follow.
+R6 is a follow-up cost-ceiling requirement; NFRs follow.
 
 ---
 
@@ -43,70 +43,108 @@ against the Conductor ledger's principal record; reviewed monthly per
 
 **Statement:** At any point in time, the capital Freqtrade is permitted to
 deploy (`stake_amount` / max open exposure) equals the original principal
-plus **working profit** — profit that has not yet been swept out per R3 —
+plus **working profit** — profit that has not yet been fenced per R3 —
 and nothing else.
 
 **Rationale:** Keeps the system's own risk-of-ruin bounded to money it has
-actually earned or was given, and makes the daily profit sweep (R3) the
+actually earned or was given, and makes the daily profit fence (R3) the
 single mechanism that caps how much "house money" is ever at risk at once.
 
 **Acceptance criteria:**
 - AC2.1: `max_deployed_capital` (Conductor-enforced ceiling passed into
   Freqtrade's stake configuration) = principal + working profit, recomputed
-  at least daily and after every sweep.
+  at least daily and immediately after every fencing event.
 - AC2.2: Freqtrade's configured `stake_amount` / `tradable_balance_ratio`
   can never cause total exposure to exceed `max_deployed_capital`, verified
   by a unit test in the risk-engine wrapper (Phase 2+).
 - AC2.3: Code review / static check prevents the Conductor from ever
   raising `max_deployed_capital` other than by the formula in AC2.1 — no
   manual override path in code.
-- AC2.4: If a sweep (R3) fails or is delayed, working profit above the
-  daily cap is **not** available for new trades until the sweep completes
-  or is manually reconciled — the system fails closed, not open.
+- AC2.4: Fencing (R3) is a ledger-only operation with no exchange
+  dependency, so it cannot fail the way a withdrawal could — but if the
+  daily fencing job itself fails to *run* (e.g. host down at the UTC day
+  boundary), any profit above the daily cap remains counted as working
+  profit until the job successfully catches up. A missed fencing run is
+  itself an alertable condition (see `06-runbooks/profit-sweep.md`), never
+  a silent extension of available capital.
 
 **Verification method:** Ledger audit comparing `max_deployed_capital` over
 time against principal + (working profit as computed from realized P&L
-minus swept amounts); code review of the stake-sizing path; unit tests
+minus fenced amounts); code review of the stake-sizing path; unit tests
 (Phase 2+).
 
 ---
 
-## R3 — Profit above the daily cap is swept to a key-less account
+## R3 — Profit above the daily cap is fenced automatically, then moved manually to a key-less account
 
-**Statement:** At the end of each trading day (UTC), any working profit
-above a configured daily cap is transferred out of the trading account to a
-separate account or wallet for which the running system holds **no API
-key** — i.e. a transfer the system can initiate but never reverse or
-re-access.
+**Statement:** At the end of each trading day (UTC), Conductor computes
+working profit and, if it exceeds a configured `daily_profit_cap`,
+immediately **fences** the excess in the ledger — a ledger-only accounting
+change that excludes it from `max_deployed_capital` (R2) so it is no
+longer available for new positions. Fencing requires no exchange API call
+and no withdrawal capability of any kind, consistent with NFR2: **the
+running system never withdraws funds, ever.** The physical transfer of
+fenced profit out of the trading account, to a separate account or wallet
+the system holds **no API key for**, is a **manual, human-initiated
+action** — performed by the operator directly on Kraken's own interface,
+triggered when cumulative fenced-but-unmoved profit exceeds a configured
+threshold (draft: **$25**) or once a calendar month has passed since the
+last transfer, whichever comes first.
 
-**Rationale:** Converts "the bot got lucky" into realized, protected gains
-on a fixed cadence, and structurally prevents the system (or anyone who
-compromises it) from ever trading, borrowing against, or withdrawing swept
-profit — the sweep destination is only reachable by the human operator.
+**Rationale:** The original design for this rule proposed an automated
+daily withdrawal to a separate wallet. That directly contradicts NFR2 (the
+exchange API key must never carry withdrawal permission) — a system that
+can withdraw, even to one hardcoded destination it "can never reverse," is
+a system with withdrawal capability, which is exactly the class of
+capability NFR2 exists to rule out entirely, not merely constrain.
+Fencing achieves the same protective intent — converting "the bot got
+lucky today" into money the trading logic can never touch again — without
+requiring any withdrawal capability: it is an accounting boundary inside
+the ledger, not a fund movement. Physically moving fenced funds off the
+exchange is deferred to a manual, periodic operator action; that action
+exists for custody/realization reasons (getting the money somewhere the
+operator controls directly), not for the risk-control purpose R2/R4
+already need — fencing alone fully satisfies R2's "principal + working
+profit only" ceiling the moment it happens, regardless of when the
+physical transfer follows.
 
 **Acceptance criteria:**
-- AC3.1: A configured `daily_profit_cap` (absolute $ or % of principal —
-  exact value TBD (Phase 3), see `08-paper-exit-criteria.md` for related
-  numeric gates) exists in Conductor config.
+- AC3.1: A configured `daily_profit_cap` (exact value TBD (Phase 3), see
+  `08-paper-exit-criteria.md` for related numeric gates) and a
+  `manual_move_threshold` (draft: $25) exist in Conductor config, along
+  with a monthly manual-move reminder cadence.
 - AC3.2: A scheduled job runs once per UTC day, computes working profit,
-  and if it exceeds `daily_profit_cap`, initiates a withdrawal of the
-  excess to the designated sweep destination.
-- AC3.3: The sweep destination's credentials (API key, private key, or
-  exchange sub-account login) are **not present** anywhere in the running
-  system's environment, secrets store, or code — verified by an explicit
-  check in `06-runbooks/profit-sweep.md` and a periodic secrets audit.
-- AC3.4: Every sweep transaction is logged in the ledger with amount,
-  destination, exchange tx id, and timestamp, and reconciled against the
-  destination account's balance by the human operator (see
+  and if it exceeds `daily_profit_cap`, marks the excess as **fenced** in
+  the ledger. This is a ledger state change only — no exchange API call of
+  any kind is made, and no code path anywhere in this repository initiates
+  a withdrawal (see NFR2, `CLAUDE.md` §0.2).
+- AC3.3: Fenced profit is excluded from `max_deployed_capital` (R2) in the
+  same computation cycle it is fenced — Freqtrade's stake sizing can never
+  use fenced funds, even though they remain physically inside the trading
+  account pending manual transfer.
+- AC3.4: The physical transfer of fenced profit to the sweep destination
+  is performed manually by the operator, directly on Kraken's own
+  interface — never by code in this repository (same pattern as deposits,
+  R1 AC1.3) — triggered when cumulative fenced-but-unmoved profit exceeds
+  `manual_move_threshold` **or** one calendar month has elapsed since the
+  last transfer, whichever comes first. Conductor alerts the operator when
+  either trigger condition is met; it does not act on it.
+- AC3.5: Every fencing event (amount, date) and every manual transfer
+  (amount, destination, exchange tx id, timestamp, operator identity) is
+  logged in the ledger, and each manual transfer is reconciled against the
+  destination account's balance by the operator (see
   `06-runbooks/profit-sweep.md`).
-- AC3.5: A failed sweep (e.g. below exchange minimum withdrawal, network
-  error) raises an alert and does **not** silently retry into unbounded
-  working profit accumulation past the next check — see
-  `06-runbooks/profit-sweep.md`.
+- AC3.6: A missed daily fencing run (e.g. host down at the UTC day
+  boundary) is itself an alertable condition — the job catches up and
+  fences correctly on its next run, but the gap is never silently absorbed
+  as if it didn't matter (see R2 AC2.4).
 
-**Verification method:** Runbook execution log + destination-account
-balance reconciliation, reviewed by the operator; automated sweep job unit
-tests (Phase 3+).
+**Verification method:** Ledger audit confirming fenced profit is excluded
+from `max_deployed_capital` the same day it crosses the cap; code review
+confirming no exchange withdrawal call exists anywhere in Conductor
+(NFR2); runbook execution log + destination-account balance reconciliation
+for each manual transfer, reviewed by the operator; automated fencing-job
+unit tests (Phase 3+).
 
 ---
 
@@ -213,6 +251,51 @@ the existing R1/R2 reconciliation.
 
 ---
 
+## R6 — Research-loop cost ceiling
+
+**Statement:** The nightly LLM research loop operates under a configured
+monthly token/spend budget. Conductor alerts the operator when cumulative
+spend for the current calendar month reaches 80% of the budget, and
+**hard-stops the research loop** (pauses generating new candidates) at
+100% — the research loop pausing has **no effect on live/paper trading**,
+which continues to operate entirely independently, per
+[`ADR-0003`](05-adr/0003-llm-never-orders.md): the live path never depends
+on the LLM being reachable or funded.
+
+**Rationale:** The system's principal is capped at $100 (R1), but the LLM
+research loop's compute/API cost is an ongoing expense that is not itself
+bounded by the capital rules — a runaway or misconfigured nightly loop
+could, in principle, cost far more over time than the money it manages
+(see risk register L7). A monthly ceiling, tracked and enforced at the
+timescale a human actually reviews spend, makes that cost bounded and
+visible rather than an open-ended, easy-to-ignore line item.
+
+**Acceptance criteria:**
+- AC6.1: A configured `monthly_llm_budget` (draft value TBD (Phase 3))
+  exists in Conductor config, tracked in the currency the LLM API bills
+  in.
+- AC6.2: Cumulative spend for the current calendar month is tracked from
+  every logged prompt/response — reusing the logging NFR1 already
+  requires for cost accounting, not a separate mechanism.
+- AC6.3: At 80% of `monthly_llm_budget`, Conductor sends an alert
+  (Telegram) — informational, no automatic action taken.
+- AC6.4: At 100% of `monthly_llm_budget`, the research loop **hard-stops**:
+  no further nightly runs are triggered until the next calendar month, or
+  an explicit human override, logged with operator identity if used.
+- AC6.5: A hard-stopped research loop does **not** halt, pause, or
+  otherwise affect Freqtrade or any live/paper trading in progress —
+  verified explicitly, since this is the one place a non-trading-path
+  failure must be proven not to leak into the trading path.
+- AC6.6: The budget resets automatically at the start of each calendar
+  month (UTC), and the reset itself is logged.
+
+**Verification method:** Unit test simulating spend crossing the 80%/100%
+thresholds and confirming alert/hard-stop behaviour (Phase 3+); manual
+drill confirming a hard-stopped research loop leaves live trading fully
+unaffected; ledger audit of monthly spend vs. budget.
+
+---
+
 ## Non-functional requirements
 
 | ID | Requirement | Acceptance criteria (summary) | Verification |
@@ -237,3 +320,6 @@ the existing R1/R2 reconciliation.
 - Pre-commit secret-scanning tool choice — TBD (Phase 2).
 - R5 startup-abort clearance runbook (extending `06-runbooks/start-stop.md`)
   — TBD (Phase 2).
+- R3 `manual_move_threshold` final value (draft $25) — TBD (Phase 3),
+  confirm alongside `daily_profit_cap`.
+- R6 `monthly_llm_budget` draft value — TBD (Phase 3).
