@@ -66,11 +66,16 @@ phase triggers.
       market data, with at least one strategy live in paper mode, for
       **7 consecutive days** (sharpened from the original "at least one
       strategy live" wording to match `docs/phase-2-plan.md` §3's exit
-      gate: "Freqtrade dry-run uptime ≥ 7 consecutive days"). Backtested
-      (work package 2C,
-      `docs/research/03-baseline-backtest.md`) but **not yet started in
-      continuous dry-run** — this is work package 2D, starting
-      immediately after this doc-closure pass.
+      gate: "Freqtrade dry-run uptime ≥ 7 consecutive days"). **In
+      progress** (work package 2D) — started `2026-09-09 17:46 UTC`
+      (`make up`, confirmed via `Dry run is enabled` in logs and
+      `"dry_run":true` on the REST API's `/show_config`). Expected to lose
+      money on paper — the point of this run is host stability and path
+      validation, not returns (see `docs/00-vision.md` "What Phase 2
+      taught us"). 7-day mark: `2026-09-16 17:46 UTC`. Update this line
+      when the uptime bar is actually met — no gaps from the host being
+      down count toward it (mirrors the paper-window rule in
+      `08-paper-exit-criteria.md`).
 - [ ] All built-in protections (StoplossGuard, MaxDrawdown, CooldownPeriod,
       LowProfitPairs) configured with concrete thresholds, not TBDs.
       **3 of 4 done**: `CooldownPeriod`, `StoplossGuard`, `MaxDrawdown` are
