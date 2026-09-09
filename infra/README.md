@@ -122,9 +122,55 @@ strategies, logs, sqlite DB) persists on the host across `down`/`up`.
   ("No inbound public ports").
 - The API still requires the username/password/JWT secret from `.env` —
   loopback-only is defence in depth, not a reason to leave it open.
-- Freqtrade's own Telegram integration is present in
-  `config.dry_run.json` but `enabled: false` — work package 2D turns it on
-  (status-only) once dry-run is stable.
+- Freqtrade's own Telegram integration is `enabled: true` in
+  `config.dry_run.json` as of work package 2D, in status-only mode — see
+  below.
+
+## Telegram bot (status-only)
+
+Freqtrade's own Telegram bot (not Conductor's — that's a separate,
+Phase 3+ service with a different token, see `.env.example`) is enabled
+for status visibility into the 2D dry-run run.
+
+**"Status-only" is enforced two ways:**
+- `force_entry_enable: false` (`config.dry_run.json`) blocks `/forcebuy`
+  **server-side**, in Freqtrade's own RPC layer — not just hidden from
+  the Telegram command menu. Confirmed by reading
+  `freqtrade/rpc/rpc.py`'s `_rpc_force_entry`, which checks this flag
+  before doing anything, regardless of which client (Telegram, REST API)
+  issued the command.
+- Every other command this bot exposes (`/status`, `/profit`, `/balance`,
+  `/trades`, `/logs`, `/whitelist`) is read-only, or risk-*reducing*-only
+  (`/forceexit` closes a position early, `/stop`/`/stopbuy` pause new
+  entries) — nothing available through this bot can *increase* risk
+  beyond what the strategy would already do on its own.
+
+Freqtrade has no built-in literal "read-only bot" mode (there's no
+per-command ACL beyond `authorized_users`, which only gates *who* can
+issue commands, not *which* commands) — the above two points are what
+"status-only" actually means here in practice.
+
+**Setup (one-time, operator action — this isn't something a config
+change alone can complete):**
+1. In Telegram, message [@BotFather](https://t.me/BotFather), send
+   `/newbot`, follow the prompts. Save the token it gives you.
+2. Message your new bot once (anything), then fetch
+   `https://api.telegram.org/bot<token>/getUpdates` in a browser or
+   `curl` and read the `"chat":{"id": ...}` value — that's your chat ID.
+   (Or ask [@userinfobot](https://t.me/userinfobot) for your own ID
+   directly.)
+3. Set `FREQTRADE__TELEGRAM__TOKEN` and `FREQTRADE__TELEGRAM__CHAT_ID` in
+   `.env` (see `.env.example`).
+4. Restart the stack (`make down && make up`) to pick up the new env
+   vars.
+5. Send `/status` to the bot to confirm it responds.
+
+**Until step 1–4 are done**, the bot's own thread fails to start
+(`telegram.error.InvalidToken`, confirmed by testing this directly) —
+this is isolated to that one background thread and does **not** crash or
+otherwise affect the rest of Freqtrade (trading engine, REST API); the
+stack runs normally either way. The dry-run uptime test (work package 2D)
+does not depend on Telegram being connected.
 
 ## Secret scanning (gitleaks)
 
