@@ -20,6 +20,7 @@ in the phase noted. **Accepted** — residual risk knowingly carried.
 | M4 | At $100, exchange fees erode any edge smaller than the round-trip cost (~0.5% taker on Kraken). | High | High | Maker-preferred order placement; strategies must model conservative fees/slippage in backtest; minimum expected edge threshold (~0.7%/trade) before a strategy is considered; low-turnover-only strategies (research review §5). | Strategy design / Research loop | Mitigated (design) |
 | M5 | Regime change — a strategy validated in one market regime (e.g. trending) fails when conditions shift (e.g. chop, high-vol bear). | High | Medium | Anchored + rolling walk-forward validation before promotion; scheduled re-validation every 4–6 weeks; reject/demote on OOS Sharpe collapse (NFR5). | Research loop | Mitigated (design) — implemented Phase 3 |
 | M6 | Stablecoin or quote-asset de-peg / failure affects the value or liquidity of held balances. | Low | High | Prefer well-established quote assets; principal is small enough ($100) that total loss is bounded; monitor exchange notices. | Operator | Accepted |
+| M7 | Pre-existing personal holdings in the same Kraken account (bought before the project, gifted, or otherwise not system-acquired) get sized into `max_deployed_capital` as if they were working profit, or get sold by a strategy that has no way of knowing they weren't the bot's to trade. | Medium | High | R5 (account isolation): capital sizing counts only ledger-recorded, system-bought balances; startup check aborts and alerts if a whitelisted pair holds an unexplained balance, rather than silently absorbing or trading it. | Conductor | Mitigated (design) — implemented Phase 2 |
 
 ## Execution risk
 
@@ -82,3 +83,5 @@ Open items requiring resolution before the phase noted: E6 (Phase 2, min
 order sizes), L5 (Phase 3, nightly LLM budget), S6 (Phase 2, disk
 encryption), O4 (Phase 3, backup schedule), O6 (Phase 4, absence
 procedure), T1/T3/T4 (Phase 2, accountant + registration-status check).
+M7 is mitigated by design (R5) but its startup-abort clearance runbook is
+still TBD (Phase 2) — see `docs/02-requirements.md` R5.

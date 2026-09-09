@@ -65,7 +65,18 @@ TBD (Phase 2) until first configured.
   purposes.
 - `stake_amount` / `tradable_balance_ratio`: derived from
   `max_deployed_capital` (R2), never a fixed number that could drift above
-  principal + working profit.
+  principal + working profit, and computed only from ledger-recorded,
+  system-bought balances (R5 account isolation) — never from a raw read of
+  whatever the exchange account currently holds.
+- Startup balance check (R5): before Freqtrade is allowed to trade, or
+  resume trading after a restart, Conductor verifies that no whitelisted
+  pair holds an exchange balance beyond what the ledger's own buy history
+  explains. Any discrepancy — e.g. a pre-existing personal holding in a
+  pair the strategy also trades — aborts startup and alerts the operator
+  rather than letting the system size positions off, or potentially sell,
+  a balance it never bought. See risk register M7 and
+  `06-runbooks/start-stop.md` (TBD Phase 2 extension for clearing this
+  abort).
 - Per-trade risk: 1–2% of equity, ATR-based sizing (research review §4) —
   exact % TBD (Phase 2) per strategy backtest.
 - Timeframe: 4h/1d bars only, no tick-level or sub-hourly strategies (see

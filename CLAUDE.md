@@ -21,12 +21,15 @@ operator explicitly overrides them in writing in that session.
    comments. `.env.example` documents shape only, with empty values. If you
    generate a secret for local testing, it goes in `.env` (git-ignored) or
    the OS keychain/1Password, never in a tracked file.
-4. **Capital rules (R1–R4 in `docs/02-requirements.md`) are hard
+4. **Capital rules (R1–R5 in `docs/02-requirements.md`) are hard
    constraints on any code you write for the trading path**, not
    suggestions: one-time $100 principal with no top-ups; trading capital is
    principal + working profit only; profit above the daily cap sweeps to an
    account this system has no key for; hard loss limits halt trading and
-   require a human to re-enable.
+   require a human to re-enable; the system sizes and reconciles only
+   assets it bought itself, and aborts startup rather than silently
+   absorbing a pre-existing balance in a whitelisted pair (account
+   isolation, R5).
 
 ## 1. Working process
 

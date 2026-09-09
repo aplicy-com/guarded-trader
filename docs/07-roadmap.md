@@ -33,7 +33,10 @@ register, ADRs, runbooks, licence. No code that connects to an exchange.
 
 ## Phase 2 — Infra + Freqtrade dry-run setup
 
-**Entry gate:** Phase 1 exit gate met.
+**Entry gate:** Phase 1 exit gate met, **and** Kraken account residency
+updated to Canada (Payward Canada) with Interac e-Transfer funding
+available — see risk register T3; this must be true before principal
+funding and live-adjacent setup in this phase.
 
 **Scope:**
 - `infra/` docker-compose for Freqtrade (and a placeholder for Conductor,

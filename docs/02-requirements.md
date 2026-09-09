@@ -2,7 +2,8 @@
 
 Format per requirement: **Statement**, **Rationale**, **Acceptance
 criteria** (testable), **Verification method**. R1–R4 are the four capital
-rules given in the Phase 1 brief; NFRs follow.
+rules given in the Phase 1 brief; R5 is a follow-up isolation requirement;
+NFRs follow.
 
 ---
 
@@ -159,6 +160,59 @@ thereafter on the re-validation cadence in `07-roadmap.md`.
 
 ---
 
+## R5 — Account isolation
+
+**Statement:** The system sizes positions only from the quote-currency
+balance it can attribute to itself (principal + working profit, per R2);
+the ledger reconciles only assets the system itself bought; and a startup
+check aborts (does not proceed to trading) and alerts the operator if any
+whitelisted pair already holds a balance the system did not itself
+acquire.
+
+**Rationale:** The Kraken account this system trades in is the operator's
+own personal account, not a dedicated entity created solely for this
+project — the operator may hold other crypto there, now or in the future
+(personal holdings, gifts, past purchases). Without an explicit isolation
+rule, pre-existing holdings could silently inflate the capital the system
+believes it has (breaking R2's "principal + working profit only" ceiling)
+or get sold by a strategy that has no idea those coins were never the
+bot's to trade. This requirement makes that boundary a checked invariant,
+not an assumption. See risk register M7.
+
+**Acceptance criteria:**
+- AC5.1: Position sizing (`max_deployed_capital`, R2) is computed only
+  from the quote-currency (e.g. USD/USDT/CAD, per the currency decided in
+  Phase 2) balance recorded in the Conductor ledger as belonging to the
+  system — never from a raw "whatever the account currently holds" read of
+  exchange balances.
+- AC5.2: The ledger's reconciliation logic (R1 AC1.4, R2) only counts
+  assets whose acquisition is recorded in the ledger as a system-initiated
+  buy — an asset present in the account that the system did not itself buy
+  is never treated as working profit or available capital.
+- AC5.3: On every startup (and before the first trade after any restart),
+  Conductor runs a balance check against the pair whitelist: for each
+  whitelisted base asset, if the exchange-reported balance exceeds what
+  the ledger's own buy history for that asset accounts for, the system
+  **aborts startup** (does not begin or resume trading) and sends an
+  alert identifying the pair and the unexplained balance.
+- AC5.4: Clearing an AC5.3 abort requires an explicit human action
+  (documented in a runbook — TBD (Phase 2), extend
+  `06-runbooks/start-stop.md`) that either records the pre-existing
+  balance as explicitly excluded from the system's capital, or confirms
+  it was moved out of the account before restart — never an automatic
+  retry that just proceeds.
+- AC5.5: This check applies per whitelisted pair, not just in aggregate —
+  a balance discrepancy in one asset must not be maskable by a shortfall
+  in another.
+
+**Verification method:** Startup-check unit tests using a seeded exchange
+balance that includes an untracked asset (Phase 2+); manual drill before
+first live allocation confirming the abort actually blocks trading rather
+than merely logging a warning; ledger audit cross-checking AC5.2 alongside
+the existing R1/R2 reconciliation.
+
+---
+
 ## Non-functional requirements
 
 | ID | Requirement | Acceptance criteria (summary) | Verification |
@@ -181,3 +235,5 @@ thereafter on the re-validation cadence in `07-roadmap.md`.
   §7.1.
 - Heartbeat interval and alert channel timing — TBD (Phase 3).
 - Pre-commit secret-scanning tool choice — TBD (Phase 2).
+- R5 startup-abort clearance runbook (extending `06-runbooks/start-stop.md`)
+  — TBD (Phase 2).
