@@ -1,6 +1,6 @@
 COMPOSE := docker compose -f infra/docker-compose.yml
 
-.PHONY: up down logs download-data backtest shell
+.PHONY: up down logs download-data backtest shell market-facts
 
 up:
 	$(COMPOSE) up -d
@@ -24,3 +24,8 @@ backtest:
 
 shell:
 	$(COMPOSE) run --rm --entrypoint bash freqtrade
+
+market-facts:
+	$(COMPOSE) run --rm -v $(CURDIR):/repo --entrypoint python freqtrade \
+		/repo/scripts/kraken_market_facts.py \
+		--out /repo/docs/research/02-kraken-market-facts.md
