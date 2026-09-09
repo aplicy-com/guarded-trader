@@ -36,6 +36,7 @@ the paper window stage:
 | Out-of-sample Sharpe vs. in-sample Sharpe | OOS ≥ 50% of IS (only evaluated once IS Sharpe ≥ 1.0 above), **same daily-equity-curve basis as above** | Research review §4 (reject if below) |
 | Backtest fee/slippage assumptions | ≥ live-observed Kraken taker fee (~0.26%) plus a slippage buffer — exact buffer TBD (Phase 2/3) | Avoid over-optimistic backtests (M4, M5 in risk register) |
 | Minimum backtest history | TBD (Phase 3) — enough bars at 4h/1d resolution to cover at least one full market regime | Regime-shift defence (M5) |
+| No single-trade dominance | No single trade, and no force-exit group (see below) taken as a whole, may account for more than 30% of net profit | A strategy whose entire reported edge rides on one trade (or one favourable data cutoff) hasn't demonstrated a repeatable edge — it has demonstrated one lucky outcome dressed up in a headline P&L number. **The work package 2C review found the original run failed this outright**: its 3 force-exit trades totalled $20.01 against a $18.44 reported net profit (108.6% — the force-exit group alone exceeded the *entire* net profit figure), and the single largest trade in that run ($11.09, SOL/USD, one of those force-exit trades) was 60.2% of net profit on its own. Neither would have been visible from the net P&L figure alone. |
 
 **Force-exit trades and headline net P&L.** A trade still open when the
 backtest data window ends is closed by the backtesting engine itself
