@@ -1,0 +1,183 @@
+# 02 — Requirements
+
+Format per requirement: **Statement**, **Rationale**, **Acceptance
+criteria** (testable), **Verification method**. R1–R4 are the four capital
+rules given in the Phase 1 brief; NFRs follow.
+
+---
+
+## R1 — One-time $100 principal, never topped up
+
+**Statement:** The system's principal is a single deposit of $100 (or
+CAD-equivalent, see open question in research review §7.1). No further
+deposits of the operator's funds are ever added to the trading account,
+regardless of drawdown, opportunity, or strategy request.
+
+**Rationale:** Bounds the maximum realistic loss to $100 and removes any
+temptation — human or LLM-influenced — to "rescue" a losing position with
+fresh capital, which is precisely the failure mode that turns a bounded
+experiment into unbounded risk.
+
+**Acceptance criteria:**
+- AC1.1: Exactly one deposit transaction of $100 (or its CAD-equivalent at
+  deposit time) exists in the exchange account's deposit history for the
+  life of the project.
+- AC1.2: The Conductor ledger has a hard-coded, immutable record of the
+  principal amount and deposit date/tx id, set once at first funding.
+- AC1.3: No code path in Conductor or Freqtrade configuration is capable of
+  initiating a deposit to the trading account. (Deposits, like withdrawals,
+  are a manual, out-of-band human action — see
+  `04-architecture/security.md`.)
+- AC1.4: A monthly reconciliation (manual or scripted, Phase 3+) confirms
+  cumulative deposits to the trading account still equal the recorded
+  principal.
+
+**Verification method:** Exchange deposit-history export cross-checked
+against the Conductor ledger's principal record; reviewed monthly per
+`06-runbooks/`. Automated reconciliation job — TBD (Phase 3).
+
+---
+
+## R2 — Trading capital = principal + working profit only
+
+**Statement:** At any point in time, the capital Freqtrade is permitted to
+deploy (`stake_amount` / max open exposure) equals the original principal
+plus **working profit** — profit that has not yet been swept out per R3 —
+and nothing else.
+
+**Rationale:** Keeps the system's own risk-of-ruin bounded to money it has
+actually earned or was given, and makes the daily profit sweep (R3) the
+single mechanism that caps how much "house money" is ever at risk at once.
+
+**Acceptance criteria:**
+- AC2.1: `max_deployed_capital` (Conductor-enforced ceiling passed into
+  Freqtrade's stake configuration) = principal + working profit, recomputed
+  at least daily and after every sweep.
+- AC2.2: Freqtrade's configured `stake_amount` / `tradable_balance_ratio`
+  can never cause total exposure to exceed `max_deployed_capital`, verified
+  by a unit test in the risk-engine wrapper (Phase 2+).
+- AC2.3: Code review / static check prevents the Conductor from ever
+  raising `max_deployed_capital` other than by the formula in AC2.1 — no
+  manual override path in code.
+- AC2.4: If a sweep (R3) fails or is delayed, working profit above the
+  daily cap is **not** available for new trades until the sweep completes
+  or is manually reconciled — the system fails closed, not open.
+
+**Verification method:** Ledger audit comparing `max_deployed_capital` over
+time against principal + (working profit as computed from realized P&L
+minus swept amounts); code review of the stake-sizing path; unit tests
+(Phase 2+).
+
+---
+
+## R3 — Profit above the daily cap is swept to a key-less account
+
+**Statement:** At the end of each trading day (UTC), any working profit
+above a configured daily cap is transferred out of the trading account to a
+separate account or wallet for which the running system holds **no API
+key** — i.e. a transfer the system can initiate but never reverse or
+re-access.
+
+**Rationale:** Converts "the bot got lucky" into realized, protected gains
+on a fixed cadence, and structurally prevents the system (or anyone who
+compromises it) from ever trading, borrowing against, or withdrawing swept
+profit — the sweep destination is only reachable by the human operator.
+
+**Acceptance criteria:**
+- AC3.1: A configured `daily_profit_cap` (absolute $ or % of principal —
+  exact value TBD (Phase 3), see `08-paper-exit-criteria.md` for related
+  numeric gates) exists in Conductor config.
+- AC3.2: A scheduled job runs once per UTC day, computes working profit,
+  and if it exceeds `daily_profit_cap`, initiates a withdrawal of the
+  excess to the designated sweep destination.
+- AC3.3: The sweep destination's credentials (API key, private key, or
+  exchange sub-account login) are **not present** anywhere in the running
+  system's environment, secrets store, or code — verified by an explicit
+  check in `06-runbooks/profit-sweep.md` and a periodic secrets audit.
+- AC3.4: Every sweep transaction is logged in the ledger with amount,
+  destination, exchange tx id, and timestamp, and reconciled against the
+  destination account's balance by the human operator (see
+  `06-runbooks/profit-sweep.md`).
+- AC3.5: A failed sweep (e.g. below exchange minimum withdrawal, network
+  error) raises an alert and does **not** silently retry into unbounded
+  working profit accumulation past the next check — see
+  `06-runbooks/profit-sweep.md`.
+
+**Verification method:** Runbook execution log + destination-account
+balance reconciliation, reviewed by the operator; automated sweep job unit
+tests (Phase 3+).
+
+---
+
+## R4 — Hard loss limits halt trading and require human re-enable
+
+**Statement:** The system enforces at least three independent hard loss
+limits — **daily loss limit**, **max drawdown from peak equity**, and
+**consecutive-loss breaker** — any one of which, when breached, halts all
+new order entry immediately and requires an explicit human action to
+resume. No automatic, timer-based, or LLM-initiated re-enable exists for
+any of the three.
+
+**Rationale:** This is the system's last line of defence against both
+strategy failure and infrastructure failure (bad deploy, exchange anomaly,
+runaway loop — see research review §4, Knight Capital reference). A halt
+that can re-enable itself is not a hard limit.
+
+**Acceptance criteria:**
+- AC4.1: **Daily loss limit** — if realized + unrealized loss for the
+  current UTC day exceeds a configured threshold (draft: −3% of trading
+  capital, see `08-paper-exit-criteria.md`), new entries are blocked until
+  a human re-enables (not merely until the next UTC day).
+- AC4.2: **Max drawdown** — if equity falls a configured percentage below
+  its running peak (draft: −10%), the system flattens open positions where
+  safely possible and halts new entries, requiring human re-enable. See
+  `06-runbooks/nuclear-protocol.md` for the flatten procedure.
+- AC4.3: **Consecutive-loss breaker** — after N losing trades in a row
+  (draft: N = 3, exact value TBD (Phase 3) per strategy backtesting),
+  new entries for that strategy are blocked pending human review, even if
+  neither the daily nor drawdown limit has been hit.
+- AC4.4: All three checks are enforced in at least two independent layers
+  — Freqtrade's built-in protections (StoplossGuard, MaxDrawdown,
+  CooldownPeriod) **and** the Conductor's own check — so a bug or
+  misconfiguration in one layer does not remove the control (defence in
+  depth, per research review §4).
+- AC4.5: A halt state persists across process restarts (stored in the
+  ledger DB, not in memory) — restarting Freqtrade or Conductor must never
+  silently clear a halt.
+- AC4.6: Re-enabling requires an explicit, authenticated human action
+  (Telegram command from an allow-listed operator, or equivalent) logged
+  with timestamp and operator identity in the ledger.
+- AC4.7: Every halt triggers an alert to the operator (Telegram) within
+  the same monitoring cycle it occurs in — silence is itself an alertable
+  condition (heartbeat, see `04-architecture/conductor.md`).
+
+**Verification method:** Automated tests simulating each breach condition
+against a test Freqtrade/Conductor instance in dry-run (Phase 2–3); manual
+drill per `06-runbooks/kill-switch.md` and
+`06-runbooks/nuclear-protocol.md` before first live allocation, and
+thereafter on the re-validation cadence in `07-roadmap.md`.
+
+---
+
+## Non-functional requirements
+
+| ID | Requirement | Acceptance criteria (summary) | Verification |
+|---|---|---|---|
+| NFR1 | **Auditability / replayability** — every LLM prompt/response and every order-path decision is logged with enough fidelity to reconstruct why a trade happened. | Prompt/response logged with content hash; strategy versions pinned to git commit; ledger links each order to the strategy version and (if applicable) research-loop run that produced it. | Log/ledger review; replay of a sampled decision, Phase 3+. |
+| NFR2 | **Key scoping** — the exchange API key used by the running system can never withdraw funds. | Key created with query + trade only, no withdrawal, IP-whitelisted (see `04-architecture/security.md`). | Verified at key creation and at each rotation (`06-runbooks/key-rotation.md`). |
+| NFR3 | **Secrets hygiene** — no secret ever enters the git history. | `.gitignore` covers `.env`/keys; secrets live in env vars / 1Password only; pre-commit secret scan — tooling TBD (Phase 2). | Pre-commit hook + manual review before first public push. |
+| NFR4 | **Reliability / heartbeat** — a silent failure (host asleep, process crashed, network down) is detected, not just an active error. | Heartbeat signal expected on a fixed interval; alert fires on missed heartbeat. Exact interval TBD (Phase 3). | Manual drill: kill the process and confirm alert fires. |
+| NFR5 | **Overfitting defence** — strategies promoted to paper/live are not curve-fit to backtest data. | ≤6 tunable parameters per strategy; anchored + rolling walk-forward validation; reject if out-of-sample Sharpe < 50% of in-sample Sharpe; conservative fee/slippage assumptions in backtests (research review §4). | Enforced in the promotion-gate code path (Phase 3), reviewed per strategy. |
+| NFR6 | **Legal/tax record-keeping** — every trade produces a record sufficient for Canadian tax reporting. | Ledger stores CAD-equivalent fair value at time of each fill, cost basis, and disposition, exportable as a report. | Manual review with an accountant before first live trade with real profit; see `03-risk-register.md` T1–T2. |
+| NFR7 | **Open-source readiness** — the repo is safe to make public at any commit. | No secrets, no PII beyond the operator's own attribution, licence present, docs coherent standalone. | Reviewed before each push if the repo is public; see `CLAUDE.md` §5. |
+| NFR8 | **Maintainability** — every architectural change is traceable to a decision record. | ADR exists for any change to execution engine, exchange, order-authority model, host, frequency policy, or licence. | PR review checklist — TBD (Phase 2, once PRs exist). |
+
+## TBD summary
+
+- Exact `daily_profit_cap` value and `daily_loss_limit` / `max_drawdown` /
+  consecutive-loss thresholds beyond the drafts above — TBD (Phase 3), to
+  be finalized in `08-paper-exit-criteria.md` before first paper run.
+- CAD vs USD principal/quote currency — TBD (Phase 2), see research review
+  §7.1.
+- Heartbeat interval and alert channel timing — TBD (Phase 3).
+- Pre-commit secret-scanning tool choice — TBD (Phase 2).

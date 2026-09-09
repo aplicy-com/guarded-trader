@@ -1,0 +1,47 @@
+# Secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Freqtrade user data (created in Phase 2; may contain local DB / backtest results)
+services/freqtrade/user_data/**/*.sqlite
+services/freqtrade/user_data/backtest_results/
+services/freqtrade/user_data/logs/
+services/freqtrade/user_data/notebooks/.ipynb_checkpoints/
+
+# Conductor local state (created in Phase 3)
+services/conductor/data/
+services/conductor/*.db
+
+# Docker / infra
+infra/.env
+infra/**/volumes/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Node (docs tooling, if any is added later)
+node_modules/
