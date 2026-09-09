@@ -114,5 +114,6 @@ needing anything on the (unreachable) host to run.
 - Exact heartbeat ping interval and healthchecks.io grace-period
   configuration — TBD (Phase 3).
 - Sandbox runtime implementation and static-analysis tooling for
-  candidate code admission — TBD (Phase 2/3), see
+  candidate code admission — TBD (Phase 3), re-tagged from "Phase 2/3"
+  during Phase 2 closure (Conductor doesn't exist until Phase 3), see
   [`ADR-0007`](../05-adr/0007-candidate-code-admission.md).

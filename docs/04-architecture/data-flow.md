@@ -94,8 +94,11 @@ mid-sequence cannot leave the system in an undocumented state — see AC4.5.
 ## TBD
 
 - Exact webhook vs. polling mechanism between Freqtrade and Conductor for
-  fill events — TBD (Phase 2/3), likely Freqtrade's REST API polled on a
-  short interval plus its optional webhook feature.
+  fill events — TBD (Phase 3), re-tagged from "Phase 2/3" during Phase 2
+  closure (Conductor is the consumer here and doesn't exist until Phase
+  3; Freqtrade's REST API itself is already up in Phase 2, see
+  `infra/README.md`), likely Freqtrade's REST API polled on a short
+  interval plus its optional webhook feature.
 - Retry/backoff behaviour for the Telegram alert path if Telegram itself
   is unreachable — TBD (Phase 3), candidate fallback: email or a second
   channel.

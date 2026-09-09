@@ -116,11 +116,14 @@ flowchart TB
 
 ## TBD
 
-- Ledger DB engine (Postgres assumed; SQLite may suffice at this scale) —
-  TBD (Phase 3).
+- ~~Ledger DB engine (Postgres assumed; SQLite may suffice at this
+  scale)~~ — resolved: SQLite, see
+  [`ADR-0009`](../05-adr/0009-sqlite-ledger.md).
 - Exact container orchestration (`docker compose` assumed for Phase 1–4
   scale; no Kubernetes planned) — confirmed direction, formalized in
   [`infra/README.md`](../../infra/README.md) at Phase 2.
 - Sandboxed runtime for candidate code admission (Docker-in-Docker vs. a
-  pre-built, network-disabled base image) — TBD (Phase 2/3), see
+  pre-built, network-disabled base image) — TBD (Phase 3), re-tagged from
+  "Phase 2/3" during Phase 2 closure (Conductor doesn't exist until Phase
+  3), see
   [`ADR-0007`](../05-adr/0007-candidate-code-admission.md).

@@ -43,7 +43,13 @@ initiating one.
 - No inbound public ports on the trading host for Phase 1–4.
 - Remote access (to check status, SSH in, or reach the Conductor API from
   elsewhere) via [Tailscale](https://tailscale.com/) rather than exposing
-  anything publicly — exact Tailscale ACL configuration TBD (Phase 2).
+  anything publicly. **Not yet installed** (confirmed 2026-09-09: no
+  `tailscale` CLI on the current Mac host) — this is a manual device
+  action (install on the Mac + phone, per `docs/phase-2-plan.md` §1), not
+  a docs decision, so it isn't "resolved" by this closure pass. Not
+  blocking the Phase 2 exit gate: the local dry-run/heartbeat model
+  (NFR4) doesn't depend on remote access, only convenience does. Complete
+  before relying on remote monitoring for real.
 - Telegram is the only outbound-initiated, internet-facing control
   surface, and it is chat-ID allow-listed (see
   [`conductor.md`](conductor.md)).
@@ -59,7 +65,7 @@ initiating one.
 - OS auto-updates enabled (risk register S3).
 - Minimal installed software — the host runs Docker and little else.
 - Full-disk encryption (FileVault on Mac; LUKS on the future mini-PC) —
-  TBD (Phase 2) to confirm enabled, see risk register S6.
+  confirmed On (`fdesetup status`, 2026-09-09), see risk register S6.
 - Sleep/power-nap disabled while the trading stack is expected to be
   running (risk register O1) — mechanism is Amphetamine (an always-on
   login session kept awake with the lid closed), not `pmset`/`caffeinate`;
@@ -126,7 +132,15 @@ containment, not merely a quality question resolved by backtesting.
 
 ## TBD
 
-- Tailscale ACL details — TBD (Phase 2).
-- Pre-commit secret-scanning tool — TBD (Phase 2).
-- Disk-encryption verification — TBD (Phase 2).
-- Dependency-update automation tool — TBD (Phase 2).
+- Tailscale ACL details — TBD, blocked on Tailscale actually being
+  installed first (operator action, see "Network" above; not yet done).
+- ~~Pre-commit secret-scanning tool~~ — resolved: gitleaks.
+- ~~Disk-encryption verification~~ — resolved: FileVault confirmed On, see
+  "Host hardening" above.
+- Dependency-update automation tool — re-tagged TBD (Phase 3): there is
+  no GitHub remote and no dependency manifest file in this repo yet
+  (confirmed 2026-09-09) — nothing exists to point Dependabot/Renovate at.
+  The only "dependency" at repo scope today is the pinned Freqtrade Docker
+  image tag, already governed by the deliberate-bump policy in
+  `infra/docker-compose.yml`'s own comment. Revisit once Phase 3
+  introduces real Python package dependencies for Conductor.
