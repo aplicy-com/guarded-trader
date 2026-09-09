@@ -19,6 +19,28 @@ for why Freqtrade is configured the way it is.
   ships with `exchange.key` / `exchange.secret` left blank, and Kraken market
   data used for simulated fills is public.
 
+## Sleep-disable (Mac host)
+
+Risk register O1 requires the host not sleep while the stack is expected
+to be running. The chosen mechanism, closing the Phase 2 TBD in
+[`../docs/07-roadmap.md`](../docs/07-roadmap.md):
+
+- **[Amphetamine](https://apps.apple.com/app/amphetamine/id937984704)**,
+  configured to keep the Mac awake indefinitely, including with the lid
+  closed (clamshell mode), running in a dedicated always-on macOS login
+  session.
+- Explicitly **not** `pmset` (system-wide power-management flags, easy to
+  leave misconfigured after an OS update) and **not** `caffeinate` (a
+  per-process/per-terminal-session assertion — it stops protecting the
+  host the moment the shell that launched it exits or the session logs
+  out, which is exactly the silent-failure mode risk register O1 is
+  about). Amphetamine's assertion is tied to a persistent login session,
+  not a shell process, so it survives terminal restarts and SSH
+  disconnects.
+- This does not replace heartbeat monitoring (NFR4, Phase 3) — it
+  addresses the sleep half of risk O1, not the crash/network-partition
+  half.
+
 ## Start
 
 From the repo root:
@@ -31,7 +53,8 @@ This pulls `freqtradeorg/freqtrade:2026.8` (pinned — never `stable` or
 `latest`, per [`../docs/04-architecture/security.md`](../docs/04-architecture/security.md))
 and starts one container, `ai-trading-agent-freqtrade`, running
 `freqtrade trade` against `config.dry_run.json` with the `Baseline4h`
-placeholder strategy (real strategy logic lands in work package 2C).
+strategy (real strategy logic landed in work package 2C — see
+[`../docs/research/03-baseline-backtest.md`](../docs/research/03-baseline-backtest.md)).
 
 ## Verify dry-run is active
 
@@ -65,11 +88,19 @@ Expect `"dry_run": true`.
 
 ## Other Makefile targets
 
-- `make download-data` — pulls historical OHLCV from Kraken's public API
-  into `services/freqtrade/user_data/data/` (gitignored; re-run anytime).
+- `make download-data` — pulls OHLCV for the whitelisted pairs from
+  Kraken's public API into `services/freqtrade/user_data/data/`
+  (gitignored; re-run anytime). Runs `scripts/fetch_kraken_ohlcv.py`, not
+  Freqtrade's own `download-data` command — Freqtrade refuses to run in
+  klines mode for Kraken at all (its public OHLC endpoint doesn't serve
+  historic klines); see the "Data" section of
+  [`../docs/research/03-baseline-backtest.md`](../docs/research/03-baseline-backtest.md)
+  for why, and its real (short) coverage limits on the 4h timeframe.
 - `make backtest` — runs Freqtrade's backtesting engine against
-  `Baseline4h` using downloaded data. Real backtest documentation is work
-  package 2C (`docs/research/03-baseline-backtest.md`).
+  `Baseline4h` using downloaded data, with the fee/slippage assumption and
+  protections enabled that produced
+  [`../docs/research/03-baseline-backtest.md`](../docs/research/03-baseline-backtest.md)
+  (work package 2C).
 - `make shell` — drops into a throwaway container with a bash shell and
   the same image/mounts, for debugging (`freqtrade` CLI subcommands,
   inspecting `user_data/`).
@@ -130,9 +161,11 @@ hook — see `../CLAUDE.md` §0.3.
   not by themselves satisfy AC4.2/AC4.6 (a durable halt requiring explicit
   human re-enable); that is the Conductor's own check, Phase 3+. Do not
   treat this alone as a complete R4 implementation.
-- `download-data` / `backtest` defaults are provisional; work packages 2B
-  (market facts) and 2C (baseline strategy + backtest) refine the pair
-  universe and cost assumptions used here.
+- Backtest history on the 4h timeframe is short (~4 months) because
+  Kraken's public API will not serve more — see
+  [`../docs/research/03-baseline-backtest.md`](../docs/research/03-baseline-backtest.md).
+  `Baseline4h` does not clear Gate 1 (`../docs/08-paper-exit-criteria.md`)
+  as a result; not expected to at this stage.
 
 ## Troubleshooting
 

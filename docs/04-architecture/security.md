@@ -61,8 +61,9 @@ initiating one.
 - Full-disk encryption (FileVault on Mac; LUKS on the future mini-PC) —
   TBD (Phase 2) to confirm enabled, see risk register S6.
 - Sleep/power-nap disabled while the trading stack is expected to be
-  running (risk register O1) — exact mechanism (`caffeinate`, power
-  settings) TBD (Phase 2).
+  running (risk register O1) — mechanism is Amphetamine (an always-on
+  login session kept awake with the lid closed), not `pmset`/`caffeinate`;
+  see [`../../infra/README.md`](../../infra/README.md#sleep-disable-mac-host).
 
 ## Telegram control-surface auth
 

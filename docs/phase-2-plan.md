@@ -16,7 +16,7 @@ Dry-run uses public market data only. No API key is needed until live. So Phase 
 | Data source | Freqtrade `download-data` from Kraken (free), 2+ years | Sufficient at 4h; paid data is Phase 5 if ever |
 | Ledger DB | SQLite (WAL), single writer = Conductor | One less container; scale is tiny. Reversible via ADR. |
 | Secret scanning | gitleaks pre-commit hook | Standard, fast |
-| Mac sleep | `caffeinate` in a launchd agent + Docker Desktop "start on login" | Until mini-PC |
+| Mac sleep | Amphetamine, always-on session at login, kept awake with lid closed (superseded the draft `caffeinate` idea — see `infra/README.md`) | Until mini-PC |
 | Remote access | Install Tailscale now on Mac + phone | Zero effort, tests the remote story early |
 | Protections (draft) | StoplossGuard 3 stops/24h → 12h lock; MaxDrawdown 10% → halt; CooldownPeriod 2 candles; LowProfitPairs off in paper | Mirrors R4; tuned in Phase 3 |
 

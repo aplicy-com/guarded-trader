@@ -29,9 +29,12 @@ before travel, before a host update).
    If it says `live` and you meant to start in paper mode (or vice versa),
    fix it now before continuing. Starting `live` by accident is the single
    most avoidable mistake this runbook exists to prevent.
-5. Confirm the host will not sleep while the stack runs (Mac:
-   `caffeinate` or the equivalent sleep-disable setting — exact command
-   TBD Phase 2, document here once decided).
+5. Confirm the host will not sleep while the stack runs. Amphetamine is
+   the sleep-disable mechanism (not `pmset`, not `caffeinate`): a
+   dedicated, always-on macOS login session with Amphetamine configured
+   to keep the Mac awake with the lid closed — see
+   [`../../infra/README.md`](../../infra/README.md#sleep-disable-mac-host)
+   for the full setup.
 6. Start the stack:
    ```
    docker compose -f infra/docker-compose.yml up -d

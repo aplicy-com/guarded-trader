@@ -149,9 +149,10 @@ deliberate decision, not by drift.
 ## TBD summary
 
 Phase 2: quote currency, min order sizes, disk encryption, secret
-scanning tool, Tailscale ACLs, sleep-disable mechanism, dependency
-automation, protection thresholds, tax classification, Kraken CA
-registration status. Phase 3: ledger DB engine, heartbeat interval,
+scanning tool, Tailscale ACLs, ~~sleep-disable mechanism~~ (resolved —
+Amphetamine, see `infra/README.md`), dependency automation, protection
+thresholds, tax classification, Kraken CA registration status. Phase 3:
+ledger DB engine, heartbeat interval,
 daily/drawdown/consecutive-loss exact thresholds, promotion-approval
 stages, backup schedule. Phase 4: mini-PC migration trigger, 25%→100%
 stability criteria, planned-absence procedure.
