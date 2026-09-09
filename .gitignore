@@ -17,6 +17,7 @@ venv/
 .ruff_cache/
 
 # Freqtrade user data (created in Phase 2; may contain local DB / backtest results)
+services/freqtrade/user_data/data/
 services/freqtrade/user_data/**/*.sqlite
 services/freqtrade/user_data/backtest_results/
 services/freqtrade/user_data/logs/
