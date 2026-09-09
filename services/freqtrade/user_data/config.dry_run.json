@@ -70,9 +70,23 @@
     }
   ],
   "telegram": {
-    "enabled": false,
+    "$comment": "Status-only mode (work package 2D). Token/chat_id are blank here and injected via FREQTRADE__TELEGRAM__TOKEN / FREQTRADE__TELEGRAM__CHAT_ID env vars (same blank-in-config pattern as api_server below) -- see infra/README.md 'Telegram bot (status-only)'. Deliberately a SEPARATE bot/token from the Conductor bot reserved in .env.example's TELEGRAM_BOT_TOKEN (Phase 3+) -- two processes cannot share one bot token's getUpdates/webhook without colliding. 'Status-only' is enforced by force_entry_enable: false below (blocks /forcebuy server-side, not just hiding it from the Telegram menu) -- every other command this bot exposes (/status, /profit, /forceexit, /stop, /stopbuy) is either read-only or risk-reducing-only, never risk-increasing.",
+    "enabled": true,
     "token": "",
-    "chat_id": ""
+    "chat_id": "",
+    "notification_settings": {
+      "status": "on",
+      "warning": "on",
+      "startup": "on",
+      "entry": "on",
+      "entry_fill": "on",
+      "entry_cancel": "on",
+      "exit": "on",
+      "exit_fill": "on",
+      "exit_cancel": "on",
+      "protection_trigger": "on",
+      "protection_trigger_global": "on"
+    }
   },
   "api_server": {
     "$comment": "Bound to 0.0.0.0 inside the container; infra/docker-compose.yml publishes it to the host as 127.0.0.1:8080 only. Credentials are blank here and injected at runtime via FREQTRADE__API_SERVER__* env vars (see .env.example) so no secret is committed.",
