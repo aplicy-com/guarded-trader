@@ -47,8 +47,12 @@ initiating one.
 - Telegram is the only outbound-initiated, internet-facing control
   surface, and it is chat-ID allow-listed (see
   [`conductor.md`](conductor.md)).
-- Kraken and Anthropic API calls are outbound-only from the host; no
-  inbound webhook from either is required in the current design.
+- Kraken, Anthropic, and heartbeat (healthchecks.io) API calls are all
+  outbound-only from the host; no inbound webhook or polling endpoint is
+  required anywhere in the current design — this includes health/liveness
+  monitoring, which uses a push (dead-man's-switch) model specifically so
+  the host never has to expose anything to be watched (see
+  `conductor.md`).
 
 ## Host hardening
 
@@ -73,6 +77,31 @@ initiating one.
   no-op or *reduces* risk (kill, flatten) — there is no Telegram command
   that can raise exposure, change `max_deployed_capital`, or export a
   secret.
+
+## Candidate code execution (LLM-generated strategy code)
+
+LLM-generated strategy code is a distinct trust boundary from order
+placement (`ADR-0003`) and is treated as **untrusted code**, not merely
+untrusted judgement, until it passes admission
+([`ADR-0007`](../05-adr/0007-candidate-code-admission.md),
+`conductor.md`):
+
+- **Static analysis first** — import whitelist enforced; `os`,
+  `subprocess`, `socket`, `requests` (and equivalents), and any
+  file-write operation are forbidden and cause automatic rejection before
+  any execution takes place.
+- **Sandboxed execution** — a candidate's backtest and walk-forward run
+  inside a throwaway, network-disabled container with no exchange
+  credentials, no secrets, and no access to the ledger DB — nothing in
+  that container is worth exfiltrating even if static analysis missed
+  something.
+- **Human approval** — a strategy version containing LLM-generated code
+  never reaches paper trading, let alone live capital, without an
+  explicit, logged `/approve` from an allow-listed operator (see
+  `conductor.md`).
+
+This treats "the LLM produced this code" as a security event requiring
+containment, not merely a quality question resolved by backtesting.
 
 ## Supply chain
 

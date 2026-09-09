@@ -46,8 +46,10 @@ flowchart TB
     subgraph Host["Trading host (Mac now, mini-PC later — see ADR-0004)"]
         subgraph ConductorSvc["Conductor service (Python/FastAPI, Docker)"]
             API["REST API"]
+            Ingest["Fill/state ingestion<br/>(polls Freqtrade, writes Ledger)"]
             Loop["Nightly research-loop worker"]
-            Gate["Promotion-gate engine<br/>(backtest→WF→paper→25%→100%)"]
+            Admission["Candidate code admission<br/>(static analysis +<br/>sandboxed, no-network backtest/WF — ADR-0007)"]
+            Gate["Promotion-gate engine<br/>(numeric gates, /approve routing,<br/>paper→25%→100%)"]
             RiskCheck["Risk-limit checker<br/>(R4: daily/drawdown/consec-loss)"]
             Fence["Profit-fence job"]
             Bot["Telegram bot handler"]
@@ -63,28 +65,41 @@ flowchart TB
     end
 
     API --> Ledger
-    Loop --> Gate
-    Gate -- "promote/demote strategy" --> REST
+    REST -- "fills, balances,<br/>order state (polled)" --> Ingest
+    Ingest --> Ledger
+    Loop --> Admission
+    Admission --> Gate
+    Gate -- "promote/demote strategy<br/>(after /approve where required)" --> REST
+    Bot -- "/approve routing" --> Gate
     RiskCheck -- "halt / resume" --> REST
+    RiskCheck --> Ledger
     Fence --> Ledger
     Bot --> RiskCheck
     Bot --> Fence
     REST --> Protections
     Protections --> Strategy
-    FreqtradeSvc -- "fills, state" --> Ledger
 ```
 
 ## Design principles
 
 1. **Two trust domains.** Anything Claude produces is a *proposal* that
    lives in the LLM/research domain until it passes deterministic gates
-   into the execution domain. No code path collapses this boundary.
+   into the execution domain. No code path collapses this boundary — and
+   this covers the *code itself*, not just the trading decision it
+   encodes: LLM-generated strategy code passes static analysis and runs
+   only inside a throwaway, network-disabled sandbox (candidate code
+   admission, [`ADR-0007`](../05-adr/0007-candidate-code-admission.md))
+   before it is ever considered for even paper trading, let alone live
+   capital.
 2. **The execution domain is boring on purpose.** Freqtrade's protections
    and its dry-run/live code-path parity are load-bearing — see
    [`execution-freqtrade.md`](execution-freqtrade.md).
 3. **Every money-relevant fact lives in the ledger**, not in memory or in
-   an LLM's context window. Restarting any service must never lose halt
-   state, principal record, or promotion stage.
+   an LLM's context window, and **only Conductor ever writes to it** —
+   Freqtrade is polled for fills/state via its REST API and never given
+   ledger write access, so there is exactly one writer to reconcile
+   against. Restarting any service must never lose halt state, principal
+   record, or promotion stage.
 4. **Fail closed.** Any ambiguity (a missed fencing run, reconciliation
    mismatch, heartbeat silence) defaults to halting or blocking new risk,
    never to proceeding optimistically.
@@ -106,3 +121,6 @@ flowchart TB
 - Exact container orchestration (`docker compose` assumed for Phase 1–4
   scale; no Kubernetes planned) — confirmed direction, formalized in
   [`infra/README.md`](../../infra/README.md) at Phase 2.
+- Sandboxed runtime for candidate code admission (Docker-in-Docker vs. a
+  pre-built, network-disabled base image) — TBD (Phase 2/3), see
+  [`ADR-0007`](../05-adr/0007-candidate-code-admission.md).
