@@ -132,23 +132,59 @@ Freqtrade's own Telegram bot (not Conductor's — that's a separate,
 Phase 3+ service with a different token, see `.env.example`) is enabled
 for status visibility into the 2D dry-run run.
 
-**"Status-only" is enforced two ways:**
-- `force_entry_enable: false` (`config.dry_run.json`) blocks `/forcebuy`
-  **server-side**, in Freqtrade's own RPC layer — not just hidden from
-  the Telegram command menu. Confirmed by reading
-  `freqtrade/rpc/rpc.py`'s `_rpc_force_entry`, which checks this flag
-  before doing anything, regardless of which client (Telegram, REST API)
-  issued the command.
-- Every other command this bot exposes (`/status`, `/profit`, `/balance`,
-  `/trades`, `/logs`, `/whitelist`) is read-only, or risk-*reducing*-only
-  (`/forceexit` closes a position early, `/stop`/`/stopbuy` pause new
-  entries) — nothing available through this bot can *increase* risk
-  beyond what the strategy would already do on its own.
+**Read this before trusting the "status-only" label — it is not a full
+command block, and an earlier version of this doc overstated it.**
+Verified directly against Freqtrade 2026.8's own source
+(`freqtrade/rpc/telegram.py`, `freqtrade/rpc/rpc.py`) during a follow-up
+review, and confirmed live against the running instance:
 
-Freqtrade has no built-in literal "read-only bot" mode (there's no
-per-command ACL beyond `authorized_users`, which only gates *who* can
-issue commands, not *which* commands) — the above two points are what
-"status-only" actually means here in practice.
+- **There is no config-level per-command permission system.** Every
+  command Freqtrade's Telegram bot registers — including `/forceexit`,
+  `/stop`, `/stopbuy`, `/pause`, `/delete`, `/reload_config`,
+  `/blacklist_delete` — is registered unconditionally
+  (`telegram.py`'s `_init`, a fixed list of ~35 `CommandHandler`s) and
+  reachable by whoever the bot accepts messages from. `config.dry_run.json`'s
+  `telegram.keyboard` (set to a read-only subset: `/status`, `/profit`,
+  `/balance`, `/daily`, `/trades`, `/count`, `/whitelist`, `/locks`,
+  `/health`, `/version`, `/help`) **only changes which buttons the
+  Telegram client displays** — confirmed live: after restarting with this
+  keyboard set, the bot's own startup log still reports
+  `rpc.telegram is listening for following commands: [...'stop'...
+  'forceexit'...]` — every command handler is still registered and would
+  still execute a manually-typed command. Treat the keyboard as reducing
+  *accidental* taps, not as a security boundary.
+- **The one command that genuinely is blocked server-side**, regardless
+  of the keyboard or of anything else: `/forcebuy` and `/forceshort`, via
+  `force_entry_enable: false` (`config.dry_run.json`). Confirmed in
+  `freqtrade/rpc/rpc.py`'s `_rpc_force_entry`, which checks this flag
+  before doing anything else, for any client (Telegram or the REST API) —
+  and reconfirmed live against the running instance's
+  `/show_config` (`force_entry_enable: false`) after this change.
+- **Who can reach the bot at all** is gated by `telegram.chat_id` — a
+  message is rejected outright unless it comes from exactly that chat ID
+  (`authorized_only` in `telegram.py`). `telegram.authorized_users` is an
+  optional *additional* narrowing to specific user IDs within that chat
+  (relevant for a group chat; not needed for a private 1:1 chat with the
+  bot). Neither restricts *which* commands are available — only *who* can
+  issue any of them.
+- `telegram.allow_custom_messages: false` (set alongside the keyboard
+  above) stops the *strategy* from pushing arbitrary custom messages —
+  unrelated to incoming commands, but reduces the bot's outbound surface
+  too.
+
+**What "status-only" actually rests on, given the above:** keeping the
+bot token and chat ID private (risk register S4 — this is the real
+control), and the fact that every command besides `/forcebuy`/
+`/forceshort` is risk-neutral or risk-*reducing* at worst (`/stop`,
+`/stopbuy`, `/pause` only stop new entries; `/forceexit` only closes a
+position early; `/delete`/`/reload_config` need the token to reach at
+all). Nothing reachable through this bot can increase risk beyond what
+the strategy already does on its own — but that is a *behavioural*
+property of which commands exist, not a *technical* block on typing them,
+and Freqtrade 2026.8 does not offer one. A real command-level allow-list
+would need Conductor (Phase 3) fronting Telegram itself, or a modified
+Freqtrade build (out of scope — ADR-0006 runs Freqtrade unmodified,
+specifically to avoid GPL-3 derivative-work complications).
 
 **Setup (one-time, operator action — this isn't something a config
 change alone can complete):**

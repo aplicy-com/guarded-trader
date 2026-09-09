@@ -19,6 +19,8 @@ venv/
 # Freqtrade user data (created in Phase 2; may contain local DB / backtest results)
 services/freqtrade/user_data/data/
 services/freqtrade/user_data/**/*.sqlite
+services/freqtrade/user_data/**/*.sqlite-shm
+services/freqtrade/user_data/**/*.sqlite-wal
 services/freqtrade/user_data/backtest_results/
 services/freqtrade/user_data/logs/
 services/freqtrade/user_data/notebooks/.ipynb_checkpoints/
