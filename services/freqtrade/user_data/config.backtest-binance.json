@@ -1,0 +1,4 @@
+{
+  "$comment": "Overlay for the Binance-sourced backtest history only (ADR-0010, docs/research/03-baseline-backtest.md 'Re-run on 2-year Binance data'). Merged on top of config.dry_run.json via `--config config.dry_run.json --config config.backtest-binance.json`, which is left untouched. stake_currency must be USDT to match the Binance-liquid pairs (ADR-0010's USD->USDT mapping); nothing else about the strategy, fees, or protections changes. Never used for dry-run/live -- Kraken with USD pairs remains the sole execution config.",
+  "stake_currency": "USDT"
+}

@@ -18,7 +18,7 @@ download-data:
 	# maximum real history Kraken's API actually serves via ccxt directly,
 	# through Freqtrade's own data handler.
 	$(COMPOSE) run --rm -v $(CURDIR):/repo --entrypoint python freqtrade \
-		/repo/scripts/fetch_kraken_ohlcv.py
+		/repo/scripts/fetch_ohlcv.py --venue kraken
 
 backtest:
 	$(COMPOSE) run --rm freqtrade backtesting \

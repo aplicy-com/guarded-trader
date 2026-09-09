@@ -90,7 +90,7 @@ Expect `"dry_run": true`.
 
 - `make download-data` — pulls OHLCV for the whitelisted pairs from
   Kraken's public API into `services/freqtrade/user_data/data/`
-  (gitignored; re-run anytime). Runs `scripts/fetch_kraken_ohlcv.py`, not
+  (gitignored; re-run anytime). Runs `scripts/fetch_ohlcv.py --venue kraken`, not
   Freqtrade's own `download-data` command — Freqtrade refuses to run in
   klines mode for Kraken at all (its public OHLC endpoint doesn't serve
   historic klines); see the "Data" section of

@@ -27,7 +27,7 @@ the order of two hours; a full 730-day pull across all 6 whitelisted
 pairs is on the order of days. That is not a background job to leave
 running unattended for this work package.
 
-Instead, `scripts/fetch_kraken_ohlcv.py` (new, this work package) pulls
+Instead, `scripts/fetch_ohlcv.py --venue kraken` (new, this work package) pulls
 directly via `ccxt.kraken().fetch_ohlcv()` and writes through Freqtrade's
 own `IDataHandler.ohlcv_store`, so the on-disk format is exactly what
 `freqtrade backtesting` expects — no synthetic or interpolated data, no
@@ -175,7 +175,7 @@ gaps need to be closed, none of which are Phase 2 work:
 1. **Backtest history.** Kraken will not serve more than ~120 days of 4h
    history via its public API at all, by any method tested here short of
    a multi-day trades-reconstruction pull. Longer history requires either
-   (a) letting `scripts/fetch_kraken_ohlcv.py`'s underlying trades-based
+   (a) letting `scripts/fetch_ohlcv.py`'s underlying trades-based
    equivalent run unattended over days, (b) accumulating real history
    candle-by-candle simply by running dry-run over time (this is in fact
    what work package 2D does next), or (c) a paid data provider —
@@ -190,13 +190,184 @@ gaps need to be closed, none of which are Phase 2 work:
    before Gate 1 is used as a real go/no-go gate, not just for this
    strategy.
 
+## Re-run on 2-year Binance data
+
+Follow-up from the 2C review: per
+[`ADR-0010`](../05-adr/0010-binance-ohlcv-for-backtest-history.md),
+backtest OHLCV history can be sourced from Binance (multi-year 4h
+available via public API, no key) while Kraken remains the sole execution
+venue. This section re-runs the exact same `Baseline4h` strategy —
+**no strategy code changed, no parameters touched** — against 2 years of
+real Binance 4h history, to see whether the short-window result above
+holds up on a real sample.
+
+**Read the price-divergence caveat in ADR-0010 before treating this as a
+Kraken-equivalent result:** the pairs below are Binance's `USDT` markets
+(`BTC/USD` etc. exist on Binance but are ~1,370× less liquid than their
+`USDT` equivalents — checked live), not literal Kraken `USD` pairs. This
+is signal-validation evidence about the strategy's logic over a long
+window, not a forecast of Kraken-specific P&L.
+
+### Data
+
+```
+docker compose -f infra/docker-compose.yml run --rm -v "$(pwd)":/repo --entrypoint python freqtrade \
+  /repo/scripts/fetch_ohlcv.py --venue binance --timeframes 4h --days 730
+```
+
+All 6 pairs returned the full requested window — Binance's OHLC endpoint
+honours `since` for genuine historical pagination, unlike Kraken's:
+
+| Pair | Candles | Coverage |
+|---|---|---|
+| BTC/USDT, XRP/USDT, ETH/USDT, SOL/USDT, LINK/USDT, LTC/USDT | 4,380 each | 2024-09-09 → 2026-09-09 (729.8 days, ~2 years) |
+
+### Backtest configuration
+
+```
+docker compose -f infra/docker-compose.yml run --rm freqtrade backtesting \
+  --config user_data/config.dry_run.json \
+  --config user_data/config.backtest-binance.json \
+  --strategy Baseline4h \
+  --datadir user_data/data/binance \
+  --pairs BTC/USDT XRP/USDT ETH/USDT SOL/USDT LINK/USDT LTC/USDT \
+  --fee 0.0036 \
+  --enable-protections \
+  --breakdown day
+```
+
+`config.dry_run.json` is **unchanged** — Freqtrade's `StaticPairList`
+rejects `USDT`-quoted pairs against a `USD` `stake_currency`, so a small
+overlay file, `services/freqtrade/user_data/config.backtest-binance.json`
+(new, this change — `{"stake_currency": "USDT"}` and nothing else), is
+merged on top via a second `--config`. It exists only for this backtest
+variant and is never used for dry-run/live. Same 0.36% fee assumption
+(0.26% Kraken taker + 0.10% slippage buffer — kept as-is; see ADR-0010's
+"More information" on why a Binance-specific fee model is a separate,
+not-yet-made decision), same `--enable-protections`, same `$100`/3-slot
+sizing.
+
+### Results
+
+#### Total
+
+| Metric | Value |
+|---|---|
+| Backtest window | 2024-09-19 20:00 → 2026-09-09 16:00 UTC (~720 days, ~2 years — after 60-candle warmup) |
+| Trades | 168 (36 win / 132 loss / 0 draw, 21.4% win rate) |
+| Starting → final balance | 100.00 → 97.19 USDT |
+| Total profit | −2.811 USDT (−2.81%) |
+| Total trade volume | 14,460.10 USDT |
+| Total fees paid | ≈ 51.87 USDT (computed the same way as the original run) |
+| **Fee ratio (fees / gross winning P&L)** | **19.8%** (51.87 / 261.54) |
+| Sharpe (closed trades) | **−0.01** |
+| Sharpe (daily wallet balance) | **0.19** |
+| Sortino (closed trades) / (daily wallet) | −0.06 / 0.27 |
+| Calmar (closed trades) / (daily wallet) | −0.11 / −0.08 |
+| Max drawdown (closed-trade basis) | **65.73%** (143.76 USDT) |
+| Max drawdown (daily wallet basis) | **71.60%** (188.73 USDT) |
+| Market change (buy & hold, equal-weight) over window | 21.96% |
+| CAGR (annualised) | −1.44% — meaningful this time (real ~2-year window, not a short-window extrapolation) |
+| Rejected entry signals | 78 |
+
+Unlike the short-window run, **both** Sharpe bases agree here — trade-based
+and daily-wallet-based are both far below the Gate 1 floor of 1.0 (one is
+even negative). The ambiguity flagged in the short-window assessment
+didn't matter this time; a longer sample resolved it in the negative
+direction on both measures. The **65–72% max drawdown** is not a Gate 1
+criterion by itself, but it is worth stating plainly: this is far beyond
+anything that would survive Gate 2's future <10% drawdown threshold or
+the live max-drawdown halt (R4 AC4.2, 10%) — this run would have tripped
+that halt many times over.
+
+#### Per pair
+
+| Pair | Trades | Win% | Total profit (USDT) | Total profit % |
+|---|---|---|---|---|
+| XRP/USDT | 29 | 20.7% | 89.32 | 89.32% |
+| BTC/USDT | 33 | 30.3% | 8.37 | 8.37% |
+| SOL/USDT | 25 | 32.0% | −2.68 | −2.68% |
+| ETH/USDT | 25 | 20.0% | −25.16 | −25.16% |
+| LINK/USDT | 22 | 9.1% | −27.37 | −27.37% |
+| LTC/USDT | 34 | 14.7% | −45.30 | −45.30% |
+| **Total** | **168** | **21.4%** | **−2.81** | **−2.81%** |
+
+Every pair produced trades this time (unlike the short window, where
+LINK/USD had zero) — a longer window gives the EMA cross far more
+opportunities to fire, in both directions.
+
+#### Exit reasons
+
+| Exit reason | Count | Avg profit % | Total profit (USDT) |
+|---|---|---|---|
+| `exit_signal` (EMA cross-down) | 62 | +8.79% | +200.50 |
+| `trailing_stop_loss` (fixed ATR stop, same caveat as before — not an actual trailing stop) | 103 | −4.57% | −219.23 |
+| `force_exit` (open at data end) | 3 | +21.10% | +15.92 |
+
+The pattern is consistent with the strategy's design intent — winners
+(`exit_signal`) average a much larger gain than losers (`trailing_stop_loss`,
+which caps loss size by construction) — but losers happen roughly 1.7× as
+often (103 vs. 62), and net out to a small loss once fees are included.
+This is a much more legible, and much less flattering, picture than the
+short-window run's.
+
+#### Single-trade / force-exit dominance
+
+Net profit this run is close to zero (−2.81 USDT), which makes "% of net
+profit" an unstable denominator (a near-zero denominator inflates any
+ratio) — reported against both net and gross for that reason:
+
+| | Amount (USDT) | % of net profit (unstable — see above) | % of gross winning P&L (261.54 USDT) |
+|---|---|---|---|
+| Largest single trade (XRP/USDT, `exit_signal`) | 106.78 | 3,798% | 40.8% |
+| `force_exit` group (3 trades) | 15.92 | 566% | 6.1% |
+
+The single largest trade alone accounts for 40.8% of all gross winning
+P&L — a large concentration, though less extreme than the short-window
+run's force-exit group (which was larger than the entire net profit
+figure there). See the Gate 1 "no single-trade dominance" criterion added
+to `docs/08-paper-exit-criteria.md` following this review.
+
+### Assessment against Gate 1
+
+**Fails, more clearly than the short-window run.** Tunable parameters
+still pass (4 ≤ 6) and the fee/slippage assumption is unchanged and still
+adequate, but:
+
+- **In-sample Sharpe ≥ 1.0**: fails on both bases (−0.01 and 0.19), no
+  ambiguity this time.
+- **Walk-forward**: still not run — out of scope for this follow-up too.
+- **Minimum backtest history**: this criterion is now satisfied in terms
+  of raw duration (~2 years, spanning both an uptrend and the drawdown
+  above) — but the strategy simply does not clear the Sharpe floor on
+  this longer, more representative sample.
+- **Single-trade dominance**: fails (40.8% of gross winning P&L from one
+  trade) against the new criterion added below.
+
+**Net: the short-window backtest's positive result does not hold up.**
+This is exactly the outcome the Gate 1 minimum-history requirement exists
+to catch — a 3.6-month sample showed a positive, borderline-Sharpe result
+that a real ~2-year sample reverses. Nothing here suggests the original
+run's numbers were wrong; it demonstrates why a short backtest window is
+not sufficient evidence on its own, independent of any question about
+this specific strategy's merit.
+
 ## TBD
 
 - Exact Gate 1 Sharpe calculation method (trade-based vs. daily-equity-
   based) — raised above, not previously specified in
-  `docs/08-paper-exit-criteria.md`. TBD (Phase 3).
+  `docs/08-paper-exit-criteria.md`. TBD (Phase 3). (Moot for *this* run
+  specifically, since both bases agree — but still unresolved as a
+  general Gate 1 definition.)
 - Minimum backtest history bar count/duration (`08-paper-exit-criteria.md`
   already carried this as TBD (Phase 3); this run sharpens it — whatever
   number is picked, Kraken's public API cannot supply more than ~120 days
   of 4h history without a multi-day trades pull, so Phase 3 planning
-  needs to account for that explicitly).
+  needs to account for that explicitly). Binance-sourced history
+  (ADR-0010) is one way to satisfy a longer-duration requirement for
+  *signal validation* even though Kraken cannot supply it directly.
+- Whether a Binance-specific fee/slippage assumption should replace the
+  reused Kraken-taker-fee-based one for Binance-sourced backtests — not
+  decided; see ADR-0010 "More information".
+- Walk-forward validation (anchored and rolling) — still not run against
+  this strategy on either data source.
