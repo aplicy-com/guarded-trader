@@ -1,0 +1,32 @@
+# Freqtrade-only compose file for Phase 2 (dry-run). Conductor and the
+# ledger DB are added in Phase 3 — see ../docs/04-architecture/overview.md.
+#
+# Image tag is pinned to a specific release, not `stable`/`latest`, per
+# ../docs/04-architecture/security.md ("Docker base images pinned to
+# specific tags/digests, not latest"). `stable` pointed at 2026.8 at the
+# time this file was written; bump the tag deliberately, never track it.
+services:
+  freqtrade:
+    image: freqtradeorg/freqtrade:2026.8
+    container_name: ai-trading-agent-freqtrade
+    restart: unless-stopped
+    command: >
+      trade
+      --config /freqtrade/user_data/config.dry_run.json
+      --strategy Baseline4h
+      --logfile /freqtrade/user_data/logs/freqtrade.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3.dryrun.sqlite
+    volumes:
+      - ../services/freqtrade/user_data:/freqtrade/user_data
+    # REST API bound to loopback only — no other ports are published.
+    # See ../docs/04-architecture/security.md ("No inbound public ports").
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file:
+      - ../.env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/api/v1/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
