@@ -51,7 +51,9 @@ phase triggers.
   pre-commit secret scanning, Tailscale setup, sleep-disable mechanism,
   dependency-update automation, protection threshold values, accountant
   consultation on tax classification (T1/T3/T4), CRA registration-status
-  check.
+  check. (Original plan, as written before Phase 2 began — see the exit
+  gate below for what actually resolved this phase vs. what got re-tagged
+  to Phase 3/4 during work package 2F's closure pass.)
 - Historical OHLCV data pulled for backtesting (Freqtrade `download-data`
   — vs. a paid provider is research review open question §7.3, decide
   here).
@@ -59,17 +61,53 @@ phase triggers.
   running in dry-run, to validate the whole execution path end-to-end
   before Conductor exists.
 
-**Exit gate:**
+**Exit gate — actual status as of 2026-09-09 (work package 2F close):**
 - [ ] Freqtrade running in Docker, dry-run mode, against real Kraken
-      market data, with at least one strategy live in paper mode.
+      market data, with at least one strategy live in paper mode, for
+      **7 consecutive days** (sharpened from the original "at least one
+      strategy live" wording to match `docs/phase-2-plan.md` §3's exit
+      gate: "Freqtrade dry-run uptime ≥ 7 consecutive days"). Backtested
+      (work package 2C,
+      `docs/research/03-baseline-backtest.md`) but **not yet started in
+      continuous dry-run** — this is work package 2D, starting
+      immediately after this doc-closure pass.
 - [ ] All built-in protections (StoplossGuard, MaxDrawdown, CooldownPeriod,
       LowProfitPairs) configured with concrete thresholds, not TBDs.
+      **3 of 4 done**: `CooldownPeriod`, `StoplossGuard`, `MaxDrawdown` are
+      configured with concrete values in `Baseline4h.py`
+      (`docs/04-architecture/execution-freqtrade.md`). `LowProfitPairs`
+      is deliberately deferred to Phase 2D — it needs real trade history
+      to set a meaningful threshold against, which doesn't exist for a
+      strategy that has only been backtested so far.
 - [ ] Key scoping verified (no withdrawal permission) per
-      `docs/06-runbooks/key-rotation.md`.
-- [ ] Secrets hygiene verified: `.gitignore` effective, pre-commit scan
-      installed, manual review pass done.
-- [ ] Accountant consulted on tax classification; T1/T3/T4 in the risk
-      register updated from Open/TBD to a concrete status.
+      `docs/06-runbooks/key-rotation.md`. **Not applicable yet — no key
+      exists.** Work package 2E (key creation) stays explicitly deferred
+      pending Kraken account residency confirmation (risk register T3,
+      `docs/phase-2-plan.md` §0); this checkbox cannot be completed before
+      2E regardless of anything else in this phase, and that is expected,
+      not a gap in this closure pass.
+- [x] Secrets hygiene verified: `.gitignore` effective (confirmed);
+      gitleaks pre-commit hook installed and active
+      (`pre-commit install` run on the trading host, 2026-09-09 — not
+      just configured in `.pre-commit-config.yaml`, actually installed
+      this time); `pre-commit run gitleaks --all-files` run against the
+      full repo and passed clean, 2026-09-09.
+- [x] ~~Accountant consulted on tax classification; T1/T3/T4 in the risk
+      register updated from Open/TBD to a concrete status.~~ **Re-scoped**
+      during this closure pass: the actual consultation is re-tagged to
+      block **Phase 4 entry** instead (risk register T1/T4 — Phase 2 is
+      dry-run only, zero taxable events exist to consult about yet). What
+      Phase 2 *can* deliver — the question list itself
+      (`docs/09-tax-questions.md`) — is done. T3 (Kraken registration
+      status) is unrelated to tax classification and blocks **2E
+      specifically**, not this checkbox.
+
+**Net: Phase 2 exit gate is not yet met.** Two items are genuinely
+outstanding — the 7-day dry-run uptime (2D, starting now) and key scoping
+(blocked on 2E, itself blocked on external Kraken residency status, not
+on anything this repo controls). Protections are 3/4 done by design, not
+by omission. Secrets hygiene is fully done. Tax classification was
+deliberately moved off this gate entirely, onto Phase 4's.
 
 ## Phase 3 — Conductor + research loop + paper trading
 
@@ -148,11 +186,19 @@ deliberate decision, not by drift.
 
 ## TBD summary
 
-Phase 2: quote currency, min order sizes, disk encryption, secret
-scanning tool, Tailscale ACLs, ~~sleep-disable mechanism~~ (resolved —
-Amphetamine, see `infra/README.md`), dependency automation, protection
-thresholds, tax classification, Kraken CA registration status. Phase 3:
-ledger DB engine, heartbeat interval,
+Phase 2 (as of work package 2F close, 2026-09-09): resolved this
+phase — ~~quote currency~~ (ADR-0008), ~~min order sizes~~
+(`docs/research/02-kraken-market-facts.md`), ~~disk encryption~~
+(FileVault confirmed On), ~~secret scanning tool~~ (gitleaks, installed
+and active), ~~sleep-disable mechanism~~ (Amphetamine,
+`infra/README.md`), ~~protection thresholds~~ (3 of 4, see Phase 2 exit
+gate above). Genuinely still open: Tailscale (not yet installed — device
+action, not blocking Phase 2 exit), dependency automation (re-tagged
+Phase 3 — no remote/manifest to point it at yet), Kraken CA registration
+status (external, blocks 2E specifically). Tax classification moved off
+Phase 2 entirely, re-tagged to block Phase 4 entry (question list ready:
+`docs/09-tax-questions.md`). Phase 3: ledger DB engine (resolved early —
+~~SQLite~~, ADR-0009), heartbeat interval,
 daily/drawdown/consecutive-loss exact thresholds, promotion-approval
 stages, backup schedule. Phase 4: mini-PC migration trigger, 25%→100%
 stability criteria, planned-absence procedure.
