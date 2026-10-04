@@ -61,7 +61,7 @@ flowchart TB
             REST["Freqtrade REST API"]
         end
 
-        Ledger[("Ledger DB<br/>(Postgres — TBD Phase 3)")]
+        Ledger[("Ledger DB<br/>(SQLite WAL — ADR-0009)")]
     end
 
     API --> Ledger
