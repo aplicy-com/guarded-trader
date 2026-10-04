@@ -3,9 +3,7 @@ import os
 from alembic import context
 
 from conductor.infrastructure.db import create_db_engine
-
-# No ORM models yet (ledger tables arrive in 3A-2); autogenerate target comes then.
-target_metadata = None
+from conductor.infrastructure.ledger_schema import metadata as target_metadata
 
 
 def _url() -> str:

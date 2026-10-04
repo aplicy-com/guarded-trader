@@ -8,7 +8,11 @@ credentials); each file was scanned against every secret value in `.env`
 before being committed, with zero hits. The trades are simulated dry-run
 trades.
 
-`status_empty.json` (`[]`) is hand-written: the "no open positions" case.
+`status_empty.json` (`[]`), `balance.json` and `whitelist.json` are
+**hand-written** from the Freqtrade REST documentation's response shapes, NOT
+recorded (3A-2 was built without a running Freqtrade instance): re-record them
+with the loop below (`/balance`, `/whitelist`) before relying on them for the
+live R5 check.
 
 Real-data quirks the contract tests now cover: `max_open_trades` arrives as
 `3.0`, timestamps carry milliseconds, `/trades` returns closed trades only,
@@ -19,7 +23,7 @@ and money values are JSON floats (parsed via `Decimal`).
 With the stack up (`make up`) and credentials in `.env`:
 
     set -a; . ./.env; set +a
-    for ep in ping show_config status profit; do
+    for ep in ping show_config status profit balance whitelist; do
       curl -s -u "$FREQTRADE__API_SERVER__USERNAME:$FREQTRADE__API_SERVER__PASSWORD" \
         http://127.0.0.1:8080/api/v1/$ep | python3 -m json.tool --sort-keys > $ep.json
     done

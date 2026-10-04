@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from conductor import __version__
+from conductor.application.capital import PrincipalNotSetError, get_capital
 from conductor.application.health import check_health
 
 router = APIRouter()
@@ -34,4 +35,33 @@ def health(request: Request, response: Response) -> HealthResponse:
         db_ok=report.db_ok,
         db_journal_mode=report.db_journal_mode,
         scheduler_running=report.scheduler_running,
+    )
+
+
+class CapitalResponse(BaseModel):
+    """Decimal amounts as strings, so no client ever sees a float."""
+
+    principal: str
+    realized_profit: str
+    fenced_total: str
+    working_profit: str
+    max_deployed_capital: str
+    enforced: bool  # always False in 3A-2: computed only, nothing is written to Freqtrade
+
+
+@router.get("/capital", response_model=CapitalResponse)
+def capital(request: Request, response: Response) -> CapitalResponse:
+    """Internal (no host port). R2 `max_deployed_capital`, computed from the ledger."""
+    try:
+        c = get_capital(request.app.state.ledger)
+    except PrincipalNotSetError:
+        response.status_code = 503
+        raise HTTPException(status_code=503, detail="principal not recorded") from None
+    return CapitalResponse(
+        principal=str(c.principal),
+        realized_profit=str(c.realized_profit),
+        fenced_total=str(c.fenced_total),
+        working_profit=str(c.working_profit),
+        max_deployed_capital=str(c.max_deployed_capital),
+        enforced=False,
     )

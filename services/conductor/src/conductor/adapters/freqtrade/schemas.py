@@ -157,3 +157,22 @@ class ProfitWire(_Wire):
             losing_trades=self.losing_trades,
             max_drawdown_abs=self.max_drawdown_abs,
         )
+
+
+class BalanceCurrencyWire(_Wire):
+    currency: str
+    balance: Decimal  # total held on the exchange (free + used)
+
+
+class BalanceWire(_Wire):
+    currencies: list[BalanceCurrencyWire]
+
+    def to_view(self) -> dict[str, Decimal]:
+        out: dict[str, Decimal] = {}
+        for c in self.currencies:
+            out[c.currency] = out.get(c.currency, Decimal(0)) + c.balance
+        return out
+
+
+class WhitelistWire(_Wire):
+    whitelist: list[str]
