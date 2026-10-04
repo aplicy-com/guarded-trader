@@ -150,28 +150,43 @@ Freqtrade dry-run stack.
 
 12a. The Hetzner firewall alone is not trusted (incident S8 in
     [`03-risk-register.md`](../03-risk-register.md)). Add the host-level
-    layer, **over Tailscale** (not the public IP; the script refuses
-    otherwise):
+    layer **over Tailscale** (the script refuses otherwise). Use the VPS's
+    `100.x` address from `tailscale status` (here `TS=100.101.102.103`):
     ```
-    scp -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes scripts/harden-host.sh deploy@ai-trader-vps:/tmp/
-    ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@ai-trader-vps 'sudo bash /tmp/harden-host.sh'
+    TS=100.101.102.103
+    scp -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes scripts/harden-host.sh deploy@$TS:/tmp/
+    ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@$TS 'sudo bash /tmp/harden-host.sh --dry-run --ssh-connection "$SSH_CONNECTION"'
     ```
-    Expected: `Status: active`, a single rule `Anywhere on tailscale0
-    ALLOW IN`, `sshd` listening on `100.x.x.x:22` and `127.0.0.1:22` only,
-    and the line `AUTO-ROLLBACK in 300s unless confirmed`.
+    The dry run changes nothing. Expected: no `WOULD ABORT` lines and the
+    last line `Dry run complete. Nothing was changed.` Then apply, keeping
+    this terminal open:
+    ```
+    ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@$TS 'sudo bash /tmp/harden-host.sh --ssh-connection "$SSH_CONNECTION"'
+    ```
+    (`sudo` strips `SSH_CONNECTION`, which is why it is passed explicitly;
+    with no valid tailnet connection the script stops and changes nothing.)
+    Expected: `Applied.`, port 22 listeners only `100.x.x.x:22` and
+    `127.0.0.1:22`, ufw `Status: active` with one rule
+    `Anywhere on tailscale0 ALLOW IN`, and `AUTO-ROLLBACK in 300s`.
 
 12b. **Within 5 minutes**, open a *second* terminal and run `make ssh`.
     Expected: the `deploy@ai-trader-vps` prompt. Only then confirm:
     ```
-    ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@ai-trader-vps 'sudo touch /run/harden-host.confirm'
+    ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@$TS 'sudo bash /tmp/harden-host.sh --confirm'
     ```
-    If the second terminal cannot connect, do nothing: after 5 minutes
-    the script rolls itself back (ufw off, sshd back on all addresses).
-    The change survives reboot: ufw is enabled at boot and sshd binds the
-    Tailscale IP via `net.ipv4.ip_nonlocal_bind=1`.
-    (A server created from the current cloud-init already has ufw
-    deny-incoming + `tailscale0` allowed, plus SSH from `admin_cidr` for
-    bootstrap; this script removes that last rule.)
+    Expected: `Confirmed: lockdown kept, rollback cancelled.` If the second
+    terminal cannot connect, do nothing: after 5 minutes the rollback turns
+    ufw off and puts `ssh.socket` back on all addresses.
+    Why `ssh.socket`: Ubuntu 24.04 starts sshd from a systemd socket that
+    owns port 22, so `ListenAddress` in `sshd_config` is ignored. The script
+    overrides the socket's `ListenStream` (with `FreeBind=yes`, so it still
+    binds at boot before Tailscale is up). It was chosen over disabling the
+    socket because it keeps Ubuntu's default model and survives package
+    upgrades.
+    (A server created from the current cloud-init runs this same script
+    at first boot with `--allow-public-ssh-from <admin_cidr>`, so ufw is
+    already on and SSH is still reachable from `admin_cidr` for bootstrap;
+    the steps above remove that last public path.)
 
 ## Lock down (remove public SSH)
 
@@ -355,8 +370,8 @@ temporary re-open. Updating the app is `make deploy`; updating secrets is
   [`rebuild-vps.md`](rebuild-vps.md). To use the public IP temporarily,
   set `admin_cidr`, run `make vps-apply`, **and** on the host
   `sudo ufw allow from <cidr> to any port 22 proto tcp` plus remove
-  `/etc/ssh/sshd_config.d/20-listen-tailscale.conf` and
-  `sudo systemctl restart ssh`; then repeat the lockdown steps.
+  `/etc/systemd/system/ssh.socket.d/20-tailscale-only.conf`, run
+  `sudo systemctl daemon-reload && sudo systemctl stop ssh.service ssh.socket && sudo systemctl start ssh.socket`; then repeat the lockdown steps.
 - **`Host key verification failed` after a rebuild.** Expected: the new
   server has a new host key. Remove the old entry:
   `ssh-keygen -R ai-trader-vps` and `ssh-keygen -R $IP`.

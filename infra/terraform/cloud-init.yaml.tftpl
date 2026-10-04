@@ -46,12 +46,11 @@ write_files:
       AllowUsers deploy
       MaxAuthTries 3
 
-  # Let sshd bind the Tailscale IP even if it starts before tailscale0 is up
-  # (otherwise a reboot could leave sshd not listening at all).
-  - path: /etc/sysctl.d/90-nonlocal-bind.conf
-    permissions: "0644"
-    content: |
-      net.ipv4.ip_nonlocal_bind = 1
+  # Single source of truth: the same script used for the live server.
+  - path: /usr/local/sbin/harden-host.sh
+    permissions: "0700"
+    encoding: b64
+    content: ${harden_script_b64}
 
   - path: /etc/fail2ban/jail.d/10-sshd.local
     permissions: "0644"
@@ -114,20 +113,13 @@ runcmd:
   - systemctl enable --now tailscaled
   - tailscale up --authkey='${tailscale_authkey}' --hostname='${hostname}' --ssh=false
 
-  # --- Host firewall (defence in depth, independent of the Hetzner one) ----
-  # Same policy as scripts/harden-host.sh: deny incoming, allow tailscale0.
-  # First boot has bootstrap_ssh=true, so SSH from admin_cidr is also allowed
-  # until you run scripts/harden-host.sh over Tailscale (provision-vps.md),
-  # which removes that rule and binds sshd to the Tailscale IP only.
-  # tailscale0 is allowed BEFORE ufw is enabled so Tailscale SSH cannot be cut.
-  - ufw --force reset
-  - ufw default deny incoming
-  - ufw default allow outgoing
-  - ufw allow in on tailscale0
-%{ if bootstrap_ssh ~}
-  - ufw allow from ${admin_cidr} to any port 22 proto tcp comment 'bootstrap ssh'
-%{ endif ~}
-  - ufw --force enable
+  # --- Host firewall + sshd bind (defence in depth) -----------------------
+  # ufw default-deny + allow tailscale0 only. First boot has bootstrap_ssh=true,
+  # so SSH from admin_cidr stays allowed and ssh.socket is left on all
+  # addresses until you run harden-host.sh over Tailscale (provision-vps.md
+  # 12a), which removes that rule and binds ssh.socket to the tailnet IP only.
+  # With bootstrap_ssh=false it binds ssh.socket to the tailnet IP right away.
+  - bash /usr/local/sbin/harden-host.sh --cloud-init%{ if bootstrap_ssh } --allow-public-ssh-from ${admin_cidr}%{ endif }
 
   # --- Apply SSH hardening and services ------------------------------------
   - sshd -t

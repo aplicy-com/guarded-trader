@@ -81,6 +81,7 @@ resource "hcloud_server" "vps" {
     ssh_public_key    = trimspace(file(pathexpand(var.ssh_public_key_path)))
     tailscale_authkey = var.tailscale_authkey
     bootstrap_ssh     = var.bootstrap_ssh
+    harden_script_b64 = filebase64("${path.module}/../../scripts/harden-host.sh")
     admin_cidr        = var.admin_cidr
   })
 
