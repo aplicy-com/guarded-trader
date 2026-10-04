@@ -1,17 +1,32 @@
 # Freqtrade REST fixtures
 
-**Provenance: hand-built from the Freqtrade 2026.8 REST API schema, NOT recorded
-from a live instance** (no Freqtrade was running when 3A-1 was written, and the
-dry-run host is the VPS/Mac, not the dev environment). Values are illustrative;
-the field names and types are what the contract test pins.
+**Provenance:** `ping`, `show_config`, `status`, `trades` and `profit` were
+**recorded on 2026-10-04 from a real local Freqtrade 2026.8 dry-run instance**
+(this repo's own `infra/docker-compose.yml`, strategy `Baseline4h`, Kraken,
+`dry_run: true`). Nothing secret is in these responses (the endpoints return no
+credentials); each file was scanned against every secret value in `.env`
+before being committed, with zero hits. The trades are simulated dry-run
+trades.
 
-Replace with real recordings before 3A-2 relies on them, on a machine where the
-dry-run bot is up (scrub nothing secret: these endpoints return no credentials):
+`status_empty.json` (`[]`) is hand-written: the "no open positions" case.
 
+Real-data quirks the contract tests now cover: `max_open_trades` arrives as
+`3.0`, timestamps carry milliseconds, `/trades` returns closed trades only,
+and money values are JSON floats (parsed via `Decimal`).
+
+## Re-recording
+
+With the stack up (`make up`) and credentials in `.env`:
+
+    set -a; . ./.env; set +a
     for ep in ping show_config status profit; do
-      curl -s -u "$USER:$PASS" http://127.0.0.1:8080/api/v1/$ep | python -m json.tool > $ep.json
+      curl -s -u "$FREQTRADE__API_SERVER__USERNAME:$FREQTRADE__API_SERVER__PASSWORD" \
+        http://127.0.0.1:8080/api/v1/$ep | python3 -m json.tool --sort-keys > $ep.json
     done
-    curl -s -u "$USER:$PASS" "http://127.0.0.1:8080/api/v1/trades?limit=50" | python -m json.tool > trades.json
+    curl -s -u "$FREQTRADE__API_SERVER__USERNAME:$FREQTRADE__API_SERVER__PASSWORD" \
+      "http://127.0.0.1:8080/api/v1/trades?limit=50" | python3 -m json.tool --sort-keys > trades.json
 
-then run `make conductor-test`; a failure means Freqtrade's API drifted from
-what the client expects.
+Then grep the files for every secret value in `.env`, update the expected
+numbers in `tests/test_freqtrade_client.py`, and run `make conductor-test`.
+A failure after a Freqtrade upgrade means the API drifted from what the
+client expects.

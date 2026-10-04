@@ -1,25 +1,66 @@
 {
-  "version": "2026.8",
-  "strategy_version": null,
-  "api_version": 2.43,
-  "dry_run": true,
-  "trading_mode": "spot",
-  "short_allowed": false,
-  "stake_currency": "USD",
-  "stake_amount": "unlimited",
-  "available_capital": 100.0,
-  "max_open_trades": 3,
-  "minimal_roi": {"0": 0.1},
-  "stoploss": -0.08,
-  "trailing_stop": false,
-  "timeframe": "4h",
-  "timeframe_ms": 14400000,
-  "timeframe_min": 240,
-  "exchange": "kraken",
-  "strategy": "Baseline4h",
-  "force_entry_enable": false,
+  "api_version": 2.5,
+  "available_capital": null,
   "bot_name": "ai-trading-agent-dryrun",
-  "state": "running",
+  "demo_trading": false,
+  "dry_run": true,
+  "entry_pricing": {
+    "check_depth_of_market": {
+      "bids_to_ask_delta": 1,
+      "enabled": false
+    },
+    "order_book_top": 1,
+    "price_side": "same",
+    "use_order_book": true
+  },
+  "exchange": "kraken",
+  "exit_pricing": {
+    "order_book_top": 1,
+    "price_side": "same",
+    "use_order_book": true
+  },
+  "force_entry_enable": false,
+  "margin_mode": "",
+  "max_entry_position_adjustment": -1,
+  "max_open_trades": 3.0,
+  "minimal_roi": {
+    "0": 10.0
+  },
+  "order_types": {
+    "emergency_exit": "market",
+    "entry": "limit",
+    "exit": "limit",
+    "force_entry": null,
+    "force_exit": null,
+    "stoploss": "market",
+    "stoploss_on_exchange": false,
+    "stoploss_on_exchange_interval": null
+  },
+  "position_adjustment_enable": false,
   "runmode": "dry_run",
-  "position_adjustment_enable": false
+  "short_allowed": false,
+  "stake_amount": "unlimited",
+  "stake_currency": "USD",
+  "stake_currency_decimals": 3,
+  "state": "running",
+  "stoploss": -0.99,
+  "stoploss_on_exchange": false,
+  "strategy": "Baseline4h",
+  "strategy_version": null,
+  "timeframe": "4h",
+  "timeframe_min": 240,
+  "timeframe_ms": 14400000,
+  "trading_mode": "spot",
+  "trailing_only_offset_is_reached": false,
+  "trailing_stop": false,
+  "trailing_stop_positive": null,
+  "trailing_stop_positive_offset": 0.0,
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  "use_custom_stoploss": true,
+  "version": "2026.8"
 }

@@ -60,14 +60,15 @@ def test_show_config(fixture_json: Callable[[str], Any]) -> None:
     assert (cfg.max_open_trades, cfg.timeframe, cfg.exchange) == (3, "4h", "kraken")
 
 
-def test_status_maps_open_trade_with_decimal_money(fixture_json: Callable[[str], Any]) -> None:
-    (t,) = make_client(fixture_json).status()
-    assert t.pair == "BTC/USD" and t.is_short is False
-    assert t.open_rate == Decimal("74000.5")
-    assert t.stake_amount == Decimal("33.3")  # float 33.3 must not become 33.2999...
-    assert t.profit_abs == Decimal("0.47")
-    assert t.open_date == datetime(2026, 10, 1, 8, 0, 12, tzinfo=UTC)
-    assert t.open_date.tzinfo is not None
+def test_status_maps_open_trades_with_decimal_money(fixture_json: Callable[[str], Any]) -> None:
+    trades = make_client(fixture_json).status()
+    assert [t.pair for t in trades] == ["LTC/USD", "SOL/USD", "BTC/USD"]
+    ltc = trades[0]
+    assert ltc.is_short is False
+    assert ltc.open_rate == Decimal("55.16")
+    assert ltc.stake_amount == Decimal("31.99739593")  # floats must not leak binary noise
+    assert ltc.profit_abs == Decimal("8.86293062")
+    assert ltc.open_date == datetime(2026, 9, 18, 8, 0, 9, 574000, tzinfo=UTC)
 
 
 def test_status_empty(fixture_json: Callable[[str], Any]) -> None:
@@ -75,15 +76,26 @@ def test_status_empty(fixture_json: Callable[[str], Any]) -> None:
     assert c.status() == ()
 
 
-def test_trades_open_and_closed(fixture_json: Callable[[str], Any]) -> None:
+def test_trades_closed_page(fixture_json: Callable[[str], Any]) -> None:
     page = make_client(fixture_json).trades(limit=50)
     assert (page.trades_count, page.total_trades, page.offset) == (2, 2, 0)
-    closed, open_ = page.trades
-    assert closed.is_open is False and closed.close_date is not None
-    assert closed.close_profit_abs == Decimal("-0.73")
-    assert closed.close_profit_ratio == Decimal("-0.0229")
-    assert closed.exit_reason == "trailing_stop_loss"
-    assert open_.is_open is True and open_.close_date is None and open_.close_rate is None
+    eth, xrp = page.trades
+    assert (eth.pair, eth.is_open) == ("ETH/USD", False)
+    assert eth.close_date is not None and eth.close_date > eth.open_date
+    assert eth.close_profit_abs == Decimal("-1.36936162")
+    assert eth.close_profit_ratio == Decimal("-0.04142954513193126")
+    assert eth.exit_reason == "trailing_stop_loss"
+    assert xrp.close_rate == Decimal("1.35606")
+
+
+def test_trades_open_trade_has_no_close_fields(fixture_json: Callable[[str], Any]) -> None:
+    payload = fixture_json("trades")
+    for key in ("close_timestamp", "close_rate", "close_profit", "close_profit_abs", "exit_reason"):
+        payload["trades"][0][key] = None
+    payload["trades"][0]["is_open"] = True
+    c = make_client(fixture_json, **{"/api/v1/trades": httpx.Response(200, json=payload)})
+    t = c.trades().trades[0]
+    assert t.is_open and t.close_date is None and t.close_rate is None and t.exit_reason is None
 
 
 def test_trades_sends_pagination_params(fixture_json: Callable[[str], Any]) -> None:
@@ -94,10 +106,10 @@ def test_trades_sends_pagination_params(fixture_json: Callable[[str], Any]) -> N
 
 def test_profit(fixture_json: Callable[[str], Any]) -> None:
     p = make_client(fixture_json).profit()
-    assert p.closed_profit_abs == Decimal("-0.73")
-    assert p.all_profit_abs == Decimal("-0.26")
-    assert (p.trade_count, p.closed_trade_count, p.winning_trades, p.losing_trades) == (2, 1, 0, 1)
-    assert p.max_drawdown_abs == Decimal("0.73")
+    assert p.closed_profit_abs == Decimal("-3.03819294")
+    assert p.closed_profit_ratio == Decimal("-0.030688817575757577")
+    assert (p.trade_count, p.closed_trade_count, p.winning_trades, p.losing_trades) == (5, 2, 0, 2)
+    assert p.max_drawdown_abs == Decimal("3.03819294")
 
 
 def test_contract_violation_is_a_clear_error(fixture_json: Callable[[str], Any]) -> None:
