@@ -33,6 +33,7 @@ packages:
   - rsync
   - fail2ban
   - unattended-upgrades
+  - ufw
 
 write_files:
   - path: /etc/ssh/sshd_config.d/10-hardening.conf
@@ -44,6 +45,13 @@ write_files:
       PubkeyAuthentication yes
       AllowUsers deploy
       MaxAuthTries 3
+
+  # Let sshd bind the Tailscale IP even if it starts before tailscale0 is up
+  # (otherwise a reboot could leave sshd not listening at all).
+  - path: /etc/sysctl.d/90-nonlocal-bind.conf
+    permissions: "0644"
+    content: |
+      net.ipv4.ip_nonlocal_bind = 1
 
   - path: /etc/fail2ban/jail.d/10-sshd.local
     permissions: "0644"
@@ -105,6 +113,21 @@ runcmd:
   # --- Join the tailnet. --ssh is off: we use normal sshd over the tailnet. -
   - systemctl enable --now tailscaled
   - tailscale up --authkey='${tailscale_authkey}' --hostname='${hostname}' --ssh=false
+
+  # --- Host firewall (defence in depth, independent of the Hetzner one) ----
+  # Same policy as scripts/harden-host.sh: deny incoming, allow tailscale0.
+  # First boot has bootstrap_ssh=true, so SSH from admin_cidr is also allowed
+  # until you run scripts/harden-host.sh over Tailscale (provision-vps.md),
+  # which removes that rule and binds sshd to the Tailscale IP only.
+  # tailscale0 is allowed BEFORE ufw is enabled so Tailscale SSH cannot be cut.
+  - ufw --force reset
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow in on tailscale0
+%{ if bootstrap_ssh ~}
+  - ufw allow from ${admin_cidr} to any port 22 proto tcp comment 'bootstrap ssh'
+%{ endif ~}
+  - ufw --force enable
 
   # --- Apply SSH hardening and services ------------------------------------
   - sshd -t
