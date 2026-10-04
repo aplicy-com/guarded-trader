@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted — 2026-09-09
+Superseded by [ADR-0011](0011-vps-hosting-on-hetzner.md) — 2026-10-04
+
+(Originally Accepted — 2026-09-09. The text below is left unedited as
+history.)
 
 ## Context and problem statement
 
