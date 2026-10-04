@@ -33,6 +33,7 @@ packages:
   - rsync
   - fail2ban
   - unattended-upgrades
+  - ufw
 
 write_files:
   - path: /etc/ssh/sshd_config.d/10-hardening.conf
@@ -44,6 +45,12 @@ write_files:
       PubkeyAuthentication yes
       AllowUsers deploy
       MaxAuthTries 3
+
+  # Single source of truth: the same script used for the live server.
+  - path: /usr/local/sbin/harden-host.sh
+    permissions: "0700"
+    encoding: b64
+    content: ${harden_script_b64}
 
   - path: /etc/fail2ban/jail.d/10-sshd.local
     permissions: "0644"
@@ -105,6 +112,14 @@ runcmd:
   # --- Join the tailnet. --ssh is off: we use normal sshd over the tailnet. -
   - systemctl enable --now tailscaled
   - tailscale up --authkey='${tailscale_authkey}' --hostname='${hostname}' --ssh=false
+
+  # --- Host firewall + sshd bind (defence in depth) -----------------------
+  # ufw default-deny + allow tailscale0 only. First boot has bootstrap_ssh=true,
+  # so SSH from admin_cidr stays allowed and ssh.socket is left on all
+  # addresses until you run harden-host.sh over Tailscale (provision-vps.md
+  # 12a), which removes that rule and binds ssh.socket to the tailnet IP only.
+  # With bootstrap_ssh=false it binds ssh.socket to the tailnet IP right away.
+  - bash /usr/local/sbin/harden-host.sh --cloud-init%{ if bootstrap_ssh } --allow-public-ssh-from ${admin_cidr}%{ endif }
 
   # --- Apply SSH hardening and services ------------------------------------
   - sshd -t

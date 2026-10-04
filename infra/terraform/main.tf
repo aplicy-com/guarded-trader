@@ -24,10 +24,15 @@ resource "hcloud_primary_ip" "ipv4" {
 # Inbound only. Outbound is unrestricted (apt, Docker Hub, Kraken, Anthropic,
 # Telegram, healthchecks.io, Tailscale coordination/DERP).
 #
-# bootstrap_ssh=true  -> one rule: SSH from admin_cidr.
-# bootstrap_ssh=false -> zero rules => all public inbound dropped (incl. ICMP).
-# Tailscale traffic arrives on the tailscale0 interface, which this
-# network-level firewall never sees, so SSH over the tailnet keeps working.
+# bootstrap_ssh=true  -> SSH from admin_cidr.
+# bootstrap_ssh=false -> one inert "sentinel" rule: ICMP from 192.0.2.1/32
+#   (RFC 5737 TEST-NET-1, never routed on the internet), so nothing real is
+#   allowed. We do NOT rely on an empty rule set meaning "drop everything":
+#   an empty firewall once left public SSH reachable (risk S8). A non-empty
+#   inbound rule list is the unambiguous "default-deny" form.
+# Tailscale is unaffected: its flows are outbound-initiated (conntrack
+# allows the replies) and SSH over the tailnet is also protected by the host
+# firewall (scripts/harden-host.sh, cloud-init).
 resource "hcloud_firewall" "vps" {
   name   = "${var.server_name}-fw"
   labels = local.labels
@@ -40,6 +45,16 @@ resource "hcloud_firewall" "vps" {
       protocol    = "tcp"
       port        = "22"
       source_ips  = [var.admin_cidr]
+    }
+  }
+
+  dynamic "rule" {
+    for_each = var.bootstrap_ssh ? [] : [1]
+    content {
+      description = "Sentinel: keeps inbound non-empty (default-deny). Allows nothing real."
+      direction   = "in"
+      protocol    = "icmp"
+      source_ips  = ["192.0.2.1/32"]
     }
   }
 }
@@ -65,6 +80,9 @@ resource "hcloud_server" "vps" {
     hostname          = var.server_name
     ssh_public_key    = trimspace(file(pathexpand(var.ssh_public_key_path)))
     tailscale_authkey = var.tailscale_authkey
+    bootstrap_ssh     = var.bootstrap_ssh
+    harden_script_b64 = filebase64("${path.module}/../../scripts/harden-host.sh")
+    admin_cidr        = var.admin_cidr
   })
 
   lifecycle {

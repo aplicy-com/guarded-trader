@@ -146,6 +146,48 @@ Freqtrade dry-run stack.
 12. In the Tailscale admin console → Settings → Keys, revoke the auth key
     from step 5 (it is already used up; revoking is cleanup).
 
+## Harden the host (tailnet-only SSH, before the cloud firewall lockdown)
+
+12a. The Hetzner firewall alone is not trusted (incident S8 in
+    [`03-risk-register.md`](../03-risk-register.md)). Add the host-level
+    layer **over Tailscale** (the script refuses otherwise). Use the VPS's
+    `100.x` address from `tailscale status` (here `TS=100.101.102.103`):
+    ```
+    TS=100.101.102.103
+    scp -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes scripts/harden-host.sh deploy@$TS:/tmp/
+    ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@$TS 'sudo bash /tmp/harden-host.sh --dry-run --ssh-connection "$SSH_CONNECTION"'
+    ```
+    The dry run changes nothing. Expected: no `WOULD ABORT` lines and the
+    last line `Dry run complete. Nothing was changed.` Then apply, keeping
+    this terminal open:
+    ```
+    ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@$TS 'sudo bash /tmp/harden-host.sh --ssh-connection "$SSH_CONNECTION"'
+    ```
+    (`sudo` strips `SSH_CONNECTION`, which is why it is passed explicitly;
+    with no valid tailnet connection the script stops and changes nothing.)
+    Expected: `Applied.`, port 22 listeners only `100.x.x.x:22` and
+    `127.0.0.1:22`, ufw `Status: active` with one rule
+    `Anywhere on tailscale0 ALLOW IN`, and `AUTO-ROLLBACK in 300s`.
+
+12b. **Within 5 minutes**, open a *second* terminal and run `make ssh`.
+    Expected: the `deploy@ai-trader-vps` prompt. Only then confirm:
+    ```
+    ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@$TS 'sudo bash /tmp/harden-host.sh --confirm'
+    ```
+    Expected: `Confirmed: lockdown kept, rollback cancelled.` If the second
+    terminal cannot connect, do nothing: after 5 minutes the rollback turns
+    ufw off and puts `ssh.socket` back on all addresses.
+    Why `ssh.socket`: Ubuntu 24.04 starts sshd from a systemd socket that
+    owns port 22, so `ListenAddress` in `sshd_config` is ignored. The script
+    overrides the socket's `ListenStream` (with `FreeBind=yes`, so it still
+    binds at boot before Tailscale is up). It was chosen over disabling the
+    socket because it keeps Ubuntu's default model and survives package
+    upgrades.
+    (A server created from the current cloud-init runs this same script
+    at first boot with `--allow-public-ssh-from <admin_cidr>`, so ufw is
+    already on and SSH is still reachable from `admin_cidr` for bootstrap;
+    the steps above remove that last public path.)
+
 ## Lock down (remove public SSH)
 
 13. Preview. Your shell still has the two `TF_VAR_` secrets from step 6.
@@ -158,7 +200,8 @@ Freqtrade dry-run stack.
     make vps-plan BOOTSTRAP=false
     ```
     Expected: `Plan: 0 to add, 1 to change, 0 to destroy.` and the change is
-    `hcloud_firewall.vps` losing its `rule`. If it says anything about
+    `hcloud_firewall.vps` swapping its SSH `rule` for the inert sentinel
+    rule (ICMP from `192.0.2.1/32`, which matches no real traffic). If it says anything about
     `hcloud_server.vps` being replaced or destroyed, **stop** and go to
     Troubleshooting ("lockdown wants to replace the server").
 
@@ -171,6 +214,17 @@ Freqtrade dry-run stack.
     and `bootstrap_ssh_open = false`.
 
 ## Verify zero public inbound
+
+14a. Automated check (fails with exit 1 if TCP 22 on the public IP accepts
+    a connection). Run it from a network that is **not** `admin_cidr` if
+    possible, and with no Tailscale exit node selected:
+    ```
+    make verify-lockdown
+    ```
+    Expected: `OK: TCP 22 on <ip> does not accept connections`. Run it after
+    **every** `make vps-lockdown`. `FAIL: ... ACCEPTS connections` is an
+    incident: do not proceed, see Troubleshooting ("Public SSH still
+    works after lockdown").
 
 15. Public SSH must now fail:
     ```
@@ -295,12 +349,29 @@ temporary re-open. Updating the app is `make deploy`; updating secrets is
 - **Lockdown wants to replace the server.** Never apply that. It means
   something other than the firewall differs. Cancel at the prompt (type
   anything but `yes`), and check `git diff infra/terraform`.
-- **Locked out after lockdown (Tailscale is down on the VPS).** Put your
-  current IP in `admin_cidr` in `terraform.tfvars`, run `make vps-apply`
-  (this deliberately re-opens SSH from that one IP), fix Tailscale over
-  the public IP, then run `make vps-lockdown` again and repeat steps
-  15–17. If SSH over the public IP also fails, rebuild:
-  [`rebuild-vps.md`](rebuild-vps.md).
+- **Public SSH still works after lockdown (`make verify-lockdown` fails).**
+  1. Read the firewall as Hetzner sees it (read-only):
+     `curl -s -H "Authorization: Bearer $TF_VAR_hcloud_token" https://api.hetzner.cloud/v1/servers/<id from terraform state show hcloud_server.vps> | jq '.server.public_net.firewalls'`
+     Expected: one entry with `"status": "applied"`. `pending` or an empty
+     list means the firewall is not enforced.
+  2. Then `curl ... /v1/firewalls/<id> | jq '.firewall.rules'`. Expected after
+     lockdown: only the ICMP sentinel from `192.0.2.1/32`; a `port: "22"`
+     rule means lockdown did not apply.
+  3. Whatever you find, the host layer still protects you if
+     `scripts/harden-host.sh` was run (step 12a). If it was not, run it now.
+  4. Also check `ssh -G` / `~/.ssh/config` for `ControlMaster`/`ControlPersist`
+     or a ProxyCommand: a multiplexed or tunnelled connection makes a
+     "public IP" test succeed without touching the public network.
+- **Locked out after lockdown (Tailscale is down on the VPS).** SSH is no
+  longer reachable on the public IP at all (cloud firewall and host
+  firewall both block it). Use the Hetzner Cloud web console (server →
+  Console, log in as `deploy` is impossible without a password) or the
+  rescue system to fix Tailscale/ufw; or simply rebuild:
+  [`rebuild-vps.md`](rebuild-vps.md). To use the public IP temporarily,
+  set `admin_cidr`, run `make vps-apply`, **and** on the host
+  `sudo ufw allow from <cidr> to any port 22 proto tcp` plus remove
+  `/etc/systemd/system/ssh.socket.d/20-tailscale-only.conf`, run
+  `sudo systemctl daemon-reload && sudo systemctl stop ssh.service ssh.socket && sudo systemctl start ssh.socket`; then repeat the lockdown steps.
 - **`Host key verification failed` after a rebuild.** Expected: the new
   server has a new host key. Remove the old entry:
   `ssh-keygen -R ai-trader-vps` and `ssh-keygen -R $IP`.
