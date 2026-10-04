@@ -8,6 +8,19 @@ for the target container diagram and
 [`../docs/04-architecture/execution-freqtrade.md`](../docs/04-architecture/execution-freqtrade.md)
 for why Freqtrade is configured the way it is.
 
+## Where this runs
+
+From Phase 3 the stack runs on a Hetzner VPS reachable only over Tailscale
+([ADR-0011](../docs/05-adr/0011-vps-hosting-on-hetzner.md)); the Mac is
+dev-only. Provisioning code is in [`terraform/`](terraform/), and the
+procedures are
+[`provision-vps.md`](../docs/06-runbooks/provision-vps.md) and
+[`rebuild-vps.md`](../docs/06-runbooks/rebuild-vps.md). Remote targets:
+`make vps-plan`, `vps-apply`, `vps-lockdown`, `ssh`, `push-env`, `deploy`,
+`logs-remote`. The sections below describe the compose stack itself, and
+the local `make up` workflow that still works on the Mac. The "Sleep-disable
+(Mac host)" section applies only to the Phase 2 Mac run.
+
 ## Prerequisites
 
 - Docker Desktop (or equivalent) running locally.

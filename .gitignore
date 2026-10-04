@@ -33,6 +33,12 @@ services/conductor/*.db
 infra/.env
 infra/**/volumes/
 
+# Terraform: state holds secrets (see infra/terraform/.gitignore)
+*.tfstate
+*.tfstate.*
+.terraform/
+infra/terraform/terraform.tfvars
+
 # Logs
 *.log
 logs/
