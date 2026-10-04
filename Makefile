@@ -1,7 +1,8 @@
-COMPOSE := docker compose -f infra/docker-compose.yml
+COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
 .PHONY: up down logs download-data backtest shell market-facts \
-	vps-plan vps-apply vps-lockdown verify-lockdown ssh push-env deploy logs-remote
+	vps-plan vps-apply vps-lockdown verify-lockdown ssh \
+	conductor-test conductor-lint conductor-shell push-env deploy logs-remote
 
 up:
 	$(COMPOSE) up -d
@@ -35,6 +36,20 @@ market-facts:
 	$(COMPOSE) run --rm -v $(CURDIR):/repo --entrypoint python freqtrade \
 		/repo/scripts/kraken_market_facts.py \
 		--out /repo/docs/research/02-kraken-market-facts.md
+
+# --- Conductor (work package 3A-1) ---------------------------------------------
+CONDUCTOR := cd services/conductor &&
+
+conductor-test:
+	$(CONDUCTOR) uv run pytest
+
+conductor-lint:
+	$(CONDUCTOR) uv run ruff check . && uv run ruff format --check . \
+		&& uv run mypy --strict src/conductor/domain && uv run mypy
+
+# Shell inside the built image (as the non-root user, read-only like prod).
+conductor-shell:
+	$(COMPOSE) run --rm --no-deps --entrypoint sh conductor
 
 # --- VPS (work package 3A-0; see docs/06-runbooks/provision-vps.md) ---------
 # Secrets come ONLY from the environment: TF_VAR_hcloud_token and
@@ -111,7 +126,7 @@ deploy:
 	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && \
 		git archive main | tar -x -C "$$tmp" && \
 		rsync -az --delete $(RSYNC_KEEP) -e "ssh $(SSH_OPTS)" "$$tmp"/ $(VPS_USER)@$(VPS_HOST):$(VPS_DIR)/
-	ssh $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/docker-compose.yml up -d'
+	ssh $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && docker compose --env-file .env -f infra/docker-compose.yml up -d --build'
 
 logs-remote:
-	ssh -t $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/docker-compose.yml logs -f --tail 200 freqtrade'
+	ssh -t $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && docker compose --env-file .env -f infra/docker-compose.yml logs -f --tail 200 freqtrade'
