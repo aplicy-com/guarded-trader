@@ -152,10 +152,9 @@ not an automatic transition.
 **Scope:**
 - Live trading begins at 25% of `max_deployed_capital`, real orders,
   real money.
-- Migration to a dedicated mini-PC per
-  `docs/06-runbooks/migrate-to-minipc.md` — trigger condition TBD (see
-  `docs/05-adr/0004-mac-first-minipc-later.md`), expected to happen within
-  this phase.
+- ~~Migration to a dedicated mini-PC~~ — superseded: hosting moves to a
+  Hetzner VPS in Phase 3 (`docs/05-adr/0011-vps-hosting-on-hetzner.md`);
+  `migrate-to-minipc.md` is archived.
 - Scale to 100% allocation once the 25% stage is stable — stability
   criteria TBD (Phase 4, to be defined before the 25% stage begins, not
   during it).
@@ -164,8 +163,7 @@ not an automatic transition.
 **Exit gate:**
 - [ ] Running at 100% allocation.
 - [ ] No breach of R1–R4 at any point during the 25%→100% transition.
-- [ ] Migration to mini-PC (or an explicit decision to defer it, with
-      reasoning recorded) complete.
+- [x] ~~Migration to mini-PC~~ — superseded by ADR-0011 (VPS, Phase 3).
 - [ ] At least one full re-validation cycle (Phase 5 cadence) completed
       successfully while live.
 

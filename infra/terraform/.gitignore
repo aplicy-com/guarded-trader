@@ -1,0 +1,16 @@
+# State contains secrets (cloud-init user_data incl. the Tailscale auth key).
+# Local state only; never commit, never push to a remote backend.
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+.terraform/
+*.tfplan
+tfplan
+terraform.tfvars
+*.auto.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# NOTE: .terraform.lock.hcl is intentionally tracked (provider checksums).

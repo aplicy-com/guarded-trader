@@ -20,7 +20,7 @@ operator explicitly overrides them in writing in that session.
    phrases, or `.env` files in commits, issues, PR descriptions, or code
    comments. `.env.example` documents shape only, with empty values. If you
    generate a secret for local testing, it goes in `.env` (git-ignored) or
-   the OS keychain/1Password, never in a tracked file.
+   the OS keychain/LastPass, never in a tracked file.
 4. **Capital rules (R1–R6 in `docs/02-requirements.md`) are hard
    constraints on any code you write for the trading path**, not
    suggestions: one-time $100 principal with no top-ups; trading capital is

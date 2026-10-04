@@ -1,0 +1,21 @@
+# Copy to terraform.tfvars (git-ignored) and edit. NON-SECRET values only.
+#
+# Secrets are NOT set here. Export them in your shell before running
+# terraform / make vps-*:
+#   TF_VAR_hcloud_token
+#   TF_VAR_tailscale_authkey
+# See docs/06-runbooks/provision-vps.md.
+
+# Your current public IPv4 as a /32 (find it with: curl -4 https://ifconfig.me).
+# Documentation-range placeholder below; it will NOT work as-is.
+admin_cidr = "203.0.113.10/32"
+
+# Everything below has a default in variables.tf; uncomment to override.
+# server_name         = "ai-trader-vps"
+# server_type         = "cx23"
+# location            = "nbg1"
+# ssh_public_key_path = "~/.ssh/ai_trader_vps.pub"
+
+# bootstrap_ssh is deliberately NOT set here: `make vps-apply` passes true,
+# `make vps-lockdown` passes false. Leaving it out means a stray
+# `terraform apply` can never re-open SSH.

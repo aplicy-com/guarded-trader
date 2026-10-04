@@ -43,7 +43,7 @@ destination is the Operator acting manually via Kraken's own interface
 
 ```mermaid
 flowchart TB
-    subgraph Host["Trading host (Mac now, mini-PC later — see ADR-0004)"]
+    subgraph Host["Trading host (Hetzner VPS, Tailscale-only — see ADR-0011; Mac during Phase 2)"]
         subgraph ConductorSvc["Conductor service (Python/FastAPI, Docker)"]
             API["REST API"]
             Ingest["Fill/state ingestion<br/>(polls Freqtrade, writes Ledger)"]
