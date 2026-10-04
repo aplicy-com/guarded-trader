@@ -35,7 +35,7 @@ Download 2y of 4h+1d OHLCV. Write `Baseline4h.py`: simple trend-following (e.g. 
 Start Freqtrade dry-run against live Kraken data with Baseline4h. Freqtrade's own Telegram bot enabled (status only) so you can watch from your phone. Runs continuously from here — this is also the burn-in for the Mac-as-host assumption.
 
 **2E — Key + residency (blocked on Kraken support)**
-Once residency shows Canada: create API key (Query + Trade, no Withdraw, IP-whitelist), store in 1Password + `.env`, verify permissions per key-rotation runbook. **Still dry-run.** Update roadmap gate.
+Once residency shows Canada: create API key (Query + Trade, no Withdraw, IP-whitelist), store in LastPass + `.env`, verify permissions per key-rotation runbook. **Still dry-run.** Update roadmap gate.
 
 **2F — Docs closure** (`docs/phase-2-close`)
 Resolve every Phase-2 TBD in place; ADR-0008 (USD quote), ADR-0009 (SQLite ledger); accountant question list for Vajira (tax classification, deemed-acquisition of 2021 holdings) in `docs/09-tax-questions.md`.

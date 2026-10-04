@@ -72,7 +72,7 @@ Drawn from the FIA automated-trading risk-controls whitepaper, retail practition
 | Kill switch | Blocks all *new* orders, persists across restarts; separate **flatten** command; both reachable via Telegram | Conductor |
 | "Nuclear" protocol | On data loss/exchange outage/anomaly: cancel open orders, flatten if possible, halt, log state, alert | Conductor runbook |
 | Profit sweep | Nightly: profit above daily cap → separate Kraken sub-account / wallet the bot has no key for | Ledger job |
-| Key hygiene | API key: query + trade only, **no withdrawal**, IP-whitelisted; secrets in env/1Password, never in repo | Ops |
+| Key hygiene | API key: query + trade only, **no withdrawal**, IP-whitelisted; secrets in env/LastPass, never in repo | Ops |
 | Overfitting defence | ≤6 tunable params per strategy; walk-forward (anchored + rolling); conservative fees/slippage in backtests; re-validate every 4–6 weeks; reject if OOS Sharpe < 50% of IS | Research loop |
 | Observability | Equity curve, exposure, fee ratio, turnover, halt state; alert on silence (heartbeat) | Grafana/Telegram |
 
@@ -105,7 +105,7 @@ Reference case for why kill switches exist: Knight Capital lost $440M in 45 minu
 ## 7. Open questions for Phase 2
 
 1. Exact Kraken min order sizes and fee tier for CAD vs USD pairs — pick quote currency.
-2. Whether the nightly research loop runs on the Mac (needs to be awake) or on the mini-PC from day one.
+2. Whether the nightly research loop runs on the Mac (needs to be awake) or on the mini-PC from day one. *(Resolved 2026-10-04: neither — a Hetzner VPS, ADR-0011.)*
 3. Data source for backtests: Kraken OHLCV via Freqtrade `download-data` (free) vs a paid provider.
 4. Model budget per night for research runs.
 

@@ -44,9 +44,9 @@ overlap with two valid ones.
 8. Once confirmed working, go back to Kraken and revoke the **old** key.
 9. Re-enable trading: `/resume kill_switch` (see
    [`kill-switch.md`](kill-switch.md)).
-10. Update the last-rotated date in that credential's 1Password entry
+10. Update the last-rotated date in that credential's LastPass entry
     notes field (resolved, work package 2F — no separate tracking tool
-    needed; 1Password is already the system of record for the credential
+    needed; LastPass is already the system of record for the credential
     itself).
 
 ## Telegram bot token rotation
@@ -90,6 +90,6 @@ overlap with two valid ones.
 ## TBD
 
 - ~~Formal rotation-cadence tracking mechanism~~ — resolved: 90-day
-  cadence, tracked in each credential's 1Password entry notes.
+  cadence, tracked in each credential's LastPass entry notes.
 - Manual research-loop trigger for step 4 of the Anthropic rotation — TBD
   (Phase 3).
