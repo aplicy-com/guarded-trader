@@ -53,6 +53,9 @@ services:
       PRINCIPAL_USD: ${PRINCIPAL_USD:?set PRINCIPAL_USD in .env}
       DATABASE_URL: sqlite:////data/conductor.db
       FREQTRADE_API_URL: http://freqtrade:8080
+      # R3. The daily cap's value is TBD (Phase 3): blank = unset = nothing is fenced.
+      DAILY_PROFIT_CAP_USD: ${DAILY_PROFIT_CAP_USD:-}
+      MANUAL_MOVE_THRESHOLD_USD: ${MANUAL_MOVE_THRESHOLD_USD:-25}
       FREQTRADE__API_SERVER__USERNAME: ${FREQTRADE__API_SERVER__USERNAME:?set in .env}
       FREQTRADE__API_SERVER__PASSWORD: ${FREQTRADE__API_SERVER__PASSWORD:?set in .env}
     volumes:
