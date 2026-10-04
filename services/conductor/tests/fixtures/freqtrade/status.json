@@ -1,0 +1,24 @@
+[
+  {
+    "trade_id": 7,
+    "pair": "BTC/USD",
+    "base_currency": "BTC",
+    "quote_currency": "USD",
+    "is_open": true,
+    "exchange": "kraken",
+    "amount": 0.00045,
+    "stake_amount": 33.3,
+    "is_short": false,
+    "leverage": 1.0,
+    "open_date": "2026-10-01 08:00:12",
+    "open_timestamp": 1790841612000,
+    "open_rate": 74000.5,
+    "current_rate": 75100.25,
+    "profit_ratio": 0.0141,
+    "profit_pct": 1.41,
+    "profit_abs": 0.47,
+    "stop_loss_abs": 68080.46,
+    "enter_tag": "baseline",
+    "orders": []
+  }
+]

@@ -1,38 +1,57 @@
 # Conductor
 
-**Status: placeholder — implementation starts Phase 3.**
+Python 3.12 / FastAPI service that will own the ledger, capital and risk
+rules, the profit fence, the Telegram control surface and (Phase 3B) the
+nightly LLM research loop. Design:
+[`docs/04-architecture/conductor.md`](../../docs/04-architecture/conductor.md).
+It never places, modifies or cancels an exchange order
+([ADR-0003](../../docs/05-adr/0003-llm-never-orders.md)).
 
-Conductor is the Python/FastAPI service that owns the nightly LLM research
-loop, the ledger, the promotion-gate engine, the daily profit-fence job,
-the risk-limit checker (the second, independent layer for R4), and the
-Telegram control surface. It is the only part of this system that talks
-to Claude. It never talks to the sweep destination at all — profit
-fencing is a ledger-only operation, and moving funds to the sweep
-destination is always a manual, human action taken outside this system
-entirely (R3). It never places, modifies, or cancels an exchange order
-itself either (that's Freqtrade's job, and only Freqtrade's — see
-[`../../docs/05-adr/0003-llm-never-orders.md`](../../docs/05-adr/0003-llm-never-orders.md)).
+**Status: 3A-1 skeleton.** Wiring only, no business logic. Ledger and
+capital rules are 3A-2, the risk layer 3A-3, Telegram 3A-4, healthchecks and
+dashboard 3A-5.
 
-Design is documented ahead of code in
-[`../../docs/04-architecture/conductor.md`](../../docs/04-architecture/conductor.md).
-Nothing in this directory connects to an exchange; do not add anything
-here that does before Phase 3's plan is written and approved
-(`CLAUDE.md` §1).
+## Layout (`src/conductor/`)
 
-## Planned contents (Phase 3)
+| Layer | Contents | Rule |
+|---|---|---|
+| `domain/` | `TradingMode`, read-only Freqtrade snapshot dataclasses | Pure: stdlib only, no I/O. `mypy --strict`. |
+| `application/` | Ports (`FreqtradeReader`, `Notifier`, `Heartbeat`, `LlmClient`), use cases | Depends on `domain` only. |
+| `adapters/` | Freqtrade REST client (**GET-only**), Telegram / healthchecks / LLM stubs | Only place that does I/O to the outside. |
+| `infrastructure/` | Settings, SQLite (WAL) engine, scheduler, logging, `/health` | Framework glue. |
+| `main.py` | Composition root (`create_app`, `app_factory`) | |
 
-- `api/` — FastAPI app: REST endpoints backing `/status` and health
-  checks.
-- `research_loop/` — nightly Claude-driven candidate generation, logged
-  with prompt/response hashes.
-- `gate/` — deterministic backtest/walk-forward/paper/allocation
-  promotion logic.
-- `risk/` — independent daily-loss/drawdown/consecutive-loss checker.
-- `fence/` — daily profit-fencing job (ledger-only; never initiates a
-  transfer — see R3).
-- `telegram/` — bot command handling, chat-ID allowlist auth.
-- `ledger/` — DB models and access layer (engine TBD, see architecture
-  doc).
+`tests/test_architecture.py` enforces the dependency rules.
 
-See the [roadmap](../../docs/07-roadmap.md) Phase 3 entry/exit gates
-before starting implementation here.
+## Commands (from the repo root)
+
+    make conductor-test    # pytest
+    make conductor-lint    # ruff, ruff format --check, mypy --strict (domain), mypy
+    make conductor-shell   # shell in the built image (needs Docker)
+
+Dependencies are exact-pinned in `pyproject.toml` and locked in `uv.lock`;
+change them with `uv add` / `uv lock --upgrade-package`.
+
+## Configuration (environment)
+
+Required (startup fails with a clear message if missing/invalid):
+`PRINCIPAL_USD` (>0), `DATABASE_URL` (`sqlite:///...` only),
+`FREQTRADE__API_SERVER__USERNAME`, `FREQTRADE__API_SERVER__PASSWORD`.
+Optional: `TRADING_MODE` (`dry_run` default | `live`), `FREQTRADE_API_URL`
+(default `http://freqtrade:8080`), `SCHEDULER_ENABLED`,
+`HEARTBEAT_INTERVAL_SECONDS` (default 300, min 30), `LLM_BACKEND`
+(`none` | `claude_code_headless` | `anthropic_api`), `LOG_LEVEL`, `LOG_JSON`.
+
+## Runtime
+
+- `GET /health` (internal; no port is published to the host): 200 when the DB
+  is in WAL mode and the scheduler is running, else 503. `/docs` and
+  `/openapi.json` are disabled.
+- The container runs as non-root uid 10001, read-only root filesystem, all
+  capabilities dropped, data in the `conductor-data` volume at `/data`.
+  Migrations (`alembic upgrade head`) run before the server starts.
+- It receives only the env vars listed in `infra/docker-compose.yml`, not the
+  whole `.env`: no Kraken keys, no Freqtrade Telegram token.
+
+Test fixtures for the Freqtrade client are described in
+`tests/fixtures/freqtrade/README.md` (currently hand-built, not recorded).

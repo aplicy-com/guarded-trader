@@ -1,0 +1,50 @@
+{
+  "trades": [
+    {
+      "trade_id": 6,
+      "pair": "ETH/USD",
+      "base_currency": "ETH",
+      "quote_currency": "USD",
+      "is_open": false,
+      "is_short": false,
+      "amount": 0.0105,
+      "stake_amount": 31.7,
+      "open_date": "2026-09-28 04:00:09",
+      "open_timestamp": 1790568009000,
+      "open_rate": 3019.2,
+      "close_date": "2026-09-30 12:00:11",
+      "close_timestamp": 1790769611000,
+      "close_rate": 2950.1,
+      "close_profit": -0.0229,
+      "close_profit_pct": -2.29,
+      "close_profit_abs": -0.73,
+      "fee_open_cost": 0.0825,
+      "fee_close_cost": 0.0804,
+      "exit_reason": "trailing_stop_loss"
+    },
+    {
+      "trade_id": 7,
+      "pair": "BTC/USD",
+      "base_currency": "BTC",
+      "quote_currency": "USD",
+      "is_open": true,
+      "is_short": false,
+      "amount": 0.00045,
+      "stake_amount": 33.3,
+      "open_date": "2026-10-01 08:00:12",
+      "open_timestamp": 1790841612000,
+      "open_rate": 74000.5,
+      "close_date": null,
+      "close_timestamp": null,
+      "close_rate": null,
+      "close_profit": null,
+      "close_profit_abs": null,
+      "fee_open_cost": 0.0866,
+      "fee_close_cost": null,
+      "exit_reason": null
+    }
+  ],
+  "trades_count": 2,
+  "offset": 0,
+  "total_trades": 2
+}
