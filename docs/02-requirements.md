@@ -44,7 +44,11 @@ against the Conductor ledger's principal record; reviewed monthly per
 **Statement:** At any point in time, the capital Freqtrade is permitted to
 deploy (`stake_amount` / max open exposure) equals the original principal
 plus **working profit** — profit that has not yet been fenced per R3 —
-and nothing else.
+and nothing else. Precisely: `working_profit = realized_profit − fenced_total`
+(realized P&L of closed trades, fees included, minus everything fenced so
+far) and `max_deployed_capital = max(0, principal + working_profit)`. Fenced
+profit is subtracted exactly once; losses reduce the ceiling, which never
+goes below zero (see ADR-0012).
 
 **Rationale:** Keeps the system's own risk-of-ruin bounded to money it has
 actually earned or was given, and makes the daily profit fence (R3) the
@@ -52,7 +56,8 @@ single mechanism that caps how much "house money" is ever at risk at once.
 
 **Acceptance criteria:**
 - AC2.1: `max_deployed_capital` (Conductor-enforced ceiling passed into
-  Freqtrade's stake configuration) = principal + working profit, recomputed
+  Freqtrade's stake configuration) = max(0, principal + working_profit),
+  with `working_profit = realized_profit − fenced_total`, recomputed
   at least daily and immediately after every fencing event.
 - AC2.2: Freqtrade's configured `stake_amount` / `tradable_balance_ratio`
   can never cause total exposure to exceed `max_deployed_capital`, verified
@@ -69,8 +74,8 @@ single mechanism that caps how much "house money" is ever at risk at once.
   a silent extension of available capital.
 
 **Verification method:** Ledger audit comparing `max_deployed_capital` over
-time against principal + (working profit as computed from realized P&L
-minus fenced amounts); code review of the stake-sizing path; unit tests
+time against max(0, principal + working_profit) with `working_profit` =
+realized P&L minus fenced amounts; code review of the stake-sizing path; unit tests
 (Phase 2+).
 
 ---

@@ -1,11 +1,31 @@
 {
-  "currencies": [
-    {"bot_owned": 0.0, "balance": 100.0, "currency": "USD", "est_stake": 100.0, "free": 100.0, "is_bot_managed": true, "is_position": false, "position": 0.0, "side": "long", "stake": "USD", "used": 0.0},
-    {"bot_owned": 0.0, "balance": 0.0128218, "currency": "ETH", "est_stake": 31.8, "free": 0.0128218, "is_bot_managed": true, "is_position": false, "position": 0.0, "side": "long", "stake": "USD", "used": 0.0}
-  ],
-  "note": "Simulated balances (Dry-run)",
-  "starting_capital": 100.0,
-  "symbol": "USD",
-  "total": 131.8,
-  "value": 131.8
+    "currencies": [
+        {
+            "balance": 100.0,
+            "bot_owned": 99.0,
+            "currency": "USD",
+            "est_stake": 100.0,
+            "est_stake_bot": 99.0,
+            "free": 100.0,
+            "is_bot_managed": true,
+            "is_position": false,
+            "position": 0.0,
+            "side": "long",
+            "stake": "USD",
+            "used": 0.0
+        }
+    ],
+    "note": "Simulated balances",
+    "stake": "USD",
+    "starting_capital": 99.0,
+    "starting_capital_fiat": 99.0,
+    "starting_capital_fiat_pct": 0.0,
+    "starting_capital_fiat_ratio": 0.0,
+    "starting_capital_pct": 0.0,
+    "starting_capital_ratio": 0.0,
+    "symbol": "USD",
+    "total": 100.0,
+    "total_bot": 99.0,
+    "value": 100.0,
+    "value_bot": 99.0
 }

@@ -157,13 +157,20 @@ def test_public_surface_is_read_only() -> None:
 def test_balances_sums_per_currency(fixture_json: Callable[[str], Any]) -> None:
     c = make_client(fixture_json, **{"/api/v1/balance": "balance"})
     b = c.balances()
-    assert b == {"USD": Decimal("100.0"), "ETH": Decimal("0.0128218")}
+    assert b == {"USD": Decimal("100.0")}
     assert all(isinstance(v, Decimal) for v in b.values())
 
 
 def test_whitelist(fixture_json: Callable[[str], Any]) -> None:
     c = make_client(fixture_json, **{"/api/v1/whitelist": "whitelist"})
-    assert c.whitelist() == ("BTC/USD", "ETH/USD", "SOL/USD")
+    assert c.whitelist() == (
+        "BTC/USD",
+        "XRP/USD",
+        "ETH/USD",
+        "SOL/USD",
+        "LINK/USD",
+        "LTC/USD",
+    )
 
 
 def test_balance_contract_violation_is_an_api_error() -> None:

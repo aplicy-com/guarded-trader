@@ -8,11 +8,13 @@ credentials); each file was scanned against every secret value in `.env`
 before being committed, with zero hits. The trades are simulated dry-run
 trades.
 
-`status_empty.json` (`[]`), `balance.json` and `whitelist.json` are
-**hand-written** from the Freqtrade REST documentation's response shapes, NOT
-recorded (3A-2 was built without a running Freqtrade instance): re-record them
-with the loop below (`/balance`, `/whitelist`) before relying on them for the
-live R5 check.
+`balance.json` and `whitelist.json` were **recorded on 2026-10-04 from the VPS
+dry-run Freqtrade** (read-only GETs run inside the container so credentials
+never left the host; nothing secret in the responses). Caveat: a dry-run
+`/balance` shows simulated wallets only; re-record it from a live-mode instance
+before relying on it for the real R5 check.
+
+`status_empty.json` (`[]`) is hand-written: the "no open positions" case.
 
 Real-data quirks the contract tests now cover: `max_open_trades` arrives as
 `3.0`, timestamps carry milliseconds, `/trades` returns closed trades only,

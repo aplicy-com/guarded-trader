@@ -33,8 +33,9 @@ and the risk layer are 3A-3, Telegram alerts 3A-4, healthchecks and dashboard
   on the internal `GET /capital` (`"enforced": false`) and `cli capital`.
 - **R3**: a daily UTC fence job (00:05 UTC, plus a catch-up run on every start)
   fences working profit above `DAILY_PROFIT_CAP_USD`. Ledger-only: no exchange
-  call. The cap's value is **TBD (Phase 3)**, so unset means nothing is fenced
-  (warning logged). Missed days and "manual move due" (unmoved >=
+  call. `.env.example` ships `DAILY_PROFIT_CAP_USD=10` (a working default; the
+  final value is still to be ratified, Phase 3). The code itself has no default:
+  unset or blank means nothing is fenced (warning logged). Missed days and "manual move due" (unmoved >=
   `MANUAL_MOVE_THRESHOLD_USD`, or 30 days since the last move) are logged
   (alerts are 3A-4).
 - **R5**: in `TRADING_MODE=live` the startup gate ingests, then compares the
@@ -83,7 +84,7 @@ change them with `uv add` / `uv lock --upgrade-package`.
 Required (startup fails with a clear message if missing/invalid):
 `PRINCIPAL_USD` (>0), `DATABASE_URL` (`sqlite:///...` only),
 `FREQTRADE__API_SERVER__USERNAME`, `FREQTRADE__API_SERVER__PASSWORD`.
-Optional: `DAILY_PROFIT_CAP_USD` (blank = unset, TBD Phase 3),
+Optional: `DAILY_PROFIT_CAP_USD` (no code default; `.env.example` sets 10; blank = unset),
 `MANUAL_MOVE_THRESHOLD_USD` (default 25), `INGEST_INTERVAL_SECONDS` (default
 300, min 30), `FREQTRADE_INSTANCE_NAME` (ledger label, default `primary`),
 `TRADING_MODE` (`dry_run` default | `live`), `FREQTRADE_API_URL`
