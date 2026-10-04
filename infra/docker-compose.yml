@@ -1,5 +1,8 @@
-# Freqtrade-only compose file for Phase 2 (dry-run). Conductor and the
-# ledger DB are added in Phase 3 — see ../docs/04-architecture/overview.md.
+# Freqtrade (Phase 2) + Conductor skeleton (Phase 3, work package 3A-1).
+# See ../docs/04-architecture/overview.md.
+#
+# Run with the repo-root .env supplied for interpolation (the Makefile does
+# this): docker compose --env-file .env -f infra/docker-compose.yml ...
 #
 # Image tag is pinned to a specific release, not `stable`/`latest`, per
 # ../docs/04-architecture/security.md ("Docker base images pinned to
@@ -30,3 +33,37 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+
+  # Conductor: internal only. NO ports are published; it is reachable solely
+  # by other containers on this compose network (Freqtrade's API is reached at
+  # http://freqtrade:8080). It deliberately does NOT use env_file: ../.env, so
+  # the Kraken keys and Freqtrade's Telegram token never enter this container;
+  # it receives only the variables listed below.
+  conductor:
+    build:
+      context: ../services/conductor
+    image: ai-trading-agent-conductor:0.1.0
+    container_name: ai-trading-agent-conductor
+    restart: unless-stopped
+    depends_on:
+      freqtrade:
+        condition: service_healthy
+    environment:
+      TRADING_MODE: ${TRADING_MODE:-dry_run}
+      PRINCIPAL_USD: ${PRINCIPAL_USD:?set PRINCIPAL_USD in .env}
+      DATABASE_URL: sqlite:////data/conductor.db
+      FREQTRADE_API_URL: http://freqtrade:8080
+      FREQTRADE__API_SERVER__USERNAME: ${FREQTRADE__API_SERVER__USERNAME:?set in .env}
+      FREQTRADE__API_SERVER__PASSWORD: ${FREQTRADE__API_SERVER__PASSWORD:?set in .env}
+    volumes:
+      - conductor-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  conductor-data:

@@ -19,7 +19,7 @@ this system entirely (R3).
 | Risk-limit checker | Independently re-derives daily loss, drawdown from peak, and consecutive-loss state from the ledger (not from Freqtrade's own view) and can halt Freqtrade via its REST API even if Freqtrade's own protections have not fired — the second layer required by R4/AC4.4. |
 | Profit-fence job | Once per UTC day, computes working profit and, if it exceeds `daily_profit_cap`, fences the excess in the ledger — a ledger-only operation, no exchange call (R3). Alerts the operator when cumulative fenced-but-unmoved profit crosses the manual-move threshold or a month has passed, but never initiates a transfer itself — the physical move off-exchange is always a manual, human action. |
 | Telegram bot handler | Authenticates commands against an allow-list of chat IDs; exposes kill switch, flatten, status, re-enable, and `/approve`; posts alerts (halts, missed fencing runs, manual-move due, heartbeat silence). |
-| Ledger | Postgres (TBD Phase 3) — append-mostly record of: principal, every fill (ingested by Conductor by polling Freqtrade's REST API — **Freqtrade never writes to the ledger directly**), every halt/resume event with operator identity, every fencing event and manual transfer, every promotion-gate decision including `/approve` actions, every candidate-code-admission result (static-analysis verdict, sandbox metrics), every LLM prompt/response hash. |
+| Ledger | SQLite in WAL mode, single file written only by Conductor ([`ADR-0009`](../05-adr/0009-sqlite-ledger.md)), migrated with Alembic — append-mostly record of: principal, every fill (ingested by Conductor by polling Freqtrade's REST API — **Freqtrade never writes to the ledger directly**), every halt/resume event with operator identity, every fencing event and manual transfer, every promotion-gate decision including `/approve` actions, every candidate-code-admission result (static-analysis verdict, sandbox metrics), every LLM prompt/response hash. |
 
 ## Nightly research-loop flow
 
@@ -110,7 +110,6 @@ needing anything on the (unreachable) host to run.
 
 ## TBD
 
-- Ledger DB engine and migration tooling — TBD (Phase 3).
 - Exact heartbeat ping interval and healthchecks.io grace-period
   configuration — TBD (Phase 3).
 - Sandbox runtime implementation and static-analysis tooling for
