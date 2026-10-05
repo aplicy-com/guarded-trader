@@ -108,7 +108,7 @@
     "password": ""
   },
   "bot_name": "ai-trading-agent-dryrun",
-  "initial_state": "running",
+  "initial_state": "paused",
   "force_entry_enable": false,
   "internals": {
     "process_throttle_secs": 5

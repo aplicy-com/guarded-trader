@@ -92,7 +92,8 @@ def enforce_halts(ledger: Ledger, instances: list[FreqtradeInstance]) -> tuple[S
     Re-applies after a Freqtrade restart (it comes back "running"). Unknown or
     unreadable state is treated as running: we pause rather than assume. If
     Freqtrade is unreachable the failure is logged and retried next cycle; the
-    halt stays active in the ledger regardless. Never resumes anything.
+    halt stays active in the ledger regardless. Never resumes anything (starting a freshly
+    booted bot is `boot.start_if_clear`'s job).
     """
     with ledger.transaction(write=False) as repo:
         active = repo.active_halts()

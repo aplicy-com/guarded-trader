@@ -1,6 +1,8 @@
 """Risk cycle (3A-3): ingest, evaluate R4/R2/R7 from the ledger, halt, enforce.
 
-One cycle, every `RISK_CHECK_INTERVAL_SECONDS`. Equity is the ledger's
+One cycle, every `RISK_CHECK_INTERVAL_SECONDS`. After enforcing halts it starts a freshly
+booted (paused) Freqtrade if no halt is active (`boot.start_if_clear`, ADR-0018).
+Equity is the ledger's
 (`principal + realized + unrealized`); Freqtrade's own numbers are never used
 for the R4 limits. A breach creates a persisted halt and pauses entries; only a
 human clears it (`halts.clear_halt`). After a clear, each breaker measures from
@@ -15,6 +17,7 @@ from decimal import Decimal
 
 import structlog
 
+from conductor.application.boot import BootGuard, start_if_clear
 from conductor.application.capital import capital_from_ledger
 from conductor.application.halts import StepResult, enforce_halts, engage_halt
 from conductor.application.ingest import FreqtradeInstance, IngestReport, run_ingest
@@ -43,6 +46,7 @@ class RiskReport:
     new_halt_ids: tuple[int, ...]
     enforcement: tuple[StepResult, ...]
     equity_known: bool
+    boot: tuple[StepResult, ...] = ()
 
 
 def _equity_of(snap: EquitySnapshot | None, principal: Decimal) -> Decimal:
@@ -106,6 +110,7 @@ def run_risk_cycle(
     now: Clock,
     notifier: Notifier,
     tracker: ReachabilityTracker | None = None,
+    boot_guard: BootGuard | None = None,
 ) -> RiskReport:
     ingest = run_ingest(ledger, instances, now=now, notifier=notifier)
     if tracker is not None:
@@ -134,4 +139,9 @@ def run_risk_cycle(
         if created:
             new_ids.append(halt_id)
     enforcement = enforce_halts(ledger, instances)
-    return RiskReport(ingest, breaches, tuple(new_ids), enforcement, equity_known)
+    boot: tuple[StepResult, ...] = ()
+    if boot_guard is not None:  # last: this cycle's halts must already be in the ledger
+        boot = start_if_clear(
+            ledger, instances, boot_guard, equity_known=equity_known, notifier=notifier
+        )
+    return RiskReport(ingest, breaches, tuple(new_ids), enforcement, equity_known, boot)
