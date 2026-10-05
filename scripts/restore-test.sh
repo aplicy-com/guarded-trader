@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 # Restore drill for the nightly backups (docs/06-runbooks/restore-backup.md).
 #
-# Downloads the LATEST backup of the Conductor ledger and/or Freqtrade's dry-run DB from
-# Backblaze B2, gunzips it, runs PRAGMA integrity_check, and prints row counts.
+# Downloads the LATEST backup of the Conductor ledger and/or Freqtrade's DB from Backblaze B2,
+# gunzips it, runs PRAGMA integrity_check, and prints row counts.
+#
+# Backups are namespaced by trading mode (ADR-0019), so you MUST say which one you want:
+#   --mode live      backups/live/<source>/...      the $20 pilot ledger and live trade DB
+#   --mode dry_run   backups/dry_run/<source>/...   the dry-run ledger and DB
+#   --mode legacy    backups/<source>/...           dry-run backups made BEFORE the split
+#                                                   (only until the first nightly run after it)
+# There is no default: restoring the wrong mode's ledger is exactly the mistake this prevents.
 #
 # Run it from your Mac. It needs a B2 key that can LIST and READ (the key on the VPS is
 # write-only and cannot do this). Supply the key in your shell for this one run; the script
@@ -11,7 +18,7 @@
 #   read -rs "RESTORE_B2_KEY_ID?Read key ID: ";  export RESTORE_B2_KEY_ID;  echo
 #   read -rs "RESTORE_B2_APP_KEY?Read app key: "; export RESTORE_B2_APP_KEY; echo
 #   export BACKUP_B2_BUCKET=...  BACKUP_B2_ENDPOINT=https://s3.<region>.backblazeb2.com
-#   scripts/restore-test.sh [conductor|freqtrade|all] [--keep DIR]
+#   scripts/restore-test.sh --mode live|dry_run|legacy [conductor|freqtrade|all] [--keep DIR]
 #   unset RESTORE_B2_KEY_ID RESTORE_B2_APP_KEY
 #
 # Needs: aws CLI (brew install awscli), sqlite3, gzip. Read-only toward B2: it only lists and
@@ -23,15 +30,23 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 
 WHAT=all
 KEEP=""
+MODE=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --mode) shift; [ $# -gt 0 ] || die "--mode needs live, dry_run or legacy"; MODE=$1 ;;
     conductor|freqtrade|all) WHAT=$1 ;;
     --keep) shift; [ $# -gt 0 ] || die "--keep needs a directory"; KEEP=$1 ;;
-    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *) die "unknown argument: $1 (use conductor, freqtrade, all, --keep DIR)" ;;
+    -h|--help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) die "unknown argument: $1 (use --mode M, conductor, freqtrade, all, --keep DIR)" ;;
   esac
   shift
 done
+case "$MODE" in
+  live|dry_run) PREFIX_ROOT="backups/$MODE" ;;
+  legacy) PREFIX_ROOT="backups" ;;
+  "") die "--mode is required: live, dry_run or legacy (see the header of this script)" ;;
+  *) die "--mode must be live, dry_run or legacy, not '$MODE'" ;;
+esac
 
 for v in BACKUP_B2_BUCKET BACKUP_B2_ENDPOINT RESTORE_B2_KEY_ID RESTORE_B2_APP_KEY; do
   [ -n "${!v:-}" ] || die "$v is not set (see the header of this script)"
@@ -73,8 +88,8 @@ row_counts() {
 }
 
 restore_one() {
-  local label=$1 prefix="backups/$1/" listing key stamp size_h age_h db
-  echo "== $label"
+  local label=$1 prefix="$PREFIX_ROOT/$1/" listing key stamp size_h age_h db
+  echo "== $label  (mode: $MODE)"
   if ! listing=$(s3 s3api list-objects-v2 --bucket "$BACKUP_B2_BUCKET" --prefix "$prefix" \
         --query 'Contents[].[Key,LastModified]' --output text 2>&1); then
     echo "   FAILED: could not list s3://$BACKUP_B2_BUCKET/$prefix"
@@ -85,7 +100,9 @@ restore_one() {
   # Keys embed a UTC timestamp, so the lexicographically greatest key is the latest backup.
   listing=$(printf '%s\n' "$listing" | grep -v '^None' | grep . | sort | tail -1 || true)
   if [ -z "$listing" ]; then
-    echo "   FAILED: no backups found under $prefix"; FAILED=1; return
+    echo "   FAILED: no backups found under $prefix"
+    [ "$MODE" != dry_run ] || echo "   (dry-run backups made before the mode split are under --mode legacy)"
+    FAILED=1; return
   fi
   key=$(printf '%s' "$listing" | cut -f1); stamp=$(printf '%s' "$listing" | cut -f2)
   age_h=$(sqlite3 :memory: "SELECT (strftime('%s','now') - strftime('%s','$stamp')) / 3600;" 2>/dev/null || echo "?")

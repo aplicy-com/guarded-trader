@@ -154,7 +154,13 @@ def create_app(
         snapshotter = build_snapshotter()
         sources = build_backup_sources(settings)
         backup_job = lambda: run_backup(  # noqa: E731
-            ledger, sources, snapshotter, store, now=clock, notifier=notifier
+            ledger,
+            sources,
+            snapshotter,
+            store,
+            mode=settings.trading_mode,
+            now=clock,
+            notifier=notifier,
         )
     limits = RiskLimits(
         daily_loss_limit_pct=settings.daily_loss_limit_pct,

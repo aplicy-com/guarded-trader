@@ -265,6 +265,7 @@ def _backup_now(ledger: SqliteLedger, settings: Settings) -> int:
             build_backup_sources(settings),
             build_snapshotter(),
             build_object_store(settings),
+            mode=settings.trading_mode,
             now=lambda: datetime.now(UTC),
             notifier=notifier,
         )

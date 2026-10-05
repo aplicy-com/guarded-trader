@@ -42,6 +42,35 @@ that names the old `100.x` address must be updated (step 6).
   acceptable in dry-run. With real money, flat the book first (see
   "Before you start").
 
+## Which mode is this server in? (read this first)
+
+Since the live pilot (ADR-0019) a server is either **dry-run** or **live**. Find out before
+anything else, on the VPS (`make ssh`, `cd /opt/ai-trading-agent`):
+```
+scripts/trading-mode.sh status
+```
+Expected: `mode: dry-run`, `mode: live` or `mode: live-pending`. Treat `live-pending` as live. Then
+use the matching column everywhere below (the steps say `<mode>`, `<volume>`, `<tradedb>`):
+
+| | dry-run | live (and live-pending) |
+|---|---|---|
+| `<mode>` for `restore-test.sh` | `--mode dry_run` | `--mode live` |
+| B2 keys | `backups/dry_run/...` | `backups/live/...` |
+| ledger volume `<volume>` | `infra_conductor-data` | `infra_conductor-data-live` |
+| Freqtrade trade DB `<tradedb>` | `tradesv3.dryrun.sqlite` | `tradesv3.live.sqlite` |
+| docker compose | `docker compose --env-file .env -f infra/docker-compose.yml` | `scripts/compose.sh` |
+| principal in the ledger | `100 USD` | `20 USD` |
+
+**A live server is a real-money system:** open positions have **exchange stop orders** on
+Kraken that keep working while the server is gone, and anything else is unmanaged. Before a
+*deliberate* rebuild, `/flatten` and confirm on Kraken that there are no positions **and no
+open orders**. After a rebuild the new server comes up **dry-run** (the mode file is not
+copied); step 7 below restores the live ledger and step 8 brings it back to live through
+`scripts/trading-mode.sh live`, which re-runs its key, ledger, R5 and mode gates.
+The Kraken key goes back in via `make push-env` (it is in your `.env` and LastPass); if the
+rebuild was a compromise response, create a **new** key first (go-live-pilot.md Part C) and
+revoke the old one on Kraken before anything else.
+
 ## Before you start
 
 1. If any real-money position could be open (Phase 4 onward), engage the
@@ -59,7 +88,7 @@ that names the old `100.x` address must be updated (step 6).
    exit
    ```
    Expected: `halt #<n> engaged` (or `was already active`), then
-   `conductor: ok backups/conductor/...` and `freqtrade: ok backups/freqtrade/...`.
+   `conductor: ok backups/<mode>/conductor/...` and `freqtrade: ok backups/<mode>/freqtrade/...`.
    Engaging the kill switch first pauses new entries, so no trade is opened
    between the backup and the shutdown, and the backup records the halt: after
    the restore the system comes back **halted**, never unguarded.
@@ -67,9 +96,9 @@ that names the old `100.x` address must be updated (step 6).
    ([`restore-backup.md`](restore-backup.md) Part A, steps A1-A4; you need a
    B2 **read** key):
    ```
-   scripts/restore-test.sh all
+   scripts/restore-test.sh --mode <mode> all
    ```
-   Expected: `RESTORE TEST PASSED`, `stored:` a few minutes ago, and for
+   Expected: `RESTORE TEST PASSED`, `(mode: <mode>)` in each header, `stored:` a few minutes ago, and for
    `conductor` the line `halts still active in this copy: #<n> kill_switch`.
    If it does not show the halt you just made, stop: the backup is not the
    current state.
@@ -226,7 +255,7 @@ update your local `.env`, and only then run `make push-env`.
 Get the latest backups on the Mac (needs the B2 read key in your shell, as in
 [`restore-backup.md`](restore-backup.md) A2-A3):
 ```
-scripts/restore-test.sh all --keep ~/vps-rebuild-backup/restored
+scripts/restore-test.sh --mode <mode> all --keep ~/vps-rebuild-backup/restored
 ```
 Expected: `RESTORE TEST PASSED` and `kept at:` for both. Check the numbers
 against what you wrote down in "Before you start".
@@ -263,6 +292,27 @@ and `Volume "infra_conductor-data"  Created`; `ls -l /data` shows `conductor.db`
 owned by `conductor`; the second `ls` lists `tradesv3.dryrun.sqlite` owned by
 `deploy`. Nothing is running yet.
 
+**If the server was LIVE**, use this block instead (restore the `--mode live` backups; the
+key must already be in `.env` from `make push-env`, because the live compose files refuse to
+load without it):
+```
+make ssh
+cd /opt/ai-trading-agent
+echo live-pending > .trading-mode
+scripts/compose.sh up --no-start --build
+chmod 0644 /tmp/conductor.sqlite /tmp/freqtrade.sqlite && \
+docker run --rm --entrypoint sh -v infra_conductor-data-live:/data -v /tmp:/in:ro ai-trading-agent-conductor:0.1.0 \
+  -c 'cp /in/conductor.sqlite /data/conductor.db && ls -l /data' && \
+cp /tmp/freqtrade.sqlite services/freqtrade/user_data/tradesv3.live.sqlite && \
+chmod 0644 services/freqtrade/user_data/tradesv3.live.sqlite && \
+rm /tmp/conductor.sqlite /tmp/freqtrade.sqlite && \
+ls -l services/freqtrade/user_data/*.sqlite
+```
+Writing `live-pending` into `.trading-mode` by hand is the one sanctioned exception to "only
+`scripts/trading-mode.sh` writes that file": it is the state that script accepts for resuming a
+live start. Expected: `Volume "infra_conductor-data-live"  Created`, `conductor.db` in `/data`,
+and `tradesv3.live.sqlite` listed. Nothing is running yet.
+
 ### 8. Start and verify the app
 
 Still on the VPS:
@@ -277,6 +327,19 @@ with `halts=1`. Ctrl-C. If Conductor exits with
 `STARTUP REFUSED` or `CONFIG ERROR`, read the message (for example a principal
 that does not match `PRINCIPAL_USD`); do not edit the database; go to
 Troubleshooting.
+
+**If the server was LIVE**, start it with the switch script, not `up -d`:
+```
+scripts/trading-mode.sh live
+```
+It skips the soak (already proved), but re-runs the gates that matter after a rebuild: the
+Kraken key scopes, the live ledger check (the restored ledger must have principal 20), then
+it starts the live Freqtrade paused, checks `dry_run=False`, runs R5 against the real Kraken
+balances, and starts the live Conductor. The restored ledger carries the halt, so Freqtrade
+stays `paused`. Then check **Kraken's Open orders**: any position that was open still has its
+exchange stop order; Freqtrade re-adopts it from the restored database. If the database and the
+exchange disagree about a position or a stop order, `/kill` and treat it as an incident.
+`scripts/drill-check.sh` reads the live volume automatically.
 
 Then, on the VPS, `scripts/drill-check.sh --expect-state paused --expect-halts 1`
 must print `CHECK PASS`, and its `data` section must match what you wrote down

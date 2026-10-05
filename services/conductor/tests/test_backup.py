@@ -20,6 +20,7 @@ from conductor.application.backup import (
     backup_key,
     run_backup,
 )
+from conductor.domain.trading_mode import TradingMode
 from conductor.infrastructure.config import Settings
 from conductor.infrastructure.ledger_repository import SqliteLedger
 from conductor.infrastructure.observability import region_for, sqlite_path
@@ -85,18 +86,22 @@ def sources(tmp_path: Path) -> list[BackupSource]:
 
 
 def test_key_is_dated_sortable_unique_and_per_source() -> None:
-    a = backup_key("conductor", NOW, "aaaaaa")
-    assert a == "backups/conductor/conductor-20261004T031507Z-aaaaaa.sqlite.gz"
-    later = backup_key("conductor", datetime(2026, 10, 5, 3, 15, tzinfo=UTC), "000000")
+    a = backup_key("conductor", NOW, "aaaaaa", TradingMode.DRY_RUN)
+    assert a == "backups/dry_run/conductor/conductor-20261004T031507Z-aaaaaa.sqlite.gz"
+    later = backup_key(
+        "conductor", datetime(2026, 10, 5, 3, 15, tzinfo=UTC), "000000", TradingMode.DRY_RUN
+    )
     assert a < later  # lexicographic order == time order, so "latest" is just max(key)
-    assert backup_key("conductor", NOW, "bbbbbb") != a  # same second, still a new key
+    assert (
+        backup_key("conductor", NOW, "bbbbbb", TradingMode.DRY_RUN) != a
+    )  # same second, still a new key
 
 
 def test_naive_looking_offsets_are_normalised_to_utc() -> None:
     from datetime import timedelta, timezone
 
     at = datetime(2026, 10, 3, 23, 15, 7, tzinfo=timezone(timedelta(hours=-4)))
-    assert "20261004T031507Z" in backup_key("x", at, "t")
+    assert "20261004T031507Z" in backup_key("x", at, "t", TradingMode.DRY_RUN)
 
 
 # --- the use case, with a write-only store ---
@@ -112,14 +117,15 @@ def test_backup_uploads_each_source_under_a_dated_key_and_audits_it(
         sources(tmp_path),
         SqliteSnapshotter(tmp_path),
         store,
+        mode=TradingMode.DRY_RUN,
         now=Clock(NOW),
         notifier=notifier,
     )
     assert report.ok
     assert len(store.objects) == 2
     keys = sorted(store.objects)
-    assert keys[0].startswith("backups/conductor/conductor-20261004T031507Z-")
-    assert keys[1].startswith("backups/freqtrade/freqtrade-20261004T031507Z-")
+    assert keys[0].startswith("backups/dry_run/conductor/conductor-20261004T031507Z-")
+    assert keys[1].startswith("backups/dry_run/freqtrade/freqtrade-20261004T031507Z-")
     # The uploaded bytes are a real, restorable database.
     conn = gunzip_to(store.objects[keys[1]], tmp_path / "restored.sqlite")
     assert conn.execute("SELECT count(*) FROM t").fetchone() == (7,)
@@ -145,6 +151,7 @@ def test_restored_copy_is_a_single_self_contained_file(
         sources(tmp_path)[:1],
         SqliteSnapshotter(tmp_path),
         store,
+        mode=TradingMode.DRY_RUN,
         now=Clock(NOW),
         notifier=None,
     )
@@ -156,7 +163,15 @@ def test_two_runs_in_the_same_second_never_overwrite(tmp_path: Path, ledger: Sql
     store = WriteOnlyStore()
     src = sources(tmp_path)[:1]
     for _ in range(2):
-        run_backup(ledger, src, SqliteSnapshotter(tmp_path), store, now=Clock(NOW), notifier=None)
+        run_backup(
+            ledger,
+            src,
+            SqliteSnapshotter(tmp_path),
+            store,
+            mode=TradingMode.DRY_RUN,
+            now=Clock(NOW),
+            notifier=None,
+        )
     assert len(store.objects) == 2
 
 
@@ -171,6 +186,7 @@ def test_upload_failure_alerts_audits_and_does_not_skip_the_other_source(
         sources(tmp_path),
         SqliteSnapshotter(tmp_path),
         store,
+        mode=TradingMode.DRY_RUN,
         now=Clock(NOW),
         notifier=notifier,
     )
@@ -196,6 +212,7 @@ def test_missing_source_is_a_failure_not_a_crash(tmp_path: Path, ledger: SqliteL
         [BackupSource("freqtrade", tmp_path / "gone.sqlite")],
         SqliteSnapshotter(tmp_path),
         store,
+        mode=TradingMode.DRY_RUN,
         now=Clock(NOW),
         notifier=notifier,
     )
@@ -220,6 +237,7 @@ def test_corrupt_source_is_never_uploaded(tmp_path: Path, ledger: SqliteLedger) 
         [BackupSource("freqtrade", bad)],
         SqliteSnapshotter(tmp_path),
         store,
+        mode=TradingMode.DRY_RUN,
         now=Clock(NOW),
         notifier=notifier,
     )
@@ -233,7 +251,13 @@ def test_a_broken_notifier_does_not_break_the_backup(tmp_path: Path, ledger: Sql
     store.fail_for = {"conductor"}
     n = BrokenNotifier()
     report = run_backup(
-        ledger, sources(tmp_path), SqliteSnapshotter(tmp_path), store, now=Clock(NOW), notifier=n
+        ledger,
+        sources(tmp_path),
+        SqliteSnapshotter(tmp_path),
+        store,
+        mode=TradingMode.DRY_RUN,
+        now=Clock(NOW),
+        notifier=n,
     )
     assert n.attempts == 1
     assert [o.ok for o in report.outcomes] == [False, True]
@@ -250,6 +274,7 @@ def test_an_audit_write_failure_does_not_hide_the_backup(tmp_path: Path) -> None
         sources(tmp_path)[:1],
         SqliteSnapshotter(tmp_path),
         store,
+        mode=TradingMode.DRY_RUN,
         now=Clock(NOW),
         notifier=None,  # type: ignore[arg-type]
     )
@@ -372,11 +397,12 @@ def test_full_backup_through_the_s3_adapter_with_a_put_only_client(
         sources(tmp_path),
         SqliteSnapshotter(tmp_path),
         S3ObjectStore(client, "b"),
+        mode=TradingMode.DRY_RUN,
         now=Clock(NOW),
         notifier=None,
     )
     assert report.ok
-    assert [c["Key"].split("/")[1] for c in client.calls] == ["conductor", "freqtrade"]
+    assert [c["Key"].split("/")[2] for c in client.calls] == ["conductor", "freqtrade"]
 
 
 # --- settings & wiring helpers ---
@@ -492,3 +518,65 @@ def test_http_and_aws_client_libraries_never_log_requests_even_at_debug() -> Non
     configure_logging("DEBUG", json=True)
     for name in ("httpx", "httpcore", "boto3", "botocore", "s3transfer", "urllib3"):
         assert logging.getLogger(name).level == logging.WARNING, name
+
+
+# --- backups are namespaced by trading mode (ADR-0019) ---------------------------------------
+
+
+def test_keys_are_namespaced_by_mode_and_never_collide() -> None:
+    live = backup_key("conductor", NOW, "aaaaaa", TradingMode.LIVE)
+    dry = backup_key("conductor", NOW, "aaaaaa", TradingMode.DRY_RUN)
+    assert live == "backups/live/conductor/conductor-20261004T031507Z-aaaaaa.sqlite.gz"
+    assert dry == "backups/dry_run/conductor/conductor-20261004T031507Z-aaaaaa.sqlite.gz"
+    assert live != dry
+    # a mode's prefix is never a prefix of another's, so listing one can't return the other
+    assert not live.startswith("backups/dry_run/") and not dry.startswith("backups/live/")
+
+
+@pytest.mark.parametrize("mode", [TradingMode.LIVE, TradingMode.DRY_RUN])
+def test_every_upload_and_audit_record_carries_the_mode(
+    tmp_path: Path, ledger: SqliteLedger, mode: TradingMode
+) -> None:
+    store = WriteOnlyStore()
+    report = run_backup(
+        ledger,
+        sources(tmp_path),
+        SqliteSnapshotter(tmp_path),
+        store,
+        mode=mode,
+        now=Clock(NOW),
+        notifier=None,
+    )
+    assert report.ok
+    assert len(store.objects) == 2
+    assert all(k.startswith(f"backups/{mode.value}/") for k in store.objects)
+    other = "live" if mode is TradingMode.DRY_RUN else "dry_run"
+    assert not any(k.startswith(f"backups/{other}/") for k in store.objects)
+    with ledger.transaction(write=False) as repo:
+        rows = repo.recent_audit(10, actions=[BACKUP_COMPLETED])
+    assert {r.detail["mode"] for r in rows} == {mode.value}
+    assert all(str(r.detail["key"]).startswith(f"backups/{mode.value}/") for r in rows)
+
+
+def test_the_mode_is_a_required_argument(tmp_path: Path, ledger: SqliteLedger) -> None:
+    with pytest.raises(TypeError, match="mode"):
+        run_backup(  # type: ignore[call-arg]
+            ledger,
+            sources(tmp_path),
+            SqliteSnapshotter(tmp_path),
+            WriteOnlyStore(),
+            now=Clock(NOW),
+            notifier=None,
+        )
+
+
+def test_the_nightly_job_and_backup_now_use_the_settings_mode(
+    tmp_path: Path, db_path: Path
+) -> None:
+    import re
+
+    src = Path(__file__).parents[1] / "src" / "conductor"
+    for name in ("main.py", "cli.py"):
+        text = (src / name).read_text()
+        call = text[text.index("run_backup(") :]
+        assert re.search(r"mode=settings\.trading_mode", call[:400]), name

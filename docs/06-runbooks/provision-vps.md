@@ -419,8 +419,8 @@ step 25 for you; still do 24 first, then check step 25 says it is applied.
     ```
     Expected:
     ```
-    conductor: ok backups/conductor/conductor-<time>-<id>.sqlite.gz
-    freqtrade: ok backups/freqtrade/freqtrade-<time>-<id>.sqlite.gz
+    conductor: ok backups/dry_run/conductor/conductor-<time>-<id>.sqlite.gz
+    freqtrade: ok backups/dry_run/freqtrade/freqtrade-<time>-<id>.sqlite.gz
     ```
     If either says `FAILED`, read the reason and go to
     [`restore-backup.md`](restore-backup.md) Troubleshooting. Then prove the files
