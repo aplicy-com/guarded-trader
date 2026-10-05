@@ -8,7 +8,7 @@ It never places an exchange order itself, and no LLM code can reach its Freqtrad
 write client ([ADR-0003](../../docs/05-adr/0003-llm-never-orders.md),
 [ADR-0014](../../docs/05-adr/0014-conductor-write-surface-and-halt-state.md)).
 
-**Status: 3A-3 risk layer.** (3A-2 below, plus the halt/enforcement features
+**Status: 3A-4 Telegram.** (3A-3 risk layer below it.) (3A-2 below, plus the halt/enforcement features
 in "Risk layer".) Conductor now has a *minimal, allowlisted* write surface
 toward Freqtrade (ADR-0014). The 3A-2 ledger, read-only ingest, R1
 principal, R2 capital *computation*, R3 fence, R5 startup check and NFR6 CAD
@@ -91,7 +91,7 @@ active halts to Freqtrade:
 |---|---|---|
 | `domain/` | `TradingMode`, Freqtrade snapshot dataclasses, capital / fence / isolation / tax rules | Pure: stdlib only, no I/O. `mypy --strict`. |
 | `application/` | Ports (`FreqtradeReader`, `Ledger`, `FxRateProvider`, `Notifier`, ...), use cases | Depends on `domain` (and the `structlog` logging facade) only. |
-| `adapters/` | Freqtrade REST client (**GET-only**), Bank of Canada FX, Telegram / healthchecks / LLM stubs | Only place that does I/O to the outside. |
+| `adapters/` | Freqtrade REST client (**GET-only**) and write client (allowlisted), Bank of Canada FX, Telegram alerts + polling bot, healthchecks / LLM stubs | Only place that does I/O to the outside. |
 | `infrastructure/` | Settings, SQLite (WAL) engine, ledger schema + repository, scheduler, logging, `/health`, `/capital` | Framework glue. |
 | `main.py` | Composition root (`create_app`, `app_factory`) | |
 
@@ -111,7 +111,8 @@ change them with `uv add` / `uv lock --upgrade-package`.
 Required (startup fails with a clear message if missing/invalid):
 `PRINCIPAL_USD` (>0), `DATABASE_URL` (`sqlite:///...` only),
 `FREQTRADE__API_SERVER__USERNAME`, `FREQTRADE__API_SERVER__PASSWORD`.
-Optional: `DAILY_LOSS_LIMIT_PCT` (3), `MAX_DRAWDOWN_PCT` (10),
+Optional: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_ALLOWED_CHAT_IDS` (both or neither),
+`TELEGRAM_COMMANDS_ENABLED` (true), `DAILY_LOSS_LIMIT_PCT` (3), `MAX_DRAWDOWN_PCT` (10),
 `CONSECUTIVE_LOSS_LIMIT` (3), `MAX_CONCURRENT_POSITIONS` (2),
 `RISK_CHECK_INTERVAL_SECONDS` (60, min 15), `DAILY_PROFIT_CAP_USD` (no code default; `.env.example` sets 10; blank = unset),
 `MANUAL_MOVE_THRESHOLD_USD` (default 25), `INGEST_INTERVAL_SECONDS` (default

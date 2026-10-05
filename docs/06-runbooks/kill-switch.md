@@ -15,9 +15,11 @@ the nuclear protocol instead.
 
 1. Open Telegram, go to the bot chat.
 2. Send: `/kill`
-3. Expect a reply within the same monitoring cycle (a few seconds to a
-   couple of minutes) confirming: kill switch engaged, timestamp, current
-   open positions (if any).
+3. The bot replies with a confirmation prompt containing a 4-character
+   code, e.g. `Reply yes K7QX within 60 s`. Send exactly that: `yes K7QX`.
+   (If you wait longer than 60 s or mistype the code, nothing happens:
+   just send `/kill` again.) You then get a reply such as
+   `Kill switch #3: all steps ok`, and an alert `HALT #3 [kill_switch] ...`.
    - If you get **no reply** within a few minutes: the Telegram control
      path itself may be down. Go to the host directly (see step 4).
 4. If Telegram isn't responding, connect to the host (SSH via Tailscale,
@@ -82,7 +84,8 @@ walking straight back into the same condition.
 
 1. Only after you understand why it fired (or confirmed it was a
    deliberate manual kill).
-2. Telegram: `/resume kill_switch`. CLI (current):
+2. Telegram: `/halts` to see the halt id, then `/resume <id>` and answer
+   `yes <code>` as above. CLI alternative:
    `python -m conductor.cli clear-halt <id> --operator <your name> --note "why"`
    (the id comes from `python -m conductor.cli halts`). It records you as
    the operator, then tells Freqtrade to resume; if it prints `FAILED`,

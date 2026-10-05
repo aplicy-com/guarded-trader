@@ -30,10 +30,14 @@ take back.
    steps take under two minutes and matter more than anything else you
    could be doing right now.
 2. Open Telegram, go to the bot chat.
-3. Send: `/flatten`
-4. Expect a reply confirming: nuclear protocol engaged, timestamp, list of
-   open orders being cancelled and positions being flattened (or a note
-   that none were open).
+3. Send: `/flatten`, then answer the bot's prompt with `yes <code>` (the
+   4-character code it shows) within 60 s. This closes every open position
+   at market, so the confirmation is deliberate: a wrong code or a late
+   answer does nothing, send `/flatten` again.
+4. Expect a reply `Nuclear #<n>: all steps ok` listing each step
+   (`pause_entries`, `cancel_order:<id>`, `force_exit_all`, `confirm_flat`,
+   `stop`), and a matching `NUCLEAR #<n>` alert. If a step says `FAILED`, the
+   halt is still recorded and entries stay blocked; see step 9.
    - **If you get no reply within a couple of minutes**, Telegram control
      may be down along with whatever else is wrong. Go to step 8
      (manual/host-level fallback) now — do not keep retrying Telegram.
