@@ -54,6 +54,18 @@ take back.
    is halted and flat (or as flat as it could get). Go back to sleep if
    that's why you're reading this. Full incident review can happen in the
    morning.
+   **CLI (current, until Telegram lands in 3A-4)** — this is the same
+   action as `/flatten`:
+   ```
+   docker compose --env-file .env -f infra/docker-compose.yml exec conductor \
+     python -m conductor.cli nuclear --operator <your name> --confirm-flatten-everything
+   ```
+   Expected output: `halt #<n> engaged`, then per step `ok` lines in this
+   order: `pause_entries`, `cancel_order:<id>` (only if any), `force_exit_all`,
+   `confirm_flat`, `stop`. If `confirm_flat` says `FAILED`, positions were
+   not all closed within 30 s: the bot is left **paused, not stopped**, so it
+   keeps managing its exits; check Kraken and go to step 9 if needed.
+   To resume later, see "Re-enabling" in `kill-switch.md` (`clear-halt`).
 8. **Fallback if Telegram/Conductor is unreachable:**
    - Connect to the host (Tailscale SSH, or directly).
    - Stop Freqtrade to guarantee no further automated activity:

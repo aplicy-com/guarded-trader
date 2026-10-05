@@ -155,6 +155,11 @@ not an automatic transition.
       AC5.4 clearance runbook (extend `06-runbooks/start-stop.md`). Until
       then any pre-existing balance in a whitelisted pair permanently
       blocks a `TRADING_MODE=live` start (3A-2 implemented only the check).
+- [ ] **TODO (blocks going live): fresh live ledger.** The dry-run ledger is
+      never carried into live: go live on a new, empty ledger database (new
+      volume / file), principal recorded from the real funding, so simulated
+      trades, equity history, fence totals and halts cannot contaminate real
+      R1/R2/R4 figures.
 - [ ] Re-record the Freqtrade `/balance` fixture from the live-mode instance
       (the VPS dry-run one shows simulated balances only).
 

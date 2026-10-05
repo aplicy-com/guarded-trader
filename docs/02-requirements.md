@@ -3,7 +3,8 @@
 Format per requirement: **Statement**, **Rationale**, **Acceptance
 criteria** (testable), **Verification method**. R1–R4 are the four capital
 rules given in the Phase 1 brief; R5 is a follow-up isolation requirement;
-R6 is a follow-up cost-ceiling requirement; NFRs follow.
+R6 is a follow-up cost-ceiling requirement; R7 (3A-3) is the correlation
+guard; NFRs follow.
 
 ---
 
@@ -114,7 +115,8 @@ profit only" ceiling the moment it happens, regardless of when the
 physical transfer follows.
 
 **Acceptance criteria:**
-- AC3.1: A configured `daily_profit_cap` (exact value TBD (Phase 3), see
+- AC3.1: A configured `daily_profit_cap` (**ratified 2026-10-05: 10 USD**;
+  shipped as `DAILY_PROFIT_CAP_USD=10` in `.env.example`; see
   `08-paper-exit-criteria.md` for related numeric gates) and a
   `manual_move_threshold` (draft: $25) exist in Conductor config, along
   with a monthly manual-move reminder cadence.
@@ -200,6 +202,27 @@ against a test Freqtrade/Conductor instance in dry-run (Phase 2–3); manual
 drill per `06-runbooks/kill-switch.md` and
 `06-runbooks/nuclear-protocol.md` before first live allocation, and
 thereafter on the re-validation cadence in `07-roadmap.md`.
+
+**Implementation status (work package 3A-3, Conductor's second layer):**
+- Evaluated every `RISK_CHECK_INTERVAL_SECONDS` (60) from the ledger, not
+  Freqtrade's view. Equity = principal + realized + unrealized; limits are
+  `DAILY_LOSS_LIMIT_PCT` (3), `MAX_DRAWDOWN_PCT` (10),
+  `CONSECUTIVE_LOSS_LIMIT` (3), breached at or beyond the threshold.
+  Daily loss is measured from the start of the UTC day, drawdown from the
+  running equity peak (initially the principal), the loss streak per
+  Freqtrade instance.
+- A breach persists a halt (`halts` table), alerts, and pauses entries
+  (Freqtrade `stopentry`). It is re-applied on every cycle and on startup,
+  so a Freqtrade or Conductor restart cannot silently clear it (AC4.5).
+- Only `cli clear-halt <id> --operator NAME` clears a halt (AC4.6; Telegram
+  arrives in 3A-4). After a clear, that breaker measures from the clear
+  (new day-window start, peak reset to the equity at the clear, streak
+  counted from the clear), so re-enabling is not instantly undone by the
+  same old loss, while a genuinely new breach halts again.
+- **AC4.2 gap:** on a drawdown breach Conductor halts entries and alerts
+  but does **not** automatically flatten positions. Flattening is the
+  explicit `cli nuclear` command. Whether drawdown should auto-flatten is
+  TBD (Phase 3, decision for the operator).
 
 ---
 
@@ -303,6 +326,45 @@ unaffected; ledger audit of monthly spend vs. budget.
 
 ---
 
+## R7 — Correlation guard: all whitelisted pairs are one exposure group
+
+**Statement:** For position-count and exposure purposes every pair on the
+whitelist (BTC, ETH, SOL, LTC, XRP, LINK) is treated as a **single exposure
+group**. No more than `max_concurrent_positions` (draft: **2**) positions
+may be open across the group at once. This is enforced in two independent
+layers: Freqtrade's `max_open_trades` (set to 2) and Conductor's own check
+of the open-position count, which halts new entries if the count ever
+exceeds the cap.
+
+**Rationale:** The paper run showed three simultaneous positions were one
+bet: the whitelist's pairs move together, so nominal diversification
+across 3 slots did not reduce risk (risk register M3). Counting the whole
+whitelist as one group makes the cap match the real exposure. Two layers
+because a misconfigured or restarted Freqtrade must not be able to remove
+the control (same defence-in-depth rule as R4 AC4.4).
+
+**Acceptance criteria:**
+- AC7.1: `max_open_trades` in the Freqtrade config equals
+  `MAX_CONCURRENT_POSITIONS` (default 2).
+- AC7.2: Every risk cycle, Conductor counts open positions from the ledger;
+  if the count is greater than the cap it persists a `max_positions` halt,
+  alerts, and pauses entries on all instances.
+- AC7.3: The halt follows the R4 halt rules: persisted, re-applied after
+  restarts, cleared only by an authenticated human action logged with the
+  operator's identity. If the count is still over the cap when a human
+  clears it, the halt is raised again on the next cycle.
+- AC7.4: The 2-position cap is a draft. A rolling-correlation based grouping
+  (risk register M3) is TBD (Phase 3, with the research loop); until then
+  the whole whitelist is one group.
+
+**Verification method:** Unit tests of the cap boundary and of the halt
+path (3A-3); a local stack run with a forced breach proving entries pause;
+the drill in `06-runbooks/kill-switch.md`.
+
+See [`ADR-0013`](05-adr/0013-correlation-guard-single-exposure-group.md).
+
+---
+
 ## Non-functional requirements
 
 | ID | Requirement | Acceptance criteria (summary) | Verification |
@@ -318,9 +380,11 @@ unaffected; ledger audit of monthly spend vs. budget.
 
 ## TBD summary
 
-- Exact `daily_profit_cap` value and `daily_loss_limit` / `max_drawdown` /
-  consecutive-loss thresholds beyond the drafts above — TBD (Phase 3), to
-  be finalized in `08-paper-exit-criteria.md` before first paper run.
+- ~~Exact `daily_profit_cap` value~~ — ratified 2026-10-05: 10 USD (R3 AC3.1).
+- `daily_loss_limit` / `max_drawdown` / consecutive-loss thresholds beyond
+  the drafts above — TBD (Phase 3), to be finalized in
+  `08-paper-exit-criteria.md` before first paper run. The drafts (3% / 10% /
+  N=3) are what Conductor's second layer runs with in the meantime.
 - ~~CAD vs USD principal/quote currency~~ — resolved Phase 2: USD, see
   [`ADR-0008`](05-adr/0008-usd-quote-currency.md).
 - Heartbeat interval and alert channel timing — TBD (Phase 3).

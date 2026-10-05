@@ -74,7 +74,7 @@ arbitrary number now.
 
 ## Position and risk sizing
 
-- `max_open_trades`: 2–3 (research review §4), enforced alongside
+- `max_open_trades`: **2** (R7, ADR-0013; research review §4 said 2–3), enforced alongside
   Conductor's correlation guard (risk register M3) so BTC+ETH open
   together still count as one effective exposure unit for risk-budget
   purposes.
@@ -96,7 +96,7 @@ arbitrary number now.
 - Per-trade risk: 1–2% of equity, ATR-based sizing (research review §4) —
   **not implemented as designed in work package 2C.** `Baseline4h` uses
   Freqtrade's default equal-weight `stake_amount: unlimited` across up to
-  3 open slots (`config.dry_run.json`), not true per-trade %-of-equity
+  the open slots in `config.dry_run.json` (3 until 3A-3, now 2 per R7), not true per-trade %-of-equity
   ATR sizing — kept simple deliberately for a path-validation baseline
   (`docs/research/03-baseline-backtest.md`). ATR is used for the *stop
   distance*, not position *size*. Re-tagged TBD (Phase 3) — real
