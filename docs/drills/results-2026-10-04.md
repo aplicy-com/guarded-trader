@@ -153,7 +153,7 @@
 
 ## Drill 3 — Restart persistence
 
-**Tests:** kill engaged; restart conductor, freqtrade, both (optional: host); still paused; clear
+**Tests:** kill engaged; restart conductor, freqtrade, both (optional: host); still paused and NEVER `running` under the halt; clear; restart with no halt starts it (ADR-0018)
 
 | Field | Value |
 |---|---|
@@ -181,13 +181,13 @@
   (paste)
   ```
 
-- Step 3 `--watch` output (freqtrade restart) and **seconds `running` with halt active**
+- Step 3 `--watch` output (freqtrade restart under halt): any `freqtrade=running` line? (must be none)
 
   ```
   (paste)
   ```
 
-- Step 4 `--watch` output (both restart) and seconds `running` with halt active
+- Step 4 `--watch` output (both restart under halt): any `freqtrade=running` line? (must be none)
 
   ```
   (paste)
@@ -199,7 +199,19 @@
   (paste)
   ```
 
-- Step 6 clear output and final `CHECK PASS`
+- Step 6 clear output and `CHECK PASS`
+
+  ```
+  (paste)
+  ```
+
+- Step 7 `--watch` output (restart with no halt): seconds `paused` before `running`; `BOOT primary` alert text and time
+
+  ```
+  (paste)
+  ```
+
+- Step 8 (optional) Conductor down => stays paused: done / skipped; result
 
   ```
   (paste)

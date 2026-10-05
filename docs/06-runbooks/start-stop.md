@@ -13,9 +13,10 @@ the VPS is updated with `make deploy` from your Mac. After any start or restart
 run `scripts/drill-check.sh`, which prints halt state, Freqtrade state, open
 positions, data counts and the last heartbeat in one go. A restart of either
 container is safe while a halt is active: the halt is stored in Conductor's
-ledger, and Conductor re-pauses Freqtrade within about a minute (see
-[`kill-switch.md`](kill-switch.md), "If Freqtrade restarts while a halt is
-active").
+ledger and Freqtrade always boots `paused` (ADR-0018). With no halt, expect
+Freqtrade to read `paused` for up to about a minute after a start, until
+Conductor starts it (see [`kill-switch.md`](kill-switch.md), "If Freqtrade
+restarts while a halt is active").
 
 **Before you start:** know which mode you intend — `dry_run` (paper) or
 `live`. If you are not 100% sure which one you mean, treat it as

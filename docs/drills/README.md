@@ -25,11 +25,11 @@ the VPS.
 | # | Drill | Why here | Time |
 |---|---|---|---|
 | 0 | Setup and baseline | everything below needs it | 20 min |
-| 1 | **Drill 5**: record the backup/restore pass | already done; paste today's output | 5 min |
-| 2 | **Drill 6**: VPS rebuild | **destroys and recreates the server, which restarts the 7-day soak clock** (3A exit gate: "VPS running ≥ 7 days"). Doing it first means the soak runs on the final server, and drills 1-4 then also prove the *rebuilt* box works. | 1.5-2 h |
-| 3 | **Drill 1**: kill switch | quick; also proves Telegram on the new box | 15 min |
-| 4 | **Drill 2**: nuclear | needs an open dry-run position to be a full test; check with `drill-check.sh` first | 15 min |
-| 5 | **Drill 3**: restart persistence | uses a halt; measures the Freqtrade restart window | 20 min |
+| 1 | **Drill 2**: nuclear | **first, while a dry-run position is open** (Conductor cannot open one, by design, and the strategy may close it at any time). The drill closes it. | 15 min |
+| 2 | **Drill 5**: record the backup/restore pass | already done; paste today's output | 5 min |
+| 3 | **Drill 6**: VPS rebuild | **destroys and recreates the server, which restarts the 7-day soak clock** (3A exit gate: "VPS running ≥ 7 days"). Done before the remaining drills so the soak runs on the final server, and drills 1, 3 and 4 then also prove the *rebuilt* box works. | 1.5-2 h |
+| 4 | **Drill 1**: kill switch | quick; also proves Telegram on the new box | 15 min |
+| 5 | **Drill 3**: restart persistence | uses a halt; proves the fail-closed boot (ADR-0018) | 25 min |
 | 6 | **Drill 4**: heartbeat silence | needs a 15-minute wait; do it last so nothing else is running during it | 30 min |
 
 If you would rather run them 1 → 6 as the plan lists them, nothing breaks, but
@@ -37,15 +37,10 @@ then the rebuild (drill 6) resets the soak clock and drills 1-4 will have run
 on the server you just threw away. Start the 7-day soak after the last drill
 passes either way, with no halt active.
 
-**Two things to decide before drill 2** (neither blocks the others):
-1. A full nuclear drill needs an open dry-run position and Conductor cannot open
-   one (by design, ADR-0003). Either wait until the baseline strategy opens one
-   (check `scripts/drill-check.sh` before each session), or run the
-   no-position variant (2a below) and re-run the full one later. This README does
-   **not** use a manual force-entry: it needs a config change on the trading
-   path, which is your call, not part of a drill script.
-2. Drill 3 will show that Freqtrade is `running` for up to ~1 minute after its
-   restart even with a halt active; see "Findings" below.
+Drill 2 is the full version only while a position is open: if you reach it and
+`positions=0`, use the no-position variant and record `PARTIAL`; the gate needs
+a full run. This README does **not** use a manual force-entry: it needs a config
+change on the trading path, which is your call, not part of a drill script.
 
 ## Setup (once per session)
 
@@ -57,9 +52,24 @@ git switch main && git merge --no-ff chore/3a-drills
 make deploy
 ```
 Expected: the rsync list includes `scripts/drill-check.sh`, then
-`Container ai-trading-agent-conductor  Running` / `Started` (no source changed,
-so nothing restarts; if it says `Recreated` for a container, that is fine but note
-the time).
+`Container ai-trading-agent-conductor  Recreated` / `Started` (the code changed:
+fail-closed boot, ADR-0018). The Freqtrade container is **not** recreated and
+keeps running with its old config, because its config is a bind-mounted file. The
+new `initial_state: paused` applies at its next restart, so do that now, once,
+and watch it come back (this is also a free first look at drill 3):
+```
+make ssh
+cd /opt/ai-trading-agent
+export C="docker compose --env-file .env -f infra/docker-compose.yml"
+$C restart freqtrade
+scripts/drill-check.sh --watch 5
+```
+Expected: `freqtrade=unreachable(...)` for ~20-40 s, then `freqtrade=paused`, then
+`freqtrade=running` within about a minute (Conductor started it: no halt is
+active), and a Telegram alert `BOOT primary: Freqtrade restarted paused; no halt
+active, started`. `freqtrade=running` must **never appear before** `paused`.
+Ctrl-C. Check the open position is still listed (`positions=`): a paused boot
+still manages its exits.
 
 **On the VPS**, at the start of every drill session:
 ```
@@ -70,7 +80,8 @@ grep '^TRADING_MODE' .env
 scripts/drill-check.sh
 ```
 Expected: `TRADING_MODE=dry_run`, then the report: both containers `Up ... (healthy)`,
-`halts (active)` = `no active halts`, `freqtrade state: running  dry_run: True`,
+`halts (active)` = `no active halts`, `freqtrade state: running  dry_run: True` (it boots `paused` and Conductor starts it
+within about a minute, so just after a restart `paused` is normal),
 a `data` section with `principal=100 USD`, `heartbeat: ok ...`, and a last
 `SUMMARY` line. (`C` is just a shorthand for the long compose command and only
 lives in this shell. `scripts/drill-check.sh --help` lists its options.)
@@ -156,8 +167,9 @@ bot, and the halt persists until a human clears it. Runbook:
 
 **Preconditions**
 - `scripts/drill-check.sh --expect-state running --expect-halts 0` → `CHECK PASS`.
-- **Full drill:** `positions=` is **at least 1**. Write down each position (`#id pair stake`
-  and whether it shows `[open order]`). **No position?** Run the *no-position variant*
+- **Full drill:** `positions=` is **at least 1** (there is one open on the VPS as of 2026-10-05; positions
+  can close on their own, so check right before you start). Write down each position (`#id pair stake`
+  and whether it shows `[open order]`). **No position any more?** Run the *no-position variant*
   below (it still proves pause + stop + halt persistence) and record the result as
   `PARTIAL (no position)`; the gate needs a full run later.
 - It is dry-run: there is nothing to check on Kraken. Do not log into Kraken for this drill.
@@ -199,16 +211,18 @@ reply text, the positions before, the seconds from `yes` to the reply.
 
 ---
 
-## Drill 3 — Restart persistence
+## Drill 3 — Restart persistence and fail-closed boot
 
-**Proves:** a halt survives a restart of Conductor, of Freqtrade, and of both, and
-that the pause is back in force afterwards.
-**Read this first:** Freqtrade itself does not remember it was paused (it always boots
-`running`). The halt lives in Conductor's ledger, and Conductor re-applies the pause on its
-next risk cycle (60 s). So after a **Freqtrade** restart, `paused` is *not* instant: this drill
-measures the gap. That gap is the thing to review (see "Findings").
+**Proves:** a halt survives a restart of Conductor, of Freqtrade and of both; **Freqtrade can never trade between
+its own boot and Conductor's decision** (it boots `paused`, [`ADR-0018`](../05-adr/0018-fail-closed-freqtrade-boot.md));
+Conductor starts it again only when no halt is active.
+**Read this first:** with `initial_state: paused` a restarted Freqtrade is `paused` from its first moment. Under an
+active halt it stays `paused`. With no halt, Conductor sends `start` on its next risk cycle (≤ 60 s) and posts
+`BOOT primary: Freqtrade restarted paused; no halt active, started`. So in every `--watch` line of this drill,
+**`freqtrade=running` while a halt is active is a FAIL**, however briefly.
 
-**Preconditions:** `scripts/drill-check.sh --expect-state running --expect-halts 0` → `CHECK PASS`.
+**Preconditions:** `scripts/drill-check.sh --expect-state running --expect-halts 0` → `CHECK PASS`
+(if you have just restarted Freqtrade, wait for it to read `running` first).
 
 **Steps**
 1. Engage the kill switch from the host (so this drill does not depend on Telegram):
@@ -223,46 +237,64 @@ measures the gap. That gap is the thing to review (see "Findings").
    sleep 45
    scripts/drill-check.sh --expect-state paused --expect-halts 1
    ```
-   Expected: `CHECK PASS`. (Freqtrade was never restarted, so it stays paused; the halt came back
-   from the ledger volume. The `heartbeat:` field reads `none sent since start` until the first ping,
-   up to 5 minutes: that is normal.)
-3. **Restart Freqtrade only**, and watch:
+   Expected: `CHECK PASS`. (Freqtrade was not restarted, so it stays paused; the halt came back from the
+   ledger volume. `heartbeat:` reads `none sent since start` until the first ping, up to 5 minutes: normal.)
+3. **Restart Freqtrade only, under the halt**, and watch:
    ```
    $C restart freqtrade
-   scripts/drill-check.sh --watch 5
+   scripts/drill-check.sh --watch 2
    ```
-   Expected sequence in the `SUMMARY` lines: `freqtrade=unreachable(...)` for ~20-40 s, then possibly
-   `freqtrade=running` for up to about a minute, then `freqtrade=paused` and it stays. Ctrl-C once it has been
-   `paused` for three lines in a row. Write down the **seconds Freqtrade was `running` with a halt active**
-   (count the 5-second lines, or use the timestamps).
+   Expected sequence in the `SUMMARY` lines: `freqtrade=unreachable(...)` for ~20-40 s, then `freqtrade=paused`, and it
+   **stays `paused`**. Watch at least 90 seconds after the first `paused` line (longer than one risk cycle), then
+   Ctrl-C. Pass: **no line shows `freqtrade=running`**. Keep the whole output.
    Then `scripts/drill-check.sh --expect-state paused --expect-halts 1` → `CHECK PASS`.
-4. **Restart both:**
+4. **Restart both, under the halt:**
    ```
    $C restart
-   scripts/drill-check.sh --watch 5
+   scripts/drill-check.sh --watch 2
    ```
-   Expected: the same shape as step 3. Ctrl-C when `paused` is stable. Then
-   `scripts/drill-check.sh --expect-state paused --expect-halts 1` → `CHECK PASS` and `docker ps` shows both `healthy`.
+   Expected: the same shape as step 3 (never `running`), and no `BOOT` alert in Telegram. Ctrl-C after 90 s of
+   `paused`. Then `scripts/drill-check.sh --expect-state paused --expect-halts 1` → `CHECK PASS`, and `docker ps`
+   shows both containers `healthy`.
 5. *(Optional, more realistic: do it only if you can reach the Hetzner web console as a fallback.)*
    Reboot the host: `sudo reboot`. Wait ~3 minutes, `make ssh` again (it needs Tailscale to come back on its own),
-   `cd /opt/ai-trading-agent`, `scripts/drill-check.sh --watch 5` as in step 3. Expected: both containers back
-   up by themselves (`restart: unless-stopped`) and `paused` within ~2 minutes.
-6. **Clear:** `docker exec ai-trading-agent-conductor python -m conductor.cli clear-halt <N> --operator maduka --note "drill 3"`.
+   `cd /opt/ai-trading-agent`, `scripts/drill-check.sh --watch 2`. Expected: both containers back up by themselves
+   (`restart: unless-stopped`) and the state is `paused` the whole time, never `running`.
+6. **Clear the halt:** `docker exec ai-trading-agent-conductor python -m conductor.cli clear-halt <N> --operator maduka --note "drill 3"`.
    Expected: `cleared halt #<N>` and `primary: resume: ok`.
    `scripts/drill-check.sh --expect-state running --expect-halts 0` → `CHECK PASS`.
+7. **The other half: restart with NO halt.** Now that nothing is halted:
+   ```
+   $C restart freqtrade
+   scripts/drill-check.sh --watch 2
+   ```
+   Expected: `unreachable(...)`, then `freqtrade=paused`, then `freqtrade=running` within about 60-90 s of it
+   becoming reachable, and a Telegram alert `BOOT primary: Freqtrade restarted paused; no halt active, started`.
+   Write down the seconds spent `paused`. Ctrl-C once `running` is stable. If you have an open position, it must still
+   be listed (`positions=`) the whole time.
+8. *(Optional)* **Conductor down ⇒ stays paused.** `$C stop conductor`, then `$C restart freqtrade`, and
+   `docker exec ai-trading-agent-freqtrade ...` is not needed: use `scripts/drill-check.sh --brief` a few times over
+   two minutes. Expected: `freqtrade=paused` and it stays so (no entries, exits still managed). Then
+   `$C start conductor`; within ~2 minutes it reads `running` and the `BOOT` alert arrives.
 
-**Pass criteria:** the halt is `ACTIVE` after every restart; after each Freqtrade restart the state returns to
-`paused` on its own within **3 minutes**; nothing resumed by itself; step 6 clears cleanly.
-**Record:** the `--watch` output of steps 3 and 4 (this is the evidence), the measured running-with-halt seconds,
-the checks of steps 2 and 6.
+**Pass criteria:** the halt is `ACTIVE` after every restart; in steps 2-5 Freqtrade is **never** `running` while the
+halt is active; step 6 clears cleanly; step 7 starts the bot by itself and alerts; positions survive restarts.
+**Record:** the `--watch` output of steps 3, 4 and 7 (this is the evidence), the checks of steps 2 and 6, and
+the seconds from "reachable" to `running` in step 7.
 
 **If it fails / rollback**
-- Still `running` after 3 minutes with a halt active: Conductor is not enforcing. `docker logs ai-trading-agent-conductor --tail 80 | grep -i halt`.
-  Record `FAIL`. Engage again: `docker exec ... kill --operator maduka` (it reports `was already active` and re-applies the pause).
+- **`freqtrade=running` at any point while a halt is active:** record `FAIL` and keep the output. Engage again:
+  `docker exec ... kill --operator maduka` (it reports `was already active` and re-applies the pause). Check
+  `grep initial_state /opt/ai-trading-agent/services/freqtrade/user_data/config.dry_run.json` says `paused`
+  and that Freqtrade was restarted after the deploy (a bind-mounted config is read at start only).
 - The halt is gone after a restart: **serious** (halt state not persisted). Record `FAIL`, do not clear anything,
   run `... conductor.cli halts --all`, keep the output, and stop the drills until it is understood.
+- Step 7 never goes `running` (stays `paused` with no halt): `docker logs ai-trading-agent-conductor --tail 80 | grep -i boot`
+  (`boot_start_deferred`, `boot_start_failed`). It retries every cycle; if it will not start, clear by hand:
+  `docker exec ... clear-halt <any cleared id> --operator maduka --note retry` re-sends `start`, or `$C restart freqtrade`
+  then `/resume`. Record `FAIL`.
 - A container will not come back: `$C up -d`, then `docker logs <name> --tail 80`.
-- Always finish with step 6 so no halt is left active.
+- Always finish with the halt cleared and Freqtrade `running` (steps 6-7) so nothing is left halted.
 
 ---
 
@@ -296,6 +328,10 @@ grace time, and tells you when it recovers. (Check settings: period 5 min + grac
 5. Recover: `$C start conductor`. Write down **T_start**. Within about 5-6 minutes (the first heartbeat is one interval after start)
    healthchecks.io returns to **up**, and a recovery notification arrives. Then
    `scripts/drill-check.sh --expect-state running --expect-halts 0`; the full report's `heartbeat:` says `ok`.
+
+*(Optional, between steps 4 and 5, only if no halt is active and you accept a short entry pause)* restart Freqtrade
+while Conductor is stopped: `docker restart ai-trading-agent-freqtrade`. Expected: it comes back `paused` and stays
+`paused` (Conductor is the only thing that starts it). After step 5 it reads `running` again within ~2 minutes.
 
 **Pass criteria:** an alert reached your phone on at least your primary channel no later than 17 minutes after T0; it named the check;
 a recovery notice arrived after the restart; the check is **up** at the end; Freqtrade was unaffected throughout.
@@ -371,8 +407,8 @@ T_halted_ok (`CHECK PASS` with the halt active), T_done. **RTO = T_halted_ok −
 6. **Lock down and scan** [6]: `make vps-lockdown`, `make verify-lockdown` (four `OK:` lines), `nmap -Pn -p- -T4 <ip>` and the UDP scan
    from a different network (phone hotspot) with no exit node. Expected: nothing `open`. Save the scan output. **Pass/stop point.**
 7. **Restore, then start** [7, 8]: `make push-env`, `make deploy-files`, `restore-test.sh all --keep`, `scp`, `up --no-start --build`, put the two DB files in,
-   `up -d`, `scripts/drill-check.sh --watch 5`. Expected: `halts=1`, and `freqtrade` goes `running` → `paused` on its own
-   within about a minute.
+   `up -d`, `scripts/drill-check.sh --watch 2`. Expected: `halts=1`, and `freqtrade` is `paused` from its first
+   reachable moment and **never `running`** (it boots paused, and the restored ledger carries the halt).
 8. **Verify restored** [8]:
    ```
    scripts/drill-check.sh --expect-state paused --expect-halts 1
@@ -413,12 +449,10 @@ output, the Terraform plan summary line and apply result, the `nmap` output (bot
 
 These came out of reading the code while preparing the drills. None changes the drill procedures; each needs your decision.
 
-1. **Freqtrade boots `running` with a halt active** (`initial_state: running`; the pause is re-applied by Conductor's risk cycle,
-   ≤60 s after Conductor is up). In dry-run this is harmless. With real money it is a window in which a restarted Freqtrade can open
-   a position under an active halt. Drill 3 measures the real gap. Candidates, for the Phase 4 plan (TBD, needs an ADR):
-   boot Freqtrade `stopped` and have Conductor start it only when no halt is active, or shorten the risk interval.
-2. **No way to guarantee an open position for drill 2.** Dry-run positions depend on the strategy firing. The full drill may have to wait for
-   one. Real-exchange behaviour of cancel and force-exit (rejected orders, minimum sizes) cannot be exercised in dry-run at all: that
+1. ~~**Freqtrade boots `running` with a halt active.**~~ Resolved in this branch: Freqtrade boots `paused` and
+   Conductor starts it only when no halt is active ([`ADR-0018`](../05-adr/0018-fail-closed-freqtrade-boot.md)). Drill 3
+   proves it. Cost: if Conductor is down after a Freqtrade restart, no new entries until it is back (exits still managed).
+2. **Drill 2 needs an open position, which Conductor cannot create.** It runs first for that reason. Real-exchange behaviour of cancel and force-exit (rejected orders, minimum sizes) cannot be exercised in dry-run at all: that
    remains a Phase 4 first-live-day check (TBD Phase 4).
 3. **Tailscale access rules by address** go stale on every rebuild (documented now in `rebuild-vps.md` 6b and `security.md`). Using a Tailscale
    tag for the server instead would remove the manual step. Operator decision (tailnet policy).

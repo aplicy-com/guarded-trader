@@ -252,12 +252,12 @@ owned by `conductor`; the second `ls` lists `tradesv3.dryrun.sqlite` owned by
 Still on the VPS:
 ```
 docker compose --env-file .env -f infra/docker-compose.yml up -d
-scripts/drill-check.sh --watch 5
+scripts/drill-check.sh --watch 2
 ```
-Expected: both containers `Started`. In the `--watch` lines, `freqtrade=` may
-read `running` for up to about a minute (Freqtrade always boots `running`;
-Conductor re-applies the pause from the ledger on its first risk cycle), then
-settles on `paused` with `halts=1`. Ctrl-C. If Conductor exits with
+Expected: both containers `Started`. In the `--watch` lines, `freqtrade=` reads
+`paused` from its first reachable moment and never `running` (Freqtrade boots
+paused, and the restored ledger carries the halt, so Conductor does not start it),
+with `halts=1`. Ctrl-C. If Conductor exits with
 `STARTUP REFUSED` or `CONFIG ERROR`, read the message (for example a principal
 that does not match `PRINCIPAL_USD`); do not edit the database; go to
 Troubleshooting.

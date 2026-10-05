@@ -114,15 +114,13 @@ walking straight back into the same condition.
 
 ## If Freqtrade restarts while a halt is active
 
-Freqtrade itself always boots `running` (`initial_state` in its config); it
-does not remember it was paused. The halt lives in Conductor's ledger, and
-Conductor re-applies the pause on its next risk cycle (every 60 s). So after
-a Freqtrade restart (a crash, a host reboot, an unattended upgrade) there can
-be up to about a minute where `freqtrade` reads `running` even though a halt
-is active. This is expected and is measured in the 3A-6 restart drill
-([`docs/drills/README.md`](../drills/README.md), drill 3). If it is still
-`running` after 3 minutes, Conductor is not enforcing: check
-`docker logs ai-trading-agent-conductor`, and engage the kill switch again.
+Freqtrade boots `paused` (`initial_state: paused`, [`ADR-0018`](../05-adr/0018-fail-closed-freqtrade-boot.md)): it
+manages exits of open positions but cannot open a new one. Conductor is the only thing that starts it, and only when no
+halt is active. So after a Freqtrade restart (a crash, a reboot, an unattended upgrade, a deploy) a halted system
+stays paused, with no window in which it could trade. With no halt, Conductor starts it again within about a minute
+and posts `BOOT primary: Freqtrade restarted paused; no halt active, started`. If Conductor is down, Freqtrade stays
+paused after a restart: no new entries until Conductor is back (the heartbeat alert tells you). Drill 3
+([`docs/drills/README.md`](../drills/README.md)) proves this.
 
 ## Common mistakes to avoid
 
