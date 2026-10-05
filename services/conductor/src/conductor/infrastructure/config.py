@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     # R3 draft value (docs/02-requirements.md AC3.1), final value TBD (Phase 3).
     manual_move_threshold_usd: Decimal = Field(default=Decimal(25), gt=Decimal(0))
 
+    # R4 second layer + R7 (draft values, docs/02-requirements.md). Percentages: 3 = 3%.
+    daily_loss_limit_pct: Decimal = Field(default=Decimal(3), gt=Decimal(0))
+    max_drawdown_pct: Decimal = Field(default=Decimal(10), gt=Decimal(0))
+    consecutive_loss_limit: int = Field(default=3, ge=1)
+    # R7: every whitelisted pair is one exposure group. Keep equal to Freqtrade's max_open_trades.
+    max_concurrent_positions: int = Field(default=2, ge=1)
+    risk_check_interval_seconds: int = Field(default=60, ge=15)
+
     scheduler_enabled: bool = True
     ingest_interval_seconds: int = Field(default=300, ge=30)
     heartbeat_interval_seconds: int = Field(default=300, ge=30)
@@ -56,7 +64,13 @@ class Settings(BaseSettings):
     def _blank_cap_is_unset(cls, v: Any) -> Any:
         return None if isinstance(v, str) and not v.strip() else v
 
-    @field_validator("principal_usd", "daily_profit_cap_usd", "manual_move_threshold_usd")
+    @field_validator(
+        "principal_usd",
+        "daily_profit_cap_usd",
+        "manual_move_threshold_usd",
+        "daily_loss_limit_pct",
+        "max_drawdown_pct",
+    )
     @classmethod
     def _finite(cls, v: Decimal | None) -> Decimal | None:
         if v is not None and not v.is_finite():

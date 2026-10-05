@@ -39,3 +39,27 @@ def test_application_depends_only_on_domain_and_stdlib() -> None:
                 or mod.startswith(("conductor.domain", "conductor.application"))
             )
             assert ok, (f, mod)
+
+
+# The Freqtrade WRITE client may only be constructed in the composition path. In
+# particular nothing in the LLM / research code can reach it (ADR-0003, ADR-0014).
+CONTROL_CLIENT_IMPORTERS = {
+    "adapters/freqtrade/__init__.py",
+    "infrastructure/freqtrade_instances.py",
+}
+
+
+def test_control_client_is_imported_only_by_the_composition_path() -> None:
+    for f in SRC.rglob("*.py"):
+        rel = f.relative_to(SRC).as_posix()
+        if rel == "adapters/freqtrade/control_client.py" or rel in CONTROL_CLIENT_IMPORTERS:
+            continue
+        text = f.read_text()
+        assert "control_client" not in text, rel
+        assert "FreqtradeControlClient" not in text, rel
+
+
+def test_llm_adapter_has_no_freqtrade_dependency() -> None:
+    llm = (SRC / "adapters" / "llm.py").read_text()
+    assert "freqtrade" not in llm.lower()
+    assert "FreqtradeController" not in llm

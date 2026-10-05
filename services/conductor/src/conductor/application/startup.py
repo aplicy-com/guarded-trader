@@ -7,6 +7,9 @@ from collections.abc import Callable
 from datetime import datetime
 from decimal import Decimal
 
+import structlog
+
+from conductor.application.halts import enforce_halts
 from conductor.application.ingest import FreqtradeInstance, run_ingest
 from conductor.application.isolation import (
     IsolationCheckUnavailableError,
@@ -16,6 +19,8 @@ from conductor.application.ledger_ports import Ledger
 from conductor.application.ports import Notifier
 from conductor.application.principal import ensure_principal
 from conductor.domain.trading_mode import TradingMode
+
+log = structlog.get_logger()
 
 
 def run_startup_checks(
@@ -36,3 +41,9 @@ def run_startup_checks(
                 f"ingest failed for {list(report.failed_instances)}; cannot verify isolation"
             )
     run_startup_isolation_check(mode, ledger, instances, notifier=notifier, now=now)
+    # A persisted halt survives restarts: re-apply it now. This must never block
+    # startup (Freqtrade may be down); the risk cycle keeps retrying.
+    try:
+        enforce_halts(ledger, instances)
+    except Exception:
+        log.exception("startup_halt_enforce_failed")

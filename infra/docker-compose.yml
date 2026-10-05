@@ -56,6 +56,13 @@ services:
       # R3. The daily cap's value is TBD (Phase 3): blank = unset = nothing is fenced.
       DAILY_PROFIT_CAP_USD: ${DAILY_PROFIT_CAP_USD:-}
       MANUAL_MOVE_THRESHOLD_USD: ${MANUAL_MOVE_THRESHOLD_USD:-25}
+      # R4 second layer + R7 (drafts, docs/02-requirements.md). Keep
+      # MAX_CONCURRENT_POSITIONS equal to max_open_trades in the Freqtrade config.
+      DAILY_LOSS_LIMIT_PCT: ${DAILY_LOSS_LIMIT_PCT:-3}
+      MAX_DRAWDOWN_PCT: ${MAX_DRAWDOWN_PCT:-10}
+      CONSECUTIVE_LOSS_LIMIT: ${CONSECUTIVE_LOSS_LIMIT:-3}
+      MAX_CONCURRENT_POSITIONS: ${MAX_CONCURRENT_POSITIONS:-2}
+      RISK_CHECK_INTERVAL_SECONDS: ${RISK_CHECK_INTERVAL_SECONDS:-60}
       FREQTRADE__API_SERVER__USERNAME: ${FREQTRADE__API_SERVER__USERNAME:?set in .env}
       FREQTRADE__API_SERVER__PASSWORD: ${FREQTRADE__API_SERVER__PASSWORD:?set in .env}
     volumes:

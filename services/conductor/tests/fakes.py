@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Any
 
 from conductor.application.ledger_ports import FxUnavailableError
-from conductor.domain.freqtrade_view import OpenTradeView, TradesPage, TradeView
+from conductor.domain.freqtrade_view import BotConfigView, OpenTradeView, TradesPage, TradeView
 from conductor.domain.tax import FxRate
 
 D = Decimal
@@ -31,6 +31,11 @@ class FakeFreqtrade:
     pairs: tuple[str, ...] = ("BTC/USD", "ETH/USD", "SOL/USD")
     fail: bool = False
     calls: list[str] = field(default_factory=list)
+    # --- control surface (doubles as the FreqtradeController) ---
+    state: str = "running"
+    control_fail: bool = False
+    exit_works: bool = True  # False: force_exit_all is accepted but nothing closes
+    control_calls: list[str] = field(default_factory=list)
 
     def _check(self, name: str) -> None:
         self.calls.append(name)
@@ -40,8 +45,37 @@ class FakeFreqtrade:
     def ping(self) -> bool:
         return not self.fail
 
-    def show_config(self) -> Any:
-        raise NotImplementedError
+    def show_config(self) -> BotConfigView:
+        self._check("show_config")
+        return BotConfigView(
+            "bot", "2026.8", "S", True, "spot", "USD", "unlimited", 2, "4h", "kraken", self.state
+        )
+
+    def _ctl(self, name: str) -> None:
+        self.control_calls.append(name)
+        if self.control_fail or self.fail:
+            raise ConnectionError("freqtrade control unreachable")
+
+    def pause_entries(self) -> None:
+        self._ctl("pause_entries")
+        if self.state == "running":
+            self.state = "paused"
+
+    def resume(self) -> None:
+        self._ctl("resume")
+        self.state = "running"
+
+    def stop(self) -> None:
+        self._ctl("stop")
+        self.state = "stopped"
+
+    def cancel_open_order(self, trade_id: int) -> None:
+        self._ctl(f"cancel:{trade_id}")
+
+    def force_exit_all(self) -> None:
+        self._ctl("force_exit_all")
+        if self.exit_works:
+            self.open_trades = []
 
     def status(self) -> tuple[OpenTradeView, ...]:
         self._check("status")

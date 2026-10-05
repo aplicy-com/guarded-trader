@@ -85,7 +85,7 @@ def freqtrade() -> FakeFreqtrade:
 
 @pytest.fixture
 def instances(freqtrade: FakeFreqtrade) -> list[FreqtradeInstance]:
-    return [FreqtradeInstance("primary", freqtrade)]
+    return [FreqtradeInstance("primary", freqtrade, freqtrade)]
 
 
 @pytest.fixture

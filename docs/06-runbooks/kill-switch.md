@@ -24,21 +24,28 @@ the nuclear protocol instead.
    or directly if you're at the machine) and stop new entries at the
    source:
    ```
-   docker compose -f infra/docker-compose.yml exec conductor <kill-command>
+   docker compose --env-file .env -f infra/docker-compose.yml exec conductor \
+     python -m conductor.cli kill --operator <your name>
    ```
-   (Exact CLI fallback command TBD Phase 3 — this runbook will be updated
-   once Conductor's CLI is implemented. Until then, if Telegram is down
-   and you need to stop new entries immediately, stopping the `freqtrade`
-   container directly prevents any new order placement:
+   Expected output: `halt #<n> engaged` then `primary: pause_entries: ok`.
+   If a line says `FAILED`, the halt is still recorded and Conductor
+   re-applies it every minute; check again with
+   `python -m conductor.cli halts`. (**Until Telegram lands in 3A-4 this CLI
+   is the primary way, not just the fallback.**)
+
+   If Conductor itself cannot be reached and you need to act now, stopping
+   the `freqtrade` container directly prevents any new order placement:
    ```
    docker compose -f infra/docker-compose.yml stop freqtrade
    ```
    This is a blunter tool than the kill switch — it also stops management
    of existing positions' exits, so only use it if you can't reach
    Conductor and need to act now. Follow up with proper diagnosis once
-   you're able to.)
+   you're able to.
 5. Verify the kill switch actually engaged:
    - Telegram: `/status` — should show halt type `kill_switch`, active.
+   - CLI: `python -m conductor.cli halts` lists active halts, e.g.
+     `#1 kill_switch [all instances] ACTIVE :: kill switch engaged by ...`.
 6. **You do not need to do anything else right now.** New entries are
    blocked. Existing positions (if any) continue to be managed by
    Freqtrade's own stop-losses. There is no time pressure to diagnose the
@@ -75,7 +82,13 @@ walking straight back into the same condition.
 
 1. Only after you understand why it fired (or confirmed it was a
    deliberate manual kill).
-2. Telegram: `/resume kill_switch`
+2. Telegram: `/resume kill_switch`. CLI (current):
+   `python -m conductor.cli clear-halt <id> --operator <your name> --note "why"`
+   (the id comes from `python -m conductor.cli halts`). It records you as
+   the operator, then tells Freqtrade to resume; if it prints `FAILED`,
+   Freqtrade stays paused (safe): fix the cause and run the same command
+   again. If the original breach is still true the halt comes back within a
+   minute: that is the system working, not a bug.
 3. Expect a confirmation reply with your identity and timestamp logged.
 4. Verify: `/status` — halt should show cleared, mode active.
 5. If the halt reason suggested a specific strategy or pair should stay

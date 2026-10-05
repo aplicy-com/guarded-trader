@@ -73,3 +73,39 @@ def test_secrets_are_not_leaked_in_repr(monkeypatch: pytest.MonkeyPatch) -> None
 def test_settings_class_has_no_default_for_required_fields() -> None:
     for name in ("principal_usd", "database_url", "freqtrade_username", "freqtrade_password"):
         assert Settings.model_fields[name].is_required()
+
+
+def test_risk_defaults_match_the_drafts_in_the_requirements(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _set(monkeypatch)
+    s = load_settings()
+    assert (s.daily_loss_limit_pct, s.max_drawdown_pct) == (3, 10)
+    assert (
+        s.consecutive_loss_limit,
+        s.max_concurrent_positions,
+        s.risk_check_interval_seconds,
+    ) == (
+        3,
+        2,
+        60,
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("DAILY_LOSS_LIMIT_PCT", "0"),
+        ("MAX_DRAWDOWN_PCT", "-1"),
+        ("CONSECUTIVE_LOSS_LIMIT", "0"),
+        ("MAX_CONCURRENT_POSITIONS", "0"),
+        ("RISK_CHECK_INTERVAL_SECONDS", "5"),
+        ("MAX_DRAWDOWN_PCT", "NaN"),
+    ],
+)
+def test_invalid_risk_settings_fail_fast(
+    monkeypatch: pytest.MonkeyPatch, name: str, value: str
+) -> None:
+    _set(monkeypatch, **{name: value})
+    with pytest.raises(ValidationError):
+        load_settings()

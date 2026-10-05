@@ -77,3 +77,16 @@ def test_a_failing_job_is_logged_not_raised_and_jobs_never_overlap() -> None:
             t.join()
     assert peak == 1  # serialised by the shared ledger lock
     assert any(e["event"] == "job_failed" and e["job"] == sch.FENCE_JOB_ID for e in logs)
+
+
+def test_risk_cycle_runs_on_start_and_on_an_interval() -> None:
+    s = build_scheduler(
+        LogHeartbeat(),
+        heartbeat_interval_seconds=300,
+        ledger_jobs=jobs(risk=lambda: None, risk_interval_seconds=60),
+    )
+    ids = {j.id for j in s.get_jobs()}
+    assert {sch.RISK_JOB_ID, sch.RISK_STARTUP_JOB_ID} <= ids
+    risk = s.get_job(sch.RISK_JOB_ID)
+    assert risk is not None
+    assert risk.trigger.interval.total_seconds() == 60

@@ -11,6 +11,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Literal, Protocol
 
+from conductor.domain.halt import Halt, HaltType
 from conductor.domain.ledger import LedgerTrade
 from conductor.domain.tax import CadValuation, FxRate
 
@@ -59,6 +60,13 @@ class TaxRow:
 
 
 @dataclass(frozen=True, slots=True)
+class OpenPosition:
+    instance: str
+    pair: str
+    stake_amount: Decimal
+
+
+@dataclass(frozen=True, slots=True)
 class TransferRecord:
     amount: Decimal
     destination: str
@@ -100,6 +108,35 @@ class LedgerRepo(Protocol):
     def moved_total(self) -> Decimal: ...
     def last_transfer_at(self) -> datetime | None: ...
     def add_transfer(self, record: TransferRecord, recorded_at: datetime) -> None: ...
+
+    # risk (3A-3)
+    def open_positions(self) -> list[OpenPosition]: ...
+    def closed_profits(self, instance: str, since: datetime | None) -> list[Decimal]:
+        """Realized profit of closed trades (oldest first), closed after ``since``."""
+        ...
+
+    def realized_profit_before(self, at: datetime) -> Decimal:
+        """Realized profit of trades closed strictly before ``at``."""
+        ...
+
+    def snapshot_at(self, at: datetime) -> EquitySnapshot | None:
+        """The ledger state in force at ``at``: the latest snapshot taken at or before it."""
+        ...
+
+    def snapshots_since(self, since: datetime | None) -> list[EquitySnapshot]: ...
+
+    # halts
+    def add_halt(
+        self, halt_type: HaltType, instance: str | None, reason: str, at: datetime, by: str
+    ) -> int: ...
+    def active_halts(self) -> list[Halt]: ...
+    def get_halt(self, halt_id: int) -> Halt | None: ...
+    def is_halt_active(self, halt_id: int) -> bool: ...
+    def clear_halt(self, halt_id: int, at: datetime, operator: str, note: str | None) -> None: ...
+    def last_clear_at(self, halt_type: HaltType, instance: str | None) -> datetime | None: ...
+    def list_halts(self, limit: int) -> list[tuple[Halt, datetime | None, str | None]]:
+        """Newest first: (halt, cleared_at, cleared_by)."""
+        ...
 
     # snapshots, audit
     def latest_snapshot(self) -> EquitySnapshot | None: ...

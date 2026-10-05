@@ -13,11 +13,13 @@ from sqlalchemy.orm import Session, sessionmaker
 from conductor.application.ledger_ports import (
     EquitySnapshot,
     LedgerRepo,
+    OpenPosition,
     TaxRow,
     TransferRecord,
     UnvaluedTrade,
     UpsertOutcome,
 )
+from conductor.domain.halt import Halt, HaltType
 from conductor.domain.isolation import base_asset
 from conductor.domain.ledger import LedgerTrade, merge_trade
 from conductor.domain.tax import CadValuation, FxRate
@@ -166,6 +168,137 @@ class SqliteLedgerRepo:
                 note=record.note,
             )
         )
+
+    # --- risk ---
+    def open_positions(self) -> list[OpenPosition]:
+        rows = self._s.execute(
+            sa.select(t.trades.c.instance, t.trades.c.pair, t.trades.c.stake_amount)
+            .where(t.trades.c.is_open.is_(True))
+            .order_by(t.trades.c.id)
+        )
+        return [OpenPosition(r.instance, r.pair, r.stake_amount) for r in rows]
+
+    def closed_profits(self, instance: str, since: datetime | None) -> list[Decimal]:
+        rows = self._s.execute(
+            sa.select(t.trades.c.close_profit_abs, t.trades.c.close_date, t.trades.c.id).where(
+                t.trades.c.instance == instance,
+                t.trades.c.is_open.is_(False),
+                t.trades.c.close_profit_abs.is_not(None),
+            )
+        ).all()
+        keep = [
+            r for r in rows if since is None or (r.close_date is not None and r.close_date > since)
+        ]
+        keep.sort(key=lambda r: (r.close_date, r.id))
+        return [r.close_profit_abs for r in keep]
+
+    def realized_profit_before(self, at: datetime) -> Decimal:
+        rows = self._s.execute(
+            sa.select(t.trades.c.close_profit_abs, t.trades.c.close_date).where(
+                t.trades.c.is_open.is_(False), t.trades.c.close_profit_abs.is_not(None)
+            )
+        ).all()
+        return sum(
+            (r.close_profit_abs for r in rows if r.close_date is not None and r.close_date < at),
+            ZERO,
+        )
+
+    def _snapshot_from(self, row: sa.Row[Any]) -> EquitySnapshot:
+        return EquitySnapshot(**{f: getattr(row, f) for f in EquitySnapshot.__dataclass_fields__})
+
+    def snapshot_at(self, at: datetime) -> EquitySnapshot | None:
+        rows = self._s.execute(
+            sa.select(t.equity_snapshots).order_by(t.equity_snapshots.c.id.desc())
+        ).all()
+        # taken_at is monotonic with id in practice; compare as datetimes to be exact
+        candidates = [r for r in rows if r.taken_at <= at]
+        return (
+            self._snapshot_from(max(candidates, key=lambda r: (r.taken_at, r.id)))
+            if candidates
+            else None
+        )
+
+    def snapshots_since(self, since: datetime | None) -> list[EquitySnapshot]:
+        rows = self._s.execute(
+            sa.select(t.equity_snapshots).order_by(t.equity_snapshots.c.id)
+        ).all()
+        return [self._snapshot_from(r) for r in rows if since is None or r.taken_at >= since]
+
+    # --- halts ---
+    @staticmethod
+    def _halt(row: sa.Row[Any]) -> Halt:
+        return Halt(
+            id=row.id,
+            halt_type=HaltType(row.halt_type),
+            instance=row.instance,
+            reason=row.reason,
+            created_at=row.created_at,
+            created_by=row.created_by,
+        )
+
+    def add_halt(
+        self, halt_type: HaltType, instance: str | None, reason: str, at: datetime, by: str
+    ) -> int:
+        halt_id: int = self._s.execute(
+            sa.insert(t.halts)
+            .values(
+                halt_type=halt_type.value,
+                instance=instance,
+                reason=reason,
+                created_at=at,
+                created_by=by,
+            )
+            .returning(t.halts.c.id)
+        ).scalar_one()
+        return halt_id
+
+    def active_halts(self) -> list[Halt]:
+        rows = self._s.execute(
+            sa.select(t.halts)
+            .outerjoin(t.halt_clears, t.halt_clears.c.halt_id == t.halts.c.id)
+            .where(t.halt_clears.c.id.is_(None))
+            .order_by(t.halts.c.id)
+        )
+        return [self._halt(r) for r in rows]
+
+    def get_halt(self, halt_id: int) -> Halt | None:
+        row = self._s.execute(sa.select(t.halts).where(t.halts.c.id == halt_id)).one_or_none()
+        return None if row is None else self._halt(row)
+
+    def is_halt_active(self, halt_id: int) -> bool:
+        cleared = self._s.execute(
+            sa.select(t.halt_clears.c.id).where(t.halt_clears.c.halt_id == halt_id)
+        ).first()
+        return cleared is None and self.get_halt(halt_id) is not None
+
+    def clear_halt(self, halt_id: int, at: datetime, operator: str, note: str | None) -> None:
+        self._s.execute(
+            sa.insert(t.halt_clears).values(
+                halt_id=halt_id, cleared_at=at, operator=operator, note=note
+            )
+        )
+
+    def last_clear_at(self, halt_type: HaltType, instance: str | None) -> datetime | None:
+        cond = t.halts.c.instance.is_(None) if instance is None else t.halts.c.instance == instance
+        rows = (
+            self._s.execute(
+                sa.select(t.halt_clears.c.cleared_at)
+                .join(t.halts, t.halts.c.id == t.halt_clears.c.halt_id)
+                .where(t.halts.c.halt_type == halt_type.value, cond)
+            )
+            .scalars()
+            .all()
+        )
+        return max(rows) if rows else None
+
+    def list_halts(self, limit: int) -> list[tuple[Halt, datetime | None, str | None]]:
+        rows = self._s.execute(
+            sa.select(t.halts, t.halt_clears.c.cleared_at, t.halt_clears.c.operator)
+            .outerjoin(t.halt_clears, t.halt_clears.c.halt_id == t.halts.c.id)
+            .order_by(t.halts.c.id.desc())
+            .limit(limit)
+        )
+        return [(self._halt(r), r.cleared_at, r.operator) for r in rows]
 
     # --- snapshots / audit ---
     def latest_snapshot(self) -> EquitySnapshot | None:

@@ -31,6 +31,28 @@ class FreqtradeReader(Protocol):
     def whitelist(self) -> tuple[str, ...]: ...
 
 
+class FreqtradeController(Protocol):
+    """The ONLY write surface toward Freqtrade (3A-3). Deliberately tiny.
+
+    Entry-blocking and flattening only: nothing here can open a position,
+    change configuration, or touch anything but bot state and existing orders.
+    """
+
+    def pause_entries(self) -> None:
+        """Stop new entries (Freqtrade `stopentry`); open trades are still managed."""
+        ...
+
+    def resume(self) -> None:
+        """Resume entries (Freqtrade `start`). Only ever called after a human clears a halt."""
+        ...
+
+    def stop(self) -> None: ...
+    def cancel_open_order(self, trade_id: int) -> None: ...
+    def force_exit_all(self) -> None:
+        """Market-exit every open trade."""
+        ...
+
+
 class Notifier(Protocol):
     """Operator-facing alerts (Telegram from 3A-4)."""
 
