@@ -121,7 +121,7 @@ Each package = one branch, plan mode first, one PR-equivalent merge to `main`.
 - Nightly backup job (ledger + Freqtrade dry-run DB, write-only B2 key) + `scripts/restore-test.sh`.
 
 **3A-6 Drills** (`chore/3a-drills`)
-- Kill switch, nuclear, restart-persists-halt, heartbeat silence (stop container), backup restore, VPS rebuild. Results recorded in `docs/drills/`.
+- Kill switch, nuclear, restart-persists-halt, heartbeat silence (stop container), backup restore, VPS rebuild. Results recorded in `docs/drills/`. Procedures, run order and results: [`docs/drills/README.md`](drills/README.md). `scripts/drill-check.sh` (on the VPS) verifies each step.
 
 **3A exit gate**
 - [ ] VPS running Freqtrade + Conductor ≥ 7 days, zero public inbound ports verified (external port scan)
