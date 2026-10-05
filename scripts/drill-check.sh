@@ -47,7 +47,6 @@ done
 [ -z "$EXPECT_POSITIONS" ] || [[ "$EXPECT_POSITIONS" =~ ^[0-9]+$ ]] || die "--expect-positions needs a number"
 case "$EXPECT_STATE" in ""|running|paused|stopped) ;; *) die "--expect-state: running, paused or stopped" ;; esac
 command -v docker >/dev/null || die "docker not found (run this on the VPS)"
-command -v python3 >/dev/null || die "python3 not found on the host"
 
 running() { [ "$(docker inspect -f '{{.State.Running}}' "$1" 2>/dev/null)" = "true" ]; }
 
@@ -63,48 +62,36 @@ def get(path):
     req = urllib.request.Request(base + path, headers={"Authorization": "Basic " + tok})
     with urllib.request.urlopen(req, timeout=8) as r:
         return json.load(r)
+import shlex
+def emit(name, value):
+    print(f"{name}={shlex.quote(str(value))}")
 try:
     cfg = get("/show_config")
     trades = get("/status")
-    print(json.dumps({
-        "ok": True,
-        "state": cfg.get("state", "unknown"),
-        "dry_run": cfg.get("dry_run"),
-        "positions": [
-            {"id": t.get("trade_id"), "pair": t.get("pair"), "stake": t.get("stake_amount"),
-             "open_orders": bool(t.get("has_open_orders"))} for t in trades],
-    }))
+    emit("FT_OK", 1)
+    emit("FT_STATE", cfg.get("state", "unknown"))
+    emit("FT_DRY", cfg.get("dry_run"))
+    emit("FT_POSITIONS", len(trades))
+    for t in trades:
+        emit("FT_POS_LINE", "  #%s %s stake %s%s" % (
+            t.get("trade_id"), t.get("pair"), t.get("stake_amount"),
+            "  [open order]" if t.get("has_open_orders") else ""))
 except Exception as exc:
-    print(json.dumps({"ok": False, "error": type(exc).__name__}))
+    emit("FT_OK", 0)
+    emit("FT_STATE", "unreachable(%s)" % type(exc).__name__)
 PY
 )
 
-ft_json() {
-  if ! running "$FT"; then echo '{"ok": false, "error": "container not running"}'; return; fi
+# Prints shell assignments (values shlex-quoted by the probe), or a fallback when it cannot run.
+ft_vars() {
+  if ! running "$FT"; then echo "FT_OK=0; FT_STATE='unreachable(container not running)'"; return; fi
   local out
   out=$(printf '%s\n' "$FT_PROBE" | docker exec -i "$FT" python - 2>/dev/null) \
-    || out='{"ok": false, "error": "probe failed"}'
-  [ -n "$out" ] && echo "$out" || echo '{"ok": false, "error": "no output"}'
+    || out="FT_OK=0
+FT_STATE='unreachable(probe failed)'"
+  printf '%s\n' "${out:-FT_OK=0
+FT_STATE='unreachable(no output)'}"
 }
-
-HALTS_PY=$(cat <<'PY'
-import sqlite3, sys
-all_ = sys.argv[1] == "--all"
-db = sqlite3.connect("file:/data/conductor.db?mode=ro", uri=True)
-rows = db.execute(
-    "SELECT h.id, h.halt_type, coalesce(h.instance, 'all instances'), h.reason, c.cleared_at, c.operator "
-    "FROM halts h LEFT JOIN halt_clears c ON c.halt_id = h.id ORDER BY h.id DESC LIMIT 200"
-).fetchall()
-n = 0
-for i, t, inst, why, at, op in rows:
-    if at is not None and not all_:
-        continue
-    print(f"#{i} {t} [{inst}] " + ("ACTIVE" if at is None else f"cleared {at} by {op}") + f" :: {why}")
-    n += 1
-if not n:
-    print("no active halts")
-PY
-)
 
 # --- Halts: Conductor's CLI when it is up; a read-only ledger peek when it is stopped ------
 halts_text() {  # $1 = "" (active) | --all
@@ -178,17 +165,14 @@ counts_text() {
 
 # --- Collect ------------------------------------------------------------------------------
 collect() {
-  FTJ=$(ft_json)
-  eval "$(printf '%s' "$FTJ" | python3 -c '
-import json, shlex, sys
-d = json.load(sys.stdin)
-print("FT_OK=%s" % ("1" if d.get("ok") else "0"))
-print("FT_STATE=%s" % shlex.quote(d.get("state", "unreachable") if d.get("ok") else "unreachable(" + str(d.get("error")) + ")"))
-print("FT_DRY=%s" % shlex.quote(str(d.get("dry_run"))))
-print("FT_POSITIONS=%d" % len(d.get("positions", [])))
-for p in d.get("positions", []):
-    print("FT_POS_LINES+=(%s)" % shlex.quote("  #%s %s stake %s%s" % (p["id"], p["pair"], p["stake"], "  [open order]" if p["open_orders"] else "")))
-' 2>/dev/null)" || { FT_OK=0; FT_STATE="unreachable(parse)"; FT_DRY="?"; FT_POSITIONS="?"; }
+  FT_OK=0; FT_STATE="unreachable"; FT_DRY="?"; FT_POSITIONS="?"; FT_POS_LINES=()
+  local line
+  while IFS= read -r line; do
+    case "$line" in
+      FT_POS_LINE=*) eval "$line"; FT_POS_LINES+=("$FT_POS_LINE") ;;
+      FT_OK=*|FT_STATE=*|FT_DRY=*|FT_POSITIONS=*) eval "$line" ;;
+    esac
+  done < <(ft_vars)
   HALTS_ACTIVE_TEXT=$(halts_text "")
   if printf '%s' "$HALTS_ACTIVE_TEXT" | grep -q 'UNREADABLE'; then HALT_COUNT="?"
   else HALT_COUNT=$(printf '%s\n' "$HALTS_ACTIVE_TEXT" | grep -c '\] ACTIVE ::' || true); fi
