@@ -1,0 +1,14 @@
+{
+    "length": 6,
+    "method": [
+        "StaticPairList"
+    ],
+    "whitelist": [
+        "BTC/USD",
+        "XRP/USD",
+        "ETH/USD",
+        "SOL/USD",
+        "LINK/USD",
+        "LTC/USD"
+    ]
+}

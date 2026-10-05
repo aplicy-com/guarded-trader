@@ -24,11 +24,18 @@ def test_domain_imports_only_stdlib_and_itself() -> None:
             assert root in sys.stdlib_module_names or mod.startswith("conductor.domain"), (f, mod)
 
 
+# structlog is the logging facade (configured in infrastructure/logging.py); it does
+# no I/O of its own choosing and is the one third-party import use cases may have.
+APPLICATION_ALLOWED_THIRD_PARTY = {"structlog"}
+
+
 def test_application_depends_only_on_domain_and_stdlib() -> None:
     for f in (SRC / "application").rglob("*.py"):
         for mod in _imports(f):
             root = mod.split(".")[0]
-            ok = root in sys.stdlib_module_names or mod.startswith(
-                ("conductor.domain", "conductor.application")
+            ok = (
+                root in sys.stdlib_module_names
+                or root in APPLICATION_ALLOWED_THIRD_PARTY
+                or mod.startswith(("conductor.domain", "conductor.application"))
             )
             assert ok, (f, mod)

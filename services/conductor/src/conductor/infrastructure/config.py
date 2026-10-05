@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import AliasChoices, AnyHttpUrl, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -32,7 +32,17 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("FREQTRADE__API_SERVER__PASSWORD", "freqtrade_password"),
     )
 
+    # Name under which this Freqtrade instance's trades are stored in the ledger.
+    freqtrade_instance_name: str = Field(default="primary", min_length=1)
+
+    # R3. The cap's value is TBD (Phase 3, docs/02-requirements.md): no default is
+    # invented. Unset => the fence job fences nothing and logs a warning.
+    daily_profit_cap_usd: Decimal | None = Field(default=None, ge=Decimal(0))
+    # R3 draft value (docs/02-requirements.md AC3.1), final value TBD (Phase 3).
+    manual_move_threshold_usd: Decimal = Field(default=Decimal(25), gt=Decimal(0))
+
     scheduler_enabled: bool = True
+    ingest_interval_seconds: int = Field(default=300, ge=30)
     heartbeat_interval_seconds: int = Field(default=300, ge=30)
     healthchecks_ping_url: AnyHttpUrl | None = None  # unused until 3A-5
 
@@ -40,6 +50,18 @@ class Settings(BaseSettings):
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_json: bool = True
+
+    @field_validator("daily_profit_cap_usd", mode="before")
+    @classmethod
+    def _blank_cap_is_unset(cls, v: Any) -> Any:
+        return None if isinstance(v, str) and not v.strip() else v
+
+    @field_validator("principal_usd", "daily_profit_cap_usd", "manual_move_threshold_usd")
+    @classmethod
+    def _finite(cls, v: Decimal | None) -> Decimal | None:
+        if v is not None and not v.is_finite():
+            raise ValueError("must be a finite number")
+        return v
 
     @field_validator("database_url")
     @classmethod

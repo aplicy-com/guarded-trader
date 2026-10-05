@@ -19,6 +19,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "httpx2==2.13.1",
+    "hypothesis==6.168.3",
     "mypy==2.4.0",
     "pytest==9.1.1",
     "ruff==0.16.10",
@@ -34,7 +35,7 @@ packages = ["src/conductor"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
-pythonpath = ["src"]
+pythonpath = ["src", "tests"]
 
 [tool.ruff]
 line-length = 100

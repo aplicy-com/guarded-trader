@@ -1,12 +1,15 @@
 """Read-only Freqtrade REST client.
 
-Exposes GET-only calls: ping, show_config, status, trades, profit. There is no
+Exposes GET-only calls: ping, show_config, status, trades, profit, balance,
+whitelist. There is no
 method that can change state, and the HTTP layer refuses any non-GET request,
 so a future edit cannot quietly turn a "reader" into an order path (ADR-0003).
 Control actions (stopentry, forceexit, reload_config) are NOT here; they land
-in 3A-2/3A-3 as a separate, reviewed adapter.
+in 3A-3 as a separate, reviewed adapter.
 """
 
+from collections.abc import Mapping
+from decimal import Decimal
 from typing import Any
 
 import httpx
@@ -20,7 +23,15 @@ from conductor.domain.freqtrade_view import (
     TradesPage,
 )
 
-from .schemas import OpenTradeWire, PingWire, ProfitWire, ShowConfigWire, TradesWire
+from .schemas import (
+    BalanceWire,
+    OpenTradeWire,
+    PingWire,
+    ProfitWire,
+    ShowConfigWire,
+    TradesWire,
+    WhitelistWire,
+)
 
 log = structlog.get_logger()
 
@@ -96,3 +107,9 @@ class FreqtradeRestClient:
 
     def profit(self) -> ProfitSummary:
         return self._parse(ProfitWire, "/profit", self._get("/profit")).to_view()
+
+    def balances(self) -> Mapping[str, Decimal]:
+        return self._parse(BalanceWire, "/balance", self._get("/balance")).to_view()
+
+    def whitelist(self) -> tuple[str, ...]:
+        return tuple(self._parse(WhitelistWire, "/whitelist", self._get("/whitelist")).whitelist)

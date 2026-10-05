@@ -43,9 +43,20 @@ getting them off the exchange, not about risk control.
 3. Manually initiate a withdrawal from the trading account to the sweep
    destination account, for the fenced amount, using Kraken's own
    withdrawal flow.
-4. Record the transfer in the ledger (Conductor command for this: TBD
-   Phase 3 — until it exists, note it manually somewhere you'll remember:
-   amount, destination, and Kraken's transaction id).
+4. Record the transfer in the ledger, from the repo root on the machine
+   running the stack (this only RECORDS what you already did on Kraken; it
+   cannot move money). Use the amount, destination and Kraken transaction id
+   exactly as Kraken shows them:
+
+       docker compose --env-file .env -f infra/docker-compose.yml exec conductor \
+         python -m conductor.cli record-transfer --amount <USD> \
+         --destination "<where it went>" --tx-id <kraken id> --operator <your name>
+
+   Expected output: `recorded transfer of <USD> USD to <destination> (<id>)`.
+   If it prints `ERROR: transfer ... exceeds fenced-but-unmoved ...`, the amount
+   is larger than what the ledger has fenced and not yet recorded as moved:
+   re-check the amount (`python -m conductor.cli capital` shows `fenced_total`).
+   The transfer id must be unique; a duplicate is rejected.
 5. Once initiated, verify per the reconciliation steps below.
 
 ## Routine verification — the manual move

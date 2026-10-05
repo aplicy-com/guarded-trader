@@ -149,6 +149,15 @@ deliberately moved off this gate entirely, onto Phase 4's.
 to fund the account with the $100 principal (R1) and go live — this is
 not an automatic transition.
 
+- [ ] **TODO (blocks going live):** the R5 exclusion mechanism must exist —
+      an exclusions table in the ledger, a CLI command to record an
+      excluded pre-existing balance (or confirm it was moved out), and the
+      AC5.4 clearance runbook (extend `06-runbooks/start-stop.md`). Until
+      then any pre-existing balance in a whitelisted pair permanently
+      blocks a `TRADING_MODE=live` start (3A-2 implemented only the check).
+- [ ] Re-record the Freqtrade `/balance` fixture from the live-mode instance
+      (the VPS dry-run one shows simulated balances only).
+
 **Scope:**
 - Live trading begins at 25% of `max_deployed_capital`, real orders,
   real money.
