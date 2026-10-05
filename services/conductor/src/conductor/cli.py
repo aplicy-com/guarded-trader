@@ -10,6 +10,8 @@
     python -m conductor.cli nuclear --operator NAME --confirm-flatten-everything
     python -m conductor.cli clear-halt HALT_ID --operator NAME [--note ...]
     python -m conductor.cli backup-now
+    python -m conductor.cli isolation-check
+    python -m conductor.cli exclude-balance --asset ETH --operator NAME [--amount N] [--note ...]
 
 `kill` blocks new entries; `nuclear` also cancels open orders, market-exits every
 position and stops the bot; `clear-halt` is the only way to resume (named
@@ -17,6 +19,11 @@ operator, logged). All three persist in the ledger first.
 
 `backup-now` runs the nightly backup immediately (same code path and audit record as the
 03:15 UTC job); it needs the BACKUP_B2_* settings. Use it to prove the B2 setup after a deploy.
+
+`isolation-check` prints, for every whitelisted base asset, the exchange balance, what the ledger's
+own open positions account for, what is excluded, and what is unexplained (R5); exit 1 if any
+asset has an unexplained balance. `exclude-balance` records a pre-existing balance as NOT the
+system's (AC5.4), by default exactly the unexplained amount; it cannot exceed what is held.
 
 `record-transfer` only RECORDS a move you already made by hand on Kraken's own
 interface. Nothing here can move money or talk to an exchange.
@@ -34,6 +41,7 @@ from conductor.application.backup import run_backup
 from conductor.application.capital import PrincipalNotSetError, get_capital
 from conductor.application.fence import record_manual_transfer
 from conductor.application.halts import clear_halt, kill_switch, nuclear
+from conductor.application.isolation import ExclusionError, isolation_rows, record_exclusion
 from conductor.application.tax import export_tax_csv, value_closed_trades
 from conductor.infrastructure.config import Settings, load_settings
 from conductor.infrastructure.db import create_db_engine, create_session_factory
@@ -94,6 +102,17 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("halt_id", type=int)
     c.add_argument("--operator", required=True)
     c.add_argument("--note", default=None)
+    sub.add_parser("isolation-check", help="R5: show unexplained balances per whitelisted asset")
+    x = sub.add_parser("exclude-balance", help="R5: record a pre-existing balance as not ours")
+    x.add_argument("--asset", required=True, help="base asset code, e.g. ETH")
+    x.add_argument("--operator", required=True)
+    x.add_argument(
+        "--amount",
+        type=_decimal,
+        default=None,
+        help="total to exclude for this asset (default: everything currently unexplained)",
+    )
+    x.add_argument("--note", default=None)
     sub.add_parser("backup-now", help="run the nightly backup now (needs BACKUP_B2_* settings)")
     e = sub.add_parser("export-tax", help="write the CAD tax export as CSV")
     e.add_argument("--out", default="-", help="file path, or - for stdout")
@@ -168,6 +187,42 @@ def _halt_command(args: argparse.Namespace, ledger: SqliteLedger, settings: Sett
             close()
 
 
+def _isolation_command(args: argparse.Namespace, ledger: SqliteLedger, settings: Settings) -> int:
+    instances, closers = build_instances(settings)
+    try:
+        inst = instances[0]
+        if args.command == "isolation-check":
+            rows = isolation_rows(ledger, inst)
+            print(
+                f"{'asset':8} {'exchange':>16} {'ledger':>16} {'excluded':>16} {'unexplained':>16}"
+            )
+            for r in rows:
+                print(
+                    f"{r.asset:8} {r.exchange_balance:>16} {r.ledger_holding:>16} "
+                    f"{r.excluded:>16} {r.unexplained:>16}"
+                )
+            bad = [r.asset for r in rows if r.unexplained > 0]
+            print("R5 CHECK FAIL: unexplained " + ", ".join(bad) if bad else "R5 CHECK PASS")
+            return 1 if bad else 0
+        total = record_exclusion(
+            ledger,
+            inst,
+            asset=args.asset,
+            amount=args.amount,
+            operator=args.operator,
+            note=args.note,
+            now=lambda: datetime.now(UTC),
+        )
+        print(f"excluded {total} {args.asset.strip().upper()} (total now excluded for that asset)")
+        return 0
+    except ExclusionError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        for close in closers:
+            close()
+
+
 def _backup_now(ledger: SqliteLedger, settings: Settings) -> int:
     if not settings.backup_enabled:
         print("ERROR: backups are not configured (set the BACKUP_B2_* variables)", file=sys.stderr)
@@ -235,6 +290,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1 if report.failed else 0
         elif args.command in {"halts", "kill", "nuclear", "clear-halt"}:
             return _halt_command(args, ledger, settings)
+        elif args.command in {"isolation-check", "exclude-balance"}:
+            return _isolation_command(args, ledger, settings)
         elif args.command == "backup-now":
             return _backup_now(ledger, settings)
         elif args.command == "export-tax":

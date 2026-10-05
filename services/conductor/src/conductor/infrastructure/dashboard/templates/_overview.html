@@ -11,7 +11,7 @@
   {% else %}
     <strong>No active halts</strong>
   {% endif %}
-  <span class="mode">{{ o.trading_mode }}</span>
+  <span class="mode{% if o.trading_mode == 'live' %} live{% endif %}">{% if o.trading_mode == 'live' %}LIVE: REAL MONEY{% else %}{{ o.trading_mode }}{% endif %}</span>
 </section>
 
 <section class="tiles">

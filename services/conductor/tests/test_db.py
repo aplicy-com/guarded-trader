@@ -30,7 +30,7 @@ def test_alembic_upgrade_head_applies_ledger_schema(tmp_path: Path) -> None:
     )
     assert out.returncode == 0, out.stderr
     with create_engine(f"sqlite:///{db}").connect() as c:
-        assert c.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0003"
+        assert c.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "0004"
         tables = {
             r[0] for r in c.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
         }

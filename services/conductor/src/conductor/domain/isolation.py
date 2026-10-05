@@ -10,6 +10,7 @@ another (AC5.5).
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Protocol
 
 ZERO = Decimal(0)
 
@@ -61,10 +62,32 @@ def check_account_isolation(
     return tuple(violations)
 
 
+class _Declaration(Protocol):
+    @property
+    def asset(self) -> str: ...
+    @property
+    def amount(self) -> Decimal: ...
+
+
+def effective_exclusions(history: Iterable[_Declaration]) -> dict[str, Decimal]:
+    """Amount in force per asset from an oldest-first declaration history (newest wins).
+
+    Items need ``asset`` and ``amount``. A newest amount of 0 withdraws the exclusion.
+    """
+    out: dict[str, Decimal] = {}
+    for rec in history:
+        out[rec.asset] = rec.amount
+    return {asset: amount for asset, amount in out.items() if amount > ZERO}
+
+
 class AccountIsolationError(RuntimeError):
     """Startup must abort: a whitelisted pair holds a balance the system did not buy (R5)."""
 
     def __init__(self, violations: tuple[IsolationViolation, ...]) -> None:
         self.violations = violations
         detail = "; ".join(f"{v.pair}: unexplained {v.unexplained} {v.asset}" for v in violations)
-        super().__init__(f"R5 account isolation violated: {detail}")
+        super().__init__(
+            f"R5 account isolation violated: {detail}. Clear it by hand "
+            "(docs/06-runbooks/start-stop.md, 'R5 abort'): move the balance off the account, or "
+            "record it with `conductor.cli exclude-balance`. It never clears itself."
+        )

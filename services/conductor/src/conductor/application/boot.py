@@ -24,6 +24,7 @@ import structlog
 from conductor.application.halts import StepResult, enforce_halts
 from conductor.application.ingest import FreqtradeInstance
 from conductor.application.ledger_ports import Ledger
+from conductor.application.live_guard import StartGate
 from conductor.application.notify import safe_send
 from conductor.application.ports import Notifier
 from conductor.domain.halt import entries_blocked
@@ -42,6 +43,7 @@ class BootGuard:
         self._lock = threading.Lock()
         self._seen: dict[str, int | None] = {}
         self._pending: set[str] = set()
+        self._withheld: dict[str, str] = {}
 
     def observe(self, instance: str, marker: int | None) -> bool:
         """Record the marker; True if this is a first sight or the marker changed (a boot)."""
@@ -59,6 +61,14 @@ class BootGuard:
     def settle(self, instance: str) -> None:
         with self._lock:
             self._pending.discard(instance)
+            self._withheld.pop(instance, None)
+
+    def note_withheld(self, instance: str, reason: str) -> bool:
+        """Remember why a start is withheld; True only when this reason is new (alert once)."""
+        with self._lock:
+            new = self._withheld.get(instance) != reason
+            self._withheld[instance] = reason
+            return new
 
 
 def start_if_clear(
@@ -68,19 +78,23 @@ def start_if_clear(
     *,
     equity_known: bool,
     notifier: Notifier | None = None,
+    start_gate: StartGate | None = None,
 ) -> tuple[StepResult, ...]:
     """Start every freshly booted, paused Freqtrade that no active halt covers.
 
     Call it AFTER this cycle's ingest, risk evaluation and `enforce_halts`, so a breach found in
     the same cycle has already become a halt. ``equity_known=False`` (an ingest failed, so R4
-    could not be evaluated) defers every start.
+    could not be evaluated) defers every start. ``start_gate`` (live pilot) may veto a start with a
+    reason: the bot then stays paused, one alert is sent, and the check is repeated every cycle,
+    so it starts only once the cause is genuinely gone (never by retrying until it slips through).
     """
     results: list[StepResult] = []
     for inst in instances:
         if inst.controller is None:
             continue
         try:
-            state = inst.reader.show_config().state
+            config = inst.reader.show_config()
+            state = config.state
             marker = inst.reader.health().startup_ts
         except Exception as exc:
             log.warning("boot_check_unreachable", instance=inst.name, error=type(exc).__name__)
@@ -105,6 +119,20 @@ def start_if_clear(
             guard.settle(inst.name)  # stays paused; `clear-halt` resumes it when a human clears
             log.warning("boot_start_withheld", instance=inst.name, reason="halt active")
             continue
+        if start_gate is not None:
+            try:
+                reason = start_gate(inst, config)
+            except Exception as exc:  # a broken gate must veto, not allow
+                reason = f"start gate failed ({type(exc).__name__})"
+            if reason is not None:
+                log.error("boot_start_vetoed", instance=inst.name, reason=reason)
+                if guard.note_withheld(inst.name, reason):
+                    safe_send(
+                        notifier,
+                        f"BOOT {inst.name}: NOT started, stays paused: {reason}",
+                    )
+                results.append(StepResult(inst.name, "boot_start", False, reason))
+                continue
         try:
             inst.controller.resume()
         except Exception as exc:

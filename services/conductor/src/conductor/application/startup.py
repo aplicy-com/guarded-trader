@@ -1,4 +1,4 @@
-"""Startup gate: R1 principal, then (live only) a fresh ingest and the R5 balance check.
+"""Startup gate: mode agreement, R1 principal, then (live only) a fresh ingest and the R5 check.
 
 Any exception from here means Conductor must not start.
 """
@@ -16,6 +16,7 @@ from conductor.application.isolation import (
     run_startup_isolation_check,
 )
 from conductor.application.ledger_ports import Ledger
+from conductor.application.live_guard import verify_mode
 from conductor.application.ports import Notifier
 from conductor.application.principal import ensure_principal
 from conductor.domain.trading_mode import TradingMode
@@ -32,6 +33,7 @@ def run_startup_checks(
     principal: Decimal,
     now: Callable[[], datetime],
 ) -> None:
+    verify_mode(mode, instances)  # before anything is written to a ledger
     ensure_principal(ledger, principal, notifier=notifier, now=now)
     if mode is TradingMode.LIVE:
         # The ledger must reflect Freqtrade's own positions before comparing balances.

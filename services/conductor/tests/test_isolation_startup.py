@@ -127,7 +127,7 @@ def test_startup_checks_live_abort_when_ingest_fails(
     clock: Clock,
 ) -> None:
     freqtrade.fail = True
-    with pytest.raises(IsolationCheckUnavailableError, match="ingest failed"):
+    with pytest.raises(IsolationCheckUnavailableError, match="cannot read Freqtrade"):
         run_startup_checks(
             mode=TradingMode.LIVE,
             ledger=ledger,
@@ -157,7 +157,7 @@ def test_startup_checks_dry_run_does_not_touch_freqtrade(
 
 
 def test_create_app_in_live_mode_refuses_to_start_on_unexplained_balance(db_path: Path) -> None:
-    ft = FakeFreqtrade(balance_by_currency={"BTC": D("1")})
+    ft = FakeFreqtrade(balance_by_currency={"BTC": D("1")}, dry_run=False)
     with pytest.raises(AccountIsolationError):
         create_app(
             make_settings(db_path, trading_mode="live"),
@@ -166,7 +166,7 @@ def test_create_app_in_live_mode_refuses_to_start_on_unexplained_balance(db_path
 
 
 def test_create_app_in_live_mode_starts_when_clean(db_path: Path) -> None:
-    ft = FakeFreqtrade(balance_by_currency={"USD": D(100)})
+    ft = FakeFreqtrade(balance_by_currency={"USD": D(100)}, dry_run=False)
     create_app(
         make_settings(db_path, trading_mode="live"), instances=[FreqtradeInstance("primary", ft)]
     )

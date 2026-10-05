@@ -206,6 +206,20 @@ halt_clears = sa.Table(
     sa.Column("note", sa.String),
 )
 
+# R5: balances that existed before the system and must never count as its own. The amount in
+# force for an asset is its newest row (0 = exclusion withdrawn); rows are never edited.
+isolation_exclusions = sa.Table(
+    "isolation_exclusions",
+    metadata,
+    sa.Column("id", sa.Integer, primary_key=True),
+    sa.Column("asset", sa.String, nullable=False),
+    sa.Column("amount", Money, nullable=False),
+    sa.Column("recorded_at", UtcDateTime, nullable=False),
+    sa.Column("operator", sa.String, nullable=False),
+    sa.Column("note", sa.String),
+    sa.CheckConstraint("CAST(amount AS REAL) >= 0", name="ck_exclusion_non_negative"),
+)
+
 # Tables that may never be UPDATEd or DELETEd once written (enforced by triggers).
 APPEND_ONLY_TABLES: tuple[str, ...] = (
     "principal",
@@ -214,6 +228,7 @@ APPEND_ONLY_TABLES: tuple[str, ...] = (
     "audit_log",
     "halts",
     "halt_clears",
+    "isolation_exclusions",
 )
 
 TABLE_NAMES: frozenset[str] = frozenset(metadata.tables)
