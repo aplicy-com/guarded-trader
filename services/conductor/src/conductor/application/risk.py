@@ -19,7 +19,9 @@ from conductor.application.capital import capital_from_ledger
 from conductor.application.halts import StepResult, enforce_halts, engage_halt
 from conductor.application.ingest import FreqtradeInstance, IngestReport, run_ingest
 from conductor.application.ledger_ports import EquitySnapshot, Ledger, LedgerRepo
+from conductor.application.notify import safe_send
 from conductor.application.ports import Notifier
+from conductor.application.reachability import ReachabilityTracker
 from conductor.domain.halt import HaltType
 from conductor.domain.risk import (
     Breach,
@@ -103,8 +105,14 @@ def run_risk_cycle(
     *,
     now: Clock,
     notifier: Notifier,
+    tracker: ReachabilityTracker | None = None,
 ) -> RiskReport:
-    ingest = run_ingest(ledger, instances, now=now)
+    ingest = run_ingest(ledger, instances, now=now, notifier=notifier)
+    if tracker is not None:
+        for inst in instances:
+            text = tracker.update(inst.name, inst.name not in ingest.failed_instances, now())
+            if text is not None:
+                safe_send(notifier, text)
     equity_known = not ingest.failed_instances
     if not equity_known:
         log.warning("risk_equity_unknown", failed_instances=list(ingest.failed_instances))

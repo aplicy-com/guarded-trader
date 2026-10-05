@@ -3,20 +3,22 @@
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 import structlog
 
 from conductor.application.capital import PrincipalNotSetError, record_snapshot
 from conductor.application.ledger_ports import Ledger
-from conductor.application.ports import FreqtradeController, FreqtradeReader
+from conductor.application.notify import safe_send
+from conductor.application.ports import FreqtradeController, FreqtradeReader, Notifier
 from conductor.domain.ledger import LedgerTrade, from_closed, from_open
 
 log = structlog.get_logger()
 Clock = Callable[[], datetime]
 
 PAGE_SIZE = 500
+ALERT_MAX_AGE = timedelta(hours=6)  # never alert on old history (first import, long outage)
 MAX_PAGES = 1000  # safety valve against a misbehaving pagination contract
 
 
@@ -67,7 +69,32 @@ def _fetch(reader: FreqtradeReader) -> _Fetched:
     return _Fetched(trades, unrealized)
 
 
-def run_ingest(ledger: Ledger, instances: list[FreqtradeInstance], *, now: Clock) -> IngestReport:
+def _trade_alert(inst: str, trade: LedgerTrade, outcome: str, at: datetime) -> str | None:
+    """Alert text for a first-seen open trade or an open->closed transition, if recent."""
+    if trade.is_open and outcome == "inserted" and at - trade.open_date <= ALERT_MAX_AGE:
+        return (
+            f"OPENED {inst} {trade.pair} {trade.amount:f} @ {trade.open_rate:f} "
+            f"(stake {trade.stake_amount:.2f} USD)"
+        )
+    closed_recently = (
+        not trade.is_open
+        and outcome in ("inserted", "updated")
+        and trade.close_date is not None
+        and at - trade.close_date <= ALERT_MAX_AGE
+    )
+    if closed_recently:
+        profit = trade.close_profit_abs or Decimal(0)
+        return f"CLOSED {inst} {trade.pair} {profit:+.2f} USD ({trade.exit_reason or 'n/a'})"
+    return None
+
+
+def run_ingest(
+    ledger: Ledger,
+    instances: list[FreqtradeInstance],
+    *,
+    now: Clock,
+    notifier: Notifier | None = None,
+) -> IngestReport:
     """Upsert every instance's trades; one unreachable instance never blocks the others.
 
     Idempotent: re-ingesting the same Freqtrade state changes nothing. A failed
@@ -79,14 +106,22 @@ def run_ingest(ledger: Ledger, instances: list[FreqtradeInstance], *, now: Clock
     for inst in instances:
         try:
             fetched = _fetch(inst.reader)
+            events: list[str] = []
             with ledger.transaction() as repo:
                 for trade in fetched.trades:
-                    counts[repo.upsert_trade(inst.name, trade, now())] += 1
+                    at = now()
+                    outcome = repo.upsert_trade(inst.name, trade, at)
+                    counts[outcome] += 1
+                    text = _trade_alert(inst.name, trade, outcome, at)
+                    if text is not None:
+                        events.append(text)
         except Exception:
             log.exception("ingest_instance_failed", instance=inst.name)
             failed.append(inst.name)
             unrealized_total = None
             continue
+        for text in events:  # after the commit: alerts follow the ledger, never lead it
+            safe_send(notifier, text)
         if unrealized_total is not None:
             unrealized_total = (
                 None if fetched.unrealized is None else unrealized_total + fetched.unrealized

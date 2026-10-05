@@ -160,3 +160,14 @@ def closed_view(trade_id: int, profit: str = "2.00", pair: str = "ETH/USD", **kw
         "exit_reason": "roi",
     }
     return TradeView(**{**base, **kw})
+
+
+class BrokenNotifier:
+    """A notifier that always fails: alerts are best-effort, risk logic must not care."""
+
+    def __init__(self) -> None:
+        self.attempts = 0
+
+    def send(self, text: str) -> None:
+        self.attempts += 1
+        raise RuntimeError("telegram is down")

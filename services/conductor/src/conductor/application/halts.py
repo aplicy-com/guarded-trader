@@ -15,6 +15,7 @@ import structlog
 
 from conductor.application.ingest import FreqtradeInstance
 from conductor.application.ledger_ports import Ledger
+from conductor.application.notify import safe_send
 from conductor.application.ports import Notifier
 from conductor.domain.halt import Halt, HaltType, entries_blocked
 
@@ -44,13 +45,6 @@ class HaltReport:
         return all(s.ok for s in self.steps)
 
 
-def _notify(notifier: Notifier, text: str) -> None:
-    try:
-        notifier.send(text)
-    except Exception:
-        log.exception("alert_failed")
-
-
 def engage_halt(
     ledger: Ledger,
     *,
@@ -77,7 +71,7 @@ def engage_halt(
     log.error(
         "halt_engaged", halt_id=halt_id, type=halt_type.value, instance=instance, reason=reason
     )
-    _notify(notifier, f"HALT #{halt_id} [{halt_type.value}] {reason}")
+    safe_send(notifier, f"HALT #{halt_id} [{halt_type.value}] {reason}")
     return halt_id, True
 
 
@@ -141,7 +135,10 @@ def kill_switch(
     )
     steps = [_pause(inst) for inst in instances]
     _audit_steps(ledger, now, operator, "kill_switch_applied", halt_id, steps)
-    return HaltReport(halt_id, created, tuple(steps))
+    report = HaltReport(halt_id, created, tuple(steps))
+    if not report.ok:  # success is already announced by the halt alert itself
+        safe_send(notifier, _result_text("KILL SWITCH", report))
+    return report
 
 
 def nuclear(
@@ -175,7 +172,9 @@ def nuclear(
     for inst in instances:
         steps.extend(_nuclear_one(inst, sleep, flatten_wait_seconds))
     _audit_steps(ledger, now, operator, "nuclear_applied", halt_id, steps)
-    return HaltReport(halt_id, created, tuple(steps))
+    report = HaltReport(halt_id, created, tuple(steps))
+    safe_send(notifier, _result_text("NUCLEAR", report))
+    return report
 
 
 def _nuclear_one(
@@ -221,6 +220,19 @@ def _nuclear_one(
         log.error("nuclear_step_failed", instance=inst.name, error=type(exc).__name__)
         steps.append(StepResult(inst.name, "nuclear", False, type(exc).__name__))
     return steps
+
+
+def _result_text(name: str, report: HaltReport) -> str:
+    head = f"{name} #{report.halt_id}: " + (
+        "all steps ok" if report.ok else "NOT every step succeeded"
+    )
+    lines = [head]
+    lines += [
+        f"  {s.instance}: {s.step}: {'ok' if s.ok else 'FAILED ' + s.detail}" for s in report.steps
+    ]
+    if not report.ok:
+        lines.append("The halt is recorded and will be re-applied automatically.")
+    return "\n".join(lines)
 
 
 def _operator(operator: str) -> str:
@@ -271,6 +283,7 @@ def clear_halt(
     operator: str,
     note: str | None,
     now: Clock,
+    notifier: Notifier | None = None,
 ) -> ClearReport:
     """The only way out of a halt: a named human. Records the clear, then resumes.
 
@@ -297,6 +310,7 @@ def clear_halt(
         active = repo.active_halts()
     if newly:
         log.warning("halt_cleared", halt_id=halt_id, operator=operator)
+        safe_send(notifier, f"HALT #{halt_id} [{halt.halt_type.value}] cleared by {operator}")
     results: list[StepResult] = []
     for inst in instances:
         if entries_blocked(active, inst.name):

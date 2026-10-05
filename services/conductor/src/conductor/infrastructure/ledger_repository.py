@@ -11,6 +11,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session, sessionmaker
 
 from conductor.application.ledger_ports import (
+    ClosedTradeSummary,
     EquitySnapshot,
     LedgerRepo,
     OpenPosition,
@@ -202,6 +203,23 @@ class SqliteLedgerRepo:
             (r.close_profit_abs for r in rows if r.close_date is not None and r.close_date < at),
             ZERO,
         )
+
+    def recent_closed_trades(self, limit: int) -> list[ClosedTradeSummary]:
+        rows = sorted(
+            self._s.execute(
+                sa.select(t.trades).where(
+                    t.trades.c.is_open.is_(False), t.trades.c.close_date.is_not(None)
+                )
+            ).all(),
+            key=lambda r: (r.close_date, r.id),
+            reverse=True,
+        )
+        return [
+            ClosedTradeSummary(
+                r.instance, r.pair, r.close_date, r.close_profit_abs or ZERO, r.exit_reason
+            )
+            for r in rows[:limit]
+        ]
 
     def _snapshot_from(self, row: sa.Row[Any]) -> EquitySnapshot:
         return EquitySnapshot(**{f: getattr(row, f) for f in EquitySnapshot.__dataclass_fields__})

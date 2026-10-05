@@ -1,8 +1,8 @@
 from decimal import Decimal
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import AliasChoices, AnyHttpUrl, Field, SecretStr, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices, AnyHttpUrl, Field, SecretStr, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from conductor.domain.trading_mode import TradingMode
 
@@ -49,6 +49,14 @@ class Settings(BaseSettings):
     max_concurrent_positions: int = Field(default=2, ge=1)
     risk_check_interval_seconds: int = Field(default=60, ge=15)
 
+    # Telegram (3A-4). The token reaches this container only. Both or neither: a bot
+    # without an allowlist, or an allowlist without a bot, is a misconfiguration.
+    telegram_bot_token: SecretStr | None = None
+    telegram_allowed_chat_ids: Annotated[tuple[int, ...], NoDecode] = ()
+    # false = alerts only, no polling. Lets a second Conductor (dev/test) send alerts without
+    # fighting the real one over getUpdates (one token can be polled by one process only).
+    telegram_commands_enabled: bool = True
+
     scheduler_enabled: bool = True
     ingest_interval_seconds: int = Field(default=300, ge=30)
     heartbeat_interval_seconds: int = Field(default=300, ge=30)
@@ -76,6 +84,34 @@ class Settings(BaseSettings):
         if v is not None and not v.is_finite():
             raise ValueError("must be a finite number")
         return v
+
+    @field_validator("telegram_bot_token", mode="before")
+    @classmethod
+    def _blank_token_is_unset(cls, v: Any) -> Any:
+        return None if isinstance(v, str) and not v.strip() else v
+
+    @field_validator("telegram_allowed_chat_ids", mode="before")
+    @classmethod
+    def _parse_chat_ids(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            parts = [p.strip() for p in v.split(",") if p.strip()]
+            try:
+                return tuple(int(p) for p in parts)
+            except ValueError:
+                raise ValueError("must be comma-separated integer chat IDs") from None
+        return v
+
+    @model_validator(mode="after")
+    def _telegram_consistent(self) -> "Settings":
+        if self.telegram_bot_token is not None and not self.telegram_allowed_chat_ids:
+            raise ValueError("TELEGRAM_ALLOWED_CHAT_IDS is required when TELEGRAM_BOT_TOKEN is set")
+        if self.telegram_bot_token is None and self.telegram_allowed_chat_ids:
+            raise ValueError("TELEGRAM_BOT_TOKEN is required when TELEGRAM_ALLOWED_CHAT_IDS is set")
+        return self
+
+    @property
+    def telegram_enabled(self) -> bool:
+        return self.telegram_bot_token is not None
 
     @field_validator("database_url")
     @classmethod
