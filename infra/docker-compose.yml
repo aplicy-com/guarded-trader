@@ -37,6 +37,14 @@ services:
       TELEGRAM_ALLOWED_CHAT_IDS: ""
       FREQTRADE__TELEGRAM__TOKEN: ""
       FREQTRADE__TELEGRAM__CHAT_ID: ""
+      # The Kraken key belongs to THIS container only, and only in live mode (ADR-0019): it is
+      # blank here, and infra/docker-compose.live.yml / docker-compose.kraken-check.yml are the
+      # only files that set it. env_file hands over the raw KRAKEN_API_* names, which Freqtrade
+      # ignores; the FREQTRADE__EXCHANGE__* names are what it reads.
+      FREQTRADE__EXCHANGE__KEY: ""
+      FREQTRADE__EXCHANGE__SECRET: ""
+      KRAKEN_API_KEY: ""
+      KRAKEN_API_SECRET: ""
       # Same for the 3A-5 observability secrets: the healthchecks.io ping URL and the Backblaze
       # write-only backup key belong to the conductor container only.
       HEALTHCHECK_PING_URL: ""

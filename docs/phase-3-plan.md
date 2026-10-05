@@ -124,7 +124,7 @@ Each package = one branch, plan mode first, one PR-equivalent merge to `main`.
 - Kill switch, nuclear, restart-persists-halt, heartbeat silence (stop container), backup restore, VPS rebuild. Results recorded in `docs/drills/`. Procedures, run order and results: [`docs/drills/README.md`](drills/README.md). `scripts/drill-check.sh` (on the VPS) verifies each step.
 
 **3A exit gate**
-- [ ] VPS running Freqtrade + Conductor ≥ 7 days, zero public inbound ports verified (external port scan)
+- [ ] VPS running Freqtrade + Conductor ≥ 7 days, zero public inbound ports verified (external port scan). *(For the ADR-0019 live pilot only, this is replaced by a 72-hour clean soak from the 2026-10-05 rebuild; the 7 days still applies to everything else.)*
 - [ ] All R1–R5 checks implemented with tests; R4 enforced in two layers
 - [ ] Correlation guard active
 - [ ] All six drills passed and recorded

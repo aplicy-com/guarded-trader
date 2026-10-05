@@ -2,7 +2,8 @@ COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
 .PHONY: up down logs download-data backtest shell market-facts \
 	vps-plan vps-apply vps-lockdown verify-lockdown ssh \
-	conductor-test conductor-lint conductor-shell push-env deploy-files deploy logs-remote
+	conductor-test conductor-lint conductor-shell push-env deploy-files deploy logs-remote \
+	go-live go-dry-run trading-mode-status pilot-sizing
 
 up:
 	$(COMPOSE) up -d
@@ -67,7 +68,8 @@ RSYNC_KEEP := --exclude=/.env \
 	--exclude=/services/freqtrade/user_data/logs/ \
 	--exclude=/services/freqtrade/user_data/backtest_results/ \
 	--exclude='*.sqlite' --exclude='*.sqlite-shm' --exclude='*.sqlite-wal' \
-	--exclude=/services/conductor/data/ --exclude='/services/conductor/*.db'
+	--exclude=/services/conductor/data/ --exclude='/services/conductor/*.db' \
+	--exclude=/.trading-mode --exclude=/archive/
 
 define require_tf_env
 	@test -n "$$TF_VAR_hcloud_token" || { echo "TF_VAR_hcloud_token is not set (see provision-vps.md)"; exit 1; }
@@ -133,9 +135,26 @@ deploy-files:
 		git archive main | tar -x -C "$$tmp" && \
 		rsync -az --delete $(RSYNC_KEEP) -e "ssh $(SSH_OPTS)" "$$tmp"/ $(VPS_USER)@$(VPS_HOST):$(VPS_DIR)/
 
-# Deploy the committed state of main and start it.
+# Deploy the committed state of main and start it, in whatever mode the server is in
+# (scripts/compose.sh reads .trading-mode: dry-run, or the live override while live).
 deploy: deploy-files
-	ssh $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && docker compose --env-file .env -f infra/docker-compose.yml up -d --build'
+	ssh $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && scripts/compose.sh up -d --build'
 
 logs-remote:
 	ssh -t $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && docker compose --env-file .env -f infra/docker-compose.yml logs -f --tail 200 freqtrade'
+
+# --- Live pilot (ADR-0019; docs/06-runbooks/go-live-pilot.md) ----------------------------------
+# The switch itself runs ON the VPS; these just call it over ssh. `go-live` refuses unless every
+# gate passes (72 h clean soak, key scopes, fresh live ledger, archived dry-run ledger, R5).
+go-live:
+	ssh -t $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && scripts/trading-mode.sh live'
+
+go-dry-run:
+	ssh -t $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && scripts/trading-mode.sh dry-run'
+
+trading-mode-status:
+	ssh $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && scripts/trading-mode.sh status'
+
+# Re-check that the live stake clears Kraken's minimums (public endpoints, no key).
+pilot-sizing:
+	uv run --with ccxt scripts/kraken_pilot_sizing.py

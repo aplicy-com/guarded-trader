@@ -21,6 +21,12 @@ FT=ai-trading-agent-freqtrade
 CD=ai-trading-agent-conductor
 CD_IMAGE=ai-trading-agent-conductor:0.1.0
 LEDGER_VOLUME=infra_conductor-data
+FT_DB_FILE=tradesv3.dryrun.sqlite
+# Live pilot (ADR-0019): the live stack has its own ledger volume and Freqtrade DB.
+MODE_FILE="$(dirname "$0")/../.trading-mode"
+case "$([ -f "$MODE_FILE" ] && tr -d '[:space:]' < "$MODE_FILE")" in
+  live|live-pending) LEDGER_VOLUME=infra_conductor-data-live; FT_DB_FILE=tradesv3.live.sqlite ;;
+esac
 
 MODE=full
 WATCH_EVERY=5
@@ -176,7 +182,7 @@ PY
 )
 FT_DB_PROBE=$(cat <<'PY'
 import sqlite3
-db = sqlite3.connect("file:/freqtrade/user_data/tradesv3.dryrun.sqlite?mode=ro", uri=True)
+db = sqlite3.connect("file:/freqtrade/user_data/FT_DB_FILE?mode=ro", uri=True)
 print("trades=%s (open %s)" % (db.execute("SELECT count(*) FROM trades").fetchone()[0],
                               db.execute("SELECT count(*) FROM trades WHERE is_open = 1").fetchone()[0]))
 PY
@@ -187,7 +193,7 @@ counts_text() {
     l=$(printf '%s\n' "$LEDGER_PROBE" | docker exec -i "$CD" python - 2>&1 | tail -1)
   else l="n/a (conductor not running)"; fi
   if running "$FT"; then
-    f=$(printf '%s\n' "$FT_DB_PROBE" | docker exec -i "$FT" python - 2>&1 | tail -1)
+    f=$(printf '%s\n' "${FT_DB_PROBE//FT_DB_FILE/$FT_DB_FILE}" | docker exec -i "$FT" python - 2>&1 | tail -1)
   else f="n/a (freqtrade not running)"; fi
   echo "   ledger:       $l"
   echo "   freqtrade db: $f"

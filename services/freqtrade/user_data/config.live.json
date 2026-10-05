@@ -1,0 +1,133 @@
+{
+  "$comment": "LIVE PILOT config (ADR-0019): REAL orders on Kraken, $20 principal, ONE position at a time, Baseline4h (a known no-edge strategy: the point is validating the real-exchange plumbing, not profit). Boots PAUSED (initial_state) and Conductor alone starts it (ADR-0018). Selected only by infra/docker-compose.live.yml via scripts/trading-mode.sh; never run it by hand. The API key reaches the container as FREQTRADE__EXCHANGE__KEY/SECRET env vars, never this file. available_capital is 19, not the 20 USD principal: Kraken charges the entry fee on top of the order cost, so staking the whole balance would be rejected for insufficient funds; the 1 USD gap is the fee reserve.",
+  "max_open_trades": 1,
+  "stake_currency": "USD",
+  "stake_amount": "unlimited",
+  "available_capital": 19,
+  "tradable_balance_ratio": 0.99,
+  "fiat_display_currency": "USD",
+  "dry_run": false,
+  "cancel_open_orders_on_exit": false,
+  "trading_mode": "spot",
+  "timeframe": "4h",
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  "order_types": {
+    "$comment": "Limit entry/exit prefers maker fills per docs/04-architecture/execution-freqtrade.md ('Order preference'); stoploss stays market so it always fills.",
+    "entry": "limit",
+    "exit": "limit",
+    "stoploss": "market",
+    "stoploss_on_exchange": false
+  },
+  "order_time_in_force": {
+    "entry": "GTC",
+    "exit": "GTC"
+  },
+  "exchange": {
+    "name": "kraken",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USD",
+      "XRP/USD",
+      "SOL/USD",
+      "LINK/USD",
+      "LTC/USD"
+    ],
+    "pair_blacklist": [
+      "ADA/.*",
+      "ETH/.*",
+      "DOT/.*",
+      "SC/.*",
+      "KAVA/.*",
+      "ACA/.*",
+      "XTZ/.*",
+      "USDC/.*",
+      ".*/USDC"
+    ]
+  },
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  "telegram": {
+    "$comment": "DISABLED in work package 3A-4 (ADR-0015). Conductor owns the Telegram bot now, with a chat-ID allowlist and confirmed writes; Freqtrade's own bot had ~35 commands (/forceexit, /stop, /reload_config, ...) reachable by anyone in the configured chat and no way to restrict them. With enabled=false none of those commands exist. Trade open/close notifications now come from Conductor (ingest).",
+    "enabled": false,
+    "token": "",
+    "chat_id": "",
+    "allow_custom_messages": false,
+    "keyboard": [
+      [
+        "/status",
+        "/profit",
+        "/balance"
+      ],
+      [
+        "/daily",
+        "/trades",
+        "/count"
+      ],
+      [
+        "/whitelist",
+        "/locks",
+        "/health"
+      ],
+      [
+        "/version",
+        "/help"
+      ]
+    ],
+    "notification_settings": {
+      "status": "on",
+      "warning": "on",
+      "startup": "on",
+      "entry": "on",
+      "entry_fill": "on",
+      "entry_cancel": "on",
+      "exit": "on",
+      "exit_fill": "on",
+      "exit_cancel": "on",
+      "protection_trigger": "on",
+      "protection_trigger_global": "on"
+    }
+  },
+  "api_server": {
+    "$comment": "Bound to 0.0.0.0 inside the container; infra/docker-compose.yml publishes it to the host as 127.0.0.1:8080 only. Credentials are blank here and injected at runtime via FREQTRADE__API_SERVER__* env vars (see .env.example) so no secret is committed.",
+    "enabled": true,
+    "listen_ip_address": "0.0.0.0",
+    "listen_port": 8080,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "",
+    "CORS_origins": [],
+    "username": "",
+    "password": ""
+  },
+  "bot_name": "ai-trading-agent-live",
+  "initial_state": "paused",
+  "force_entry_enable": false,
+  "internals": {
+    "process_throttle_secs": 5
+  }
+}

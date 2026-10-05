@@ -10,6 +10,7 @@
     python -m conductor.cli nuclear --operator NAME --confirm-flatten-everything
     python -m conductor.cli clear-halt HALT_ID --operator NAME [--note ...]
     python -m conductor.cli backup-now
+    python -m conductor.cli soak-check --started-at 2026-10-05T15:29:00Z [--hours 72]
     python -m conductor.cli isolation-check
     python -m conductor.cli exclude-balance --asset ETH --operator NAME [--amount N] [--note ...]
 
@@ -19,6 +20,9 @@ operator, logged). All three persist in the ledger first.
 
 `backup-now` runs the nightly backup immediately (same code path and audit record as the
 03:15 UTC job); it needs the BACKUP_B2_* settings. Use it to prove the B2 setup after a deploy.
+
+`soak-check` (live-pilot gate, run against the dry-run ledger) exits 0 only when the soak window
+has run for --hours (default 72) with no halt raised by the system itself and none active now.
 
 `isolation-check` prints, for every whitelisted base asset, the exchange balance, what the ledger's
 own open positions account for, what is excluded, and what is unexplained (R5); exit 1 if any
@@ -31,7 +35,7 @@ interface. Nothing here can move money or talk to an exchange.
 
 import argparse
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from pydantic import ValidationError
@@ -42,6 +46,7 @@ from conductor.application.capital import PrincipalNotSetError, get_capital
 from conductor.application.fence import record_manual_transfer
 from conductor.application.halts import clear_halt, kill_switch, nuclear
 from conductor.application.isolation import ExclusionError, isolation_rows, record_exclusion
+from conductor.application.soak import DEFAULT_REQUIRED, check_soak
 from conductor.application.tax import export_tax_csv, value_closed_trades
 from conductor.infrastructure.config import Settings, load_settings
 from conductor.infrastructure.db import create_db_engine, create_session_factory
@@ -102,6 +107,9 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("halt_id", type=int)
     c.add_argument("--operator", required=True)
     c.add_argument("--note", default=None)
+    s = sub.add_parser("soak-check", help="live-pilot gate: has the dry-run soak been clean?")
+    s.add_argument("--started-at", type=_instant, required=True)
+    s.add_argument("--hours", type=_decimal, default=DEFAULT_REQUIRED.total_seconds() / 3600)
     sub.add_parser("isolation-check", help="R5: show unexplained balances per whitelisted asset")
     x = sub.add_parser("exclude-balance", help="R5: record a pre-existing balance as not ours")
     x.add_argument("--asset", required=True, help="base asset code, e.g. ETH")
@@ -187,6 +195,30 @@ def _halt_command(args: argparse.Namespace, ledger: SqliteLedger, settings: Sett
             close()
 
 
+def _soak_check(ledger: SqliteLedger, args: argparse.Namespace) -> int:
+    status = check_soak(
+        ledger,
+        started_at=args.started_at,
+        now=datetime.now(UTC),
+        required=timedelta(hours=float(args.hours)),
+    )
+    hours = status.elapsed.total_seconds() / 3600
+    print(
+        f"soak started {status.started_at:%Y-%m-%d %H:%MZ}; elapsed {hours:.1f} h of {args.hours} h"
+    )
+    for h in status.system_halts:
+        print(f"  system halt since start: #{h.id} {h.halt_type.value} :: {h.reason}")
+    for h in status.active_halts:
+        print(f"  active halt now: #{h.id} {h.halt_type.value} :: {h.reason}")
+    if not status.time_met:
+        print("SOAK NOT MET: not enough time has passed")
+    elif not status.clean:
+        print("SOAK NOT CLEAN: see the halts above")
+    else:
+        print("SOAK MET")
+    return 0 if status.ok else 1
+
+
 def _isolation_command(args: argparse.Namespace, ledger: SqliteLedger, settings: Settings) -> int:
     instances, closers = build_instances(settings)
     try:
@@ -197,10 +229,9 @@ def _isolation_command(args: argparse.Namespace, ledger: SqliteLedger, settings:
                 f"{'asset':8} {'exchange':>16} {'ledger':>16} {'excluded':>16} {'unexplained':>16}"
             )
             for r in rows:
-                print(
-                    f"{r.asset:8} {r.exchange_balance:>16} {r.ledger_holding:>16} "
-                    f"{r.excluded:>16} {r.unexplained:>16}"
-                )
+                cells = (r.exchange_balance, r.ledger_holding, r.excluded, r.unexplained)
+                shown = [f"{c.normalize():f}" if c else "0" for c in cells]
+                print(f"{r.asset:8} " + " ".join(f"{c:>16}" for c in shown))
             bad = [r.asset for r in rows if r.unexplained > 0]
             print("R5 CHECK FAIL: unexplained " + ", ".join(bad) if bad else "R5 CHECK PASS")
             return 1 if bad else 0
@@ -290,6 +321,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1 if report.failed else 0
         elif args.command in {"halts", "kill", "nuclear", "clear-halt"}:
             return _halt_command(args, ledger, settings)
+        elif args.command == "soak-check":
+            return _soak_check(ledger, args)
         elif args.command in {"isolation-check", "exclude-balance"}:
             return _isolation_command(args, ledger, settings)
         elif args.command == "backup-now":

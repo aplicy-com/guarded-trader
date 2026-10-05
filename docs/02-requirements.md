@@ -38,6 +38,15 @@ experiment into unbounded risk.
 against the Conductor ledger's principal record; reviewed monthly per
 `06-runbooks/`. Automated reconciliation job — TBD (Phase 3).
 
+**Amendment, 2026-10-05 ([`ADR-0019`](05-adr/0019-live-pilot-20-usd-plumbing.md)):**
+the first live ledger is a **$20 pilot**, not the $100. R1 applies to that
+ledger as written: exactly one deposit (≈ $28 CAD, converted to $20 USD), its
+principal recorded once and immutable (`PRINCIPAL_USD=20`, pinned in
+`infra/docker-compose.live.yml`), no top-ups or rescue deposits. The other $80 is
+**not** deposited; if and how it is added is `TBD (Gate 2)` and needs a
+superseding ADR. AC1.1's "$100" is read as "the principal of that ledger" until
+then.
+
 ---
 
 ## R2 — Trading capital = principal + working profit only
@@ -265,10 +274,8 @@ not an assumption. See risk register M7.
   **aborts startup** (does not begin or resume trading) and sends an
   alert identifying the pair and the unexplained balance.
 - AC5.4: Clearing an AC5.3 abort requires an explicit human action
-  (documented in a runbook — TBD (Phase 3), re-tagged from Phase 2: this
-  is Conductor's own startup check, and Conductor does not exist until
-  Phase 3, so there is nothing to write the clearance runbook against
-  yet; extend `06-runbooks/start-stop.md`) that either records the pre-existing
+  (documented in `06-runbooks/start-stop.md`, "R5 abort", written for the
+  live pilot, ADR-0019) that either records the pre-existing
   balance as explicitly excluded from the system's capital, or confirms
   it was moved out of the account before restart — never an automatic
   retry that just proceeds.
@@ -393,9 +400,10 @@ See [`ADR-0013`](05-adr/0013-correlation-guard-single-exposure-group.md).
 - ~~Heartbeat interval and alert channel timing~~ — resolved 3A-5: 5 min ping, 10 min grace, healthchecks.io alerting by email/phone.
 - ~~Pre-commit secret-scanning tool choice~~ — resolved Phase 2: gitleaks
   (`.pre-commit-config.yaml`).
-- R5 startup-abort clearance runbook (extending `06-runbooks/start-stop.md`)
-  — TBD (Phase 3), re-tagged from Phase 2 (Conductor-dependent, see AC5.4
-  above).
+- ~~R5 startup-abort clearance runbook~~ — written for the live pilot
+  (ADR-0019): `06-runbooks/start-stop.md`, "R5 abort". Mechanism:
+  `isolation_exclusions` table + `conductor.cli isolation-check` /
+  `exclude-balance`.
 - R3 `manual_move_threshold` final value (draft $25) — TBD (Phase 3),
   confirm alongside `daily_profit_cap`.
 - R6 `monthly_llm_budget` draft value — TBD (Phase 3).
