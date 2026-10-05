@@ -31,11 +31,12 @@
     "order_book_top": 1
   },
   "order_types": {
-    "$comment": "Limit entry/exit prefers maker fills per docs/04-architecture/execution-freqtrade.md ('Order preference'); stoploss stays market so it always fills.",
+    "$comment": "Limit entry/exit prefers maker fills ('Order preference' in docs/04-architecture/execution-freqtrade.md). LIVE ONLY: stoploss_on_exchange is true (ADR-0019). Freqtrade 2026.8's Kraken class supports it with order types 'market' (Kraken stop-loss, triggers a market sell) and 'limit' (stop-loss-limit); 'market' is used so the stop always fills. It works with the strategy's custom_stoploss: the exchange order is created when the entry fills at the initial stop and replaced once, after stoploss_on_exchange_interval, by the ATR stop (which then never moves). 10 s keeps the window where the exchange holds only the wide initial stop short; the replacement costs two Kraken calls once per trade.",
     "entry": "limit",
     "exit": "limit",
     "stoploss": "market",
-    "stoploss_on_exchange": false
+    "stoploss_on_exchange": true,
+    "stoploss_on_exchange_interval": 10
   },
   "order_time_in_force": {
     "entry": "GTC",

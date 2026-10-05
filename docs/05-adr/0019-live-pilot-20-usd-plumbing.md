@@ -9,6 +9,10 @@ gate and the 3A "VPS running ≥ 7 days" exit item in [`docs/07-roadmap.md`](../
 `CLAUDE.md` §4 (the operator overrides it in writing for this pilot, see "Explicit overrides").
 Everything else in those documents stands. ADR-0018 (fail-closed boot) applies unchanged.
 
+Amended 2026-10-05, before merge (decisions 11 and 12): the live stop-loss is placed **on the
+exchange**, and backups are **namespaced by trading mode**. Both close gaps this ADR first
+recorded as known.
+
 ## Context and problem statement
 
 Three weeks of dry-run and the 3A drills validated the system against a *simulated* exchange.
@@ -81,6 +85,28 @@ pilot is therefore *not* an attempt to make money and must not be judged or scal
     `TRADING_MODE` in either direction, and re-checks before every Freqtrade start. Telegram
     (status, help, every confirmation) and the dashboard show a `LIVE: REAL MONEY` banner.
 
+11. **The stop lives on Kraken.** `config.live.json` sets `stoploss_on_exchange: true` with order
+    type `market`, so an open position keeps a real stop-loss order on Kraken if Freqtrade, Conductor
+    or the whole VPS is down. Verified against the pinned Freqtrade 2026.8:
+    - Its Kraken class declares `stoploss_on_exchange: True` with `stoploss_order_types`
+      `{limit, market}` (a unit test reads this from the image). `market` is Kraken's stop-loss
+      order (triggers a market sell), chosen over stop-limit so it cannot be skipped over.
+    - It works with `Baseline4h`'s `custom_stoploss`. Observed in a scratch dry-run bot (which runs
+      Freqtrade's real stop-order code path against simulated orders): when the entry fills,
+      Freqtrade places the stop at the *initial* stop (`stoploss`, -99%, i.e. almost nothing), then
+      after `stoploss_on_exchange_interval` cancels it and places one at the custom ATR stop
+      (about 1.8% below entry for the BTC trade tried). The ATR stop is fixed, so this happens once
+      per trade. `stoploss_on_exchange_interval` is **10 s** (default 60) to keep the window with
+      only the wide stop short.
+    - Pausing (`/kill`) leaves the stop; `forceexit` (the nuclear protocol) cancels it and sells;
+      Freqtrade's shutdown does not cancel it (`cancel_open_orders_on_exit` is false).
+    - The stop is **live only**: the dry-run config is unchanged, so the soak run is not disturbed.
+12. **Backups are namespaced by mode.** Keys are `backups/live/<source>/...` and
+    `backups/dry_run/<source>/...` (the audit record carries the mode too). `restore-test.sh` takes
+    `--mode live|dry_run|legacy` and has no default; `legacy` reads the older
+    `backups/<source>/...` keys, which are dry-run backups. The restore and rebuild runbooks use the
+    mode, the matching volume (`infra_conductor-data-live`) and trade DB (`tradesv3.live.sqlite`).
+
 ## Explicit overrides (the operator, 2026-10-05)
 
 - **`CLAUDE.md` §4 promotion ladder** (backtest → walk-forward → 3-week paper → 25% → 100%) is
@@ -107,12 +133,16 @@ pilot is therefore *not* an attempt to make money and must not be judged or scal
 - **Real orders will be placed**, by Freqtrade only, on a no-edge strategy. Expect to lose a little
   to fees and spread: the $20 is the price of the plumbing test. Max realistic loss is the
   principal.
-- **Stops are software stops** (`stoploss_on_exchange: false`, as in the dry-run design): if
-  Freqtrade or the VPS is down, an open position has no stop. At this size that is accepted;
-  it is also why Conductor's halt and the heartbeat exist.
-- **Known gap: backups.** Live and dry-run backups use the same B2 prefix; after going live the
-  *latest* backup is the live ledger, which is what restore drills read. The dry-run ledger is
-  preserved separately by the archive step. Namespacing backups by mode is a follow-up.
+- **Stop limits (decision 11), what it does and does not give you.** If the VPS is down, an open
+  position still has a stop on Kraken at the ATR level, and it executes as a market sell with
+  normal slippage. It does **not** run the strategy's exit signals, Conductor's halts or
+  Freqtrade's protections while the bot is down. For roughly the first 10 s after an entry fills
+  the exchange holds only the wide initial stop (software stops still apply if the bot is up). The
+  stop reserves the coin on Kraken, so Freqtrade cancels it before any other exit order (it does
+  this itself; a failure to re-create it is logged and Freqtrade force-exits). A stop-loss order is
+  still an order: Kraken must accept it, and the first-day check confirms it appears.
+- **Backups (decision 12)** are separated, so a restore can never return the other mode's ledger.
+  The `legacy` mode exists only until the first nightly run after this is deployed.
 - **Known gap: fencing vs. stake.** Freqtrade sizes from `available_capital` plus its own closed
   profit and does not know about fenced profit; Conductor's existing `capital_exceeded` halt (R2
   second layer) is what catches an over-stake. At a $2/day cap on a $19 stake this is a theoretical

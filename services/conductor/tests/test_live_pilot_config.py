@@ -2,6 +2,8 @@
 
 import importlib.util
 import json
+import shutil
+import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -399,3 +401,98 @@ def test_cli_soak_check_exit_codes(
         )
     assert cli.main(["soak-check", "--started-at", long_ago]) == 1
     assert "SOAK NOT CLEAN" in capsys.readouterr().out
+
+
+# ---- stop-loss on the exchange (ADR-0019 amendment) ---------------------------------------------
+
+
+KRAKEN_STOP_TYPES = {"market", "limit"}  # Freqtrade 2026.8 exchange/kraken.py stoploss_order_types
+
+
+def test_live_stoploss_lives_on_the_exchange_with_a_supported_order_type(live: dict) -> None:
+    ot = live["order_types"]
+    assert ot["stoploss_on_exchange"] is True
+    assert ot["stoploss"] in KRAKEN_STOP_TYPES
+    assert ot["stoploss"] == "market"  # a stop that always fills, not a stop-limit that can miss
+    assert "stoploss_on_exchange_limit_ratio" not in ot  # only meaningful for stop-limit
+
+
+def test_the_exchange_stop_is_replaced_by_the_custom_stop_quickly(live: dict) -> None:
+    # The first exchange order sits at the strategy's wide initial stop until Freqtrade replaces
+    # it with the custom ATR stop after this interval: keep that window short.
+    assert 0 < live["order_types"]["stoploss_on_exchange_interval"] <= 30
+
+
+def test_the_strategy_uses_a_custom_stoploss_which_freqtrade_syncs_to_the_exchange() -> None:
+    source = (REPO / "services/freqtrade/user_data/strategies/Baseline4h.py").read_text()
+    assert "use_custom_stoploss = True" in source and "def custom_stoploss" in source
+
+
+def test_stoploss_on_exchange_is_live_only_the_dry_run_soak_is_unchanged() -> None:
+    dry = json.loads(DRY_CONFIG.read_text())
+    assert dry["order_types"]["stoploss_on_exchange"] is False
+    assert "stoploss_on_exchange_interval" not in dry["order_types"]
+
+
+def test_a_cancel_on_exit_never_removes_the_exchange_stop(live: dict) -> None:
+    # Freqtrade's shutdown only cancels *open orders* when this is on; the stop must outlive the
+    # bot (and the VPS), which is the point.
+    assert live["cancel_open_orders_on_exit"] is False
+
+
+def test_the_runbook_and_adr_describe_the_exchange_stop() -> None:
+    runbook = (REPO / "docs/06-runbooks/go-live-pilot.md").read_text()
+    assert "Stop loss" in runbook and "stop order" in runbook
+    assert "Open orders" in runbook
+    adr = (REPO / "docs/05-adr/0019-live-pilot-20-usd-plumbing.md").read_text()
+    assert "stoploss_on_exchange" in adr
+    assert "Stops are software stops" not in adr  # the old known gap is closed, not left standing
+
+
+def _docker(*args: str, timeout: int = 120) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        ["docker", *args],  # noqa: S607
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+FT_IMAGE = "freqtradeorg/freqtrade:2026.8"
+needs_ft_image = pytest.mark.skipif(
+    not shutil.which("docker") or _docker("image", "inspect", FT_IMAGE).returncode != 0,
+    reason="needs docker and the pinned Freqtrade image locally",
+)
+
+
+@needs_ft_image
+def test_pinned_freqtrade_really_supports_kraken_stoploss_on_exchange(live: dict) -> None:
+    code = (
+        "from freqtrade.exchange import Kraken; "
+        "h = Kraken._ft_has; "
+        "print(h['stoploss_on_exchange'], sorted(h['stoploss_order_types']))"
+    )
+    res = _docker("run", "--rm", "--entrypoint", "python", FT_IMAGE, "-c", code)
+    assert res.returncode == 0, res.stderr[-400:]
+    assert res.stdout.strip() == "True ['limit', 'market']"
+    assert live["order_types"]["stoploss"] in {"limit", "market"}
+
+
+@needs_ft_image
+def test_freqtrade_accepts_the_live_config_schema() -> None:
+    env = {
+        "FREQTRADE__EXCHANGE__KEY": "k",
+        "FREQTRADE__EXCHANGE__SECRET": "s",
+        "FREQTRADE__API_SERVER__USERNAME": "user",
+        "FREQTRADE__API_SERVER__PASSWORD": "pass",
+        "FREQTRADE__API_SERVER__JWT_SECRET_KEY": "j" * 32,
+    }
+    args = ["run", "--rm"]
+    for k, v in env.items():
+        args += ["-e", f"{k}={v}"]
+    args += ["-v", f"{LIVE_CONFIG.parent}:/freqtrade/user_data:ro", FT_IMAGE]
+    args += ["show-config", "--config", "/freqtrade/user_data/config.live.json"]
+    res = _docker(*args)
+    assert res.returncode == 0, res.stderr[-400:] + res.stdout[-400:]
+    assert "Configuration error" not in res.stdout + res.stderr

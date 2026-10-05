@@ -37,8 +37,12 @@ Tick each, in your head or on paper, before going on:
   deciding later. You are choosing to proceed, or you have asked the accountant. Either is
   fine; ticking it without thinking is not.
 - [ ] **You accept losing the $20.** `Baseline4h` is expected to lose a little to fees and spread.
-- [ ] **Software stops only.** If the VPS or Freqtrade is down, an open position has no stop
-  (ADR-0019). At $20 that is accepted.
+- [ ] **What the exchange stop does and does not do.** Each position gets a real **stop-loss order on
+  Kraken** (`stoploss_on_exchange`, ADR-0019), so if the VPS or Freqtrade is down the position is
+  still sold if the price falls to the stop. It is a market sell (normal slippage), it does not
+  run the strategy's exit signals or Conductor's halts while the bot is down, and for roughly
+  the first 10 seconds after an entry fills Kraken holds only a very wide initial stop. At $20
+  that is accepted.
 
 ### A2. Everything is merged and deployed
 
@@ -244,8 +248,14 @@ Only when: soak met (A5), account funded (B), real key verified (C).
    - `scripts/trading-mode.sh cli capital` → `principal: 20`, `max_deployed_capital: 20`.
 3. Within a day, check the first nightly backup ran (03:15 UTC) and, once, `docker exec
    ai-trading-agent-conductor python -m conductor.cli backup-now` → `conductor: ok ...`
-   and `freqtrade: ok ...`. (The latest backups are now the **live** ones; the dry-run ledger is
-   in `archive/` on the VPS: copy `archive/` to the Mac once, then it can stay.)
+   and `freqtrade: ok ...`. Both keys now start `backups/live/` (live and dry-run backups are
+   kept apart: the dry-run ones are `backups/dry_run/` or, if made before the split,
+   `backups/<source>/`). The dry-run ledger is also in `archive/` on the VPS: copy `archive/`
+   to the Mac once, then it can stay. Prove the live backup restores, from the Mac with a B2
+   **read** key ([`restore-backup.md`](restore-backup.md) Part A):
+   `scripts/restore-test.sh --mode live all` → `RESTORE TEST PASSED`, `(mode: live)`,
+   `principal: 20 USD`. (`--mode dry_run` would show `100 USD`: that is how you know which
+   ledger you are holding.)
 
 **To go back to dry-run at any time:** `scripts/trading-mode.sh dry-run` (`make go-dry-run`).
 It refuses while a real position or order is open (flatten first: `/flatten`, then confirm flat
@@ -303,20 +313,51 @@ When Telegram shows a trade opened (Conductor sends an alert for each entry/exit
 
 1. **Look at Kraken first**: the position is real, on the exchange, the size is about 19 USD of
    one of BTC/XRP/SOL/LINK/LTC, and it is the only position. Note the pair and amount.
-2. **Kill switch with a position open.** `/kill` + code. Expected: Freqtrade `paused`; the
+2. **Confirm the stop order is visible on Kraken** (the whole point of `stoploss_on_exchange`).
+   Wait **at least 30 seconds** after the entry filled, then on Kraken → **Orders → Open orders**
+   look for exactly **one** order on that pair: side **Sell**, type **Stop loss** (a market
+   stop-loss), volume equal to the position amount, and a trigger price **below** the current
+   price. Compare its trigger price with what Freqtrade believes. On the VPS:
+   ```
+   docker exec -i ai-trading-agent-freqtrade python - <<'PY'
+   import base64, json, os, urllib.request
+   tok = base64.b64encode(f"{os.environ['FREQTRADE__API_SERVER__USERNAME']}:{os.environ['FREQTRADE__API_SERVER__PASSWORD']}".encode()).decode()
+   r = urllib.request.Request("http://127.0.0.1:8080/api/v1/status", headers={"Authorization": "Basic " + tok})
+   for t in json.load(urllib.request.urlopen(r, timeout=8)):
+       print(t["pair"], "open_rate", t["open_rate"], "stop_loss_abs", t["stop_loss_abs"], "initial_stop_loss_abs", t["initial_stop_loss_abs"])
+   PY
+   ```
+   Expected: Kraken's trigger price equals `stop_loss_abs` (to the pair's price precision), a few
+   percent below `open_rate`. If you looked within the first ~10 seconds you may instead have
+   seen the very wide initial stop (about 1% of the price, `initial_stop_loss_abs`): refresh;
+   it is replaced by the real stop. **If there is still no stop order after a minute, or two,
+   or the volume is wrong: do not leave the position as it is. `/flatten`, confirm flat on
+   Kraken, and write it down as a finding** (the position is then protected only while the
+   bot runs).
+3. **Kill switch with a position open.** `/kill` + code. Expected: Freqtrade `paused`; the
    position **stays open and is still managed** (a paused bot still exits on its stop/exit
-   signal). On Kraken the position and any exit order are untouched. `/resume <n>` + code.
-3. **Nuclear with a position open.** Only do this while you are happy to close the position now
+   signal). On Kraken the position **and its stop order** are untouched (look again at Open
+   orders). `/resume <n>` + code.
+4. **Optional, and only if you can watch for the next few minutes: the bot-down test.** This is
+   the real proof that the stop survives the VPS being down. `scripts/compose.sh stop freqtrade`
+   (Conductor will report it unreachable; that is expected). On Kraken, Open orders **still
+   shows the same stop order**. Then `scripts/compose.sh up -d freqtrade`: Freqtrade boots
+   `paused`, Conductor starts it, and the stop order is **the same one** (same trigger price; no
+   second order). If a second stop order appears, cancel nothing by hand: `/kill`, `/flatten`,
+   and write it down.
+5. **Nuclear with a position open.** Only do this while you are happy to close the position now
    (it will realise a small loss or gain). `/flatten` + `yes <code>`. Expected reply lists
-   `cancel_order:<id>` (only if an order was open), `force_exit_all: ok`, `confirm_flat: ok`,
+   `cancel_order:<id>` (only if an entry/exit order was open; the stop order is cancelled by
+   Freqtrade as part of the exit and is not listed), `force_exit_all: ok`, `confirm_flat: ok`,
    `stop: ok`, within about a minute. On Kraken: the position is **sold at market**, the
-   order history shows the sell, no open orders, the coin balance is back to what you wrote down
+   order history shows the sell, **Open orders is empty** (the stop order is gone: a stop left
+   behind after a sell would be a finding), the coin balance is back to what you wrote down
    in A4 (that is R5 working in reverse). `scripts/drill-check.sh` → `positions: 0`,
    `freqtrade=stopped`. Then `/resume <n>` + code to carry on.
-4. **Reconcile one full trade**: Kraken order history vs the dashboard **Positions** page vs
+6. **Reconcile one full trade**: Kraken order history vs the dashboard **Positions** page vs
    `scripts/trading-mode.sh cli capital` (`realized_profit` equals the sum of closed trades,
    fees included). Differences are findings, not noise: write them down.
-5. **Judge it by plumbing, not profit.** Record the results, with timestamps and what surprised you,
+7. **Judge it by plumbing, not profit.** Record the results, with timestamps and what surprised you,
    in `docs/drills/` (copy `TEMPLATE.md`; name it `results-live-pilot-<date>.md`).
 
 If nothing opens within several days, that is the strategy being quiet, not a fault. Decide
@@ -345,12 +386,14 @@ force an entry.
   Conductor disagree about the mode. Do not override. `scripts/trading-mode.sh status`; if the
   state is inconsistent, `scripts/trading-mode.sh dry-run` (it refuses if a real position is
   open) and start again from Part D.
-- **The VPS is down or being rebuilt while live:** an open position has no stop and nothing is
-  managing it. Before a deliberate rebuild, `/flatten` and confirm flat on Kraken, then follow
-  [`rebuild-vps.md`](rebuild-vps.md). Note: after a rebuild the server is dry-run until you
-  switch it again; restore the **live** ledger (the latest backup) into the volume
-  `infra_conductor-data-live` and the live trade DB `tradesv3.live.sqlite` instead of the
-  dry-run names that runbook uses, put the key back in `.env`, and re-run Part D.
+- **The VPS is down or being rebuilt while live:** an open position keeps its **stop order on
+  Kraken** (check Open orders on Kraken's site from your phone: it should still be there), but
+  nothing else is managing it (no exit signals, no halts, no new fills handled). Get the server back; `/flatten`
+  needs it, so if you must exit sooner, sell by hand on Kraken's site. Before a *deliberate*
+  rebuild, `/flatten` and confirm on Kraken that there are no positions **and no open orders**,
+  then follow [`rebuild-vps.md`](rebuild-vps.md), whose "Which mode is this server in?" section
+  has the live restore: `restore-test.sh --mode live`, volume `infra_conductor-data-live`,
+  trade DB `tradesv3.live.sqlite`, and `scripts/trading-mode.sh live` to bring it back.
 - **Key suspected leaked:** revoke it on Kraken **first** (that alone stops it trading), then
   [`key-rotation.md`](key-rotation.md). The key cannot withdraw, and is IP-whitelisted.
 - **The dry-run ledger archive** (`archive/dry-run-*.tgz`, mode 600) is the only copy of the soak's
