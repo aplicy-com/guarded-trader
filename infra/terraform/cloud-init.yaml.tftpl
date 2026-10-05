@@ -113,6 +113,14 @@ runcmd:
   - systemctl enable --now tailscaled
   - tailscale up --authkey='${tailscale_authkey}' --hostname='${hostname}' --ssh=false
 
+  # --- Conductor dashboard: tailnet-only HTTPS (3A-5, ADR-0017) ------------
+  # `serve` (tailnet only), never `funnel` (public). Proxies to the loopback port the
+  # conductor container publishes. Needs "HTTPS certificates" enabled for the tailnet
+  # (admin console -> DNS); if that is not done yet this times out and is NOT fatal:
+  # run the same command by hand later (provision-vps.md step 24). cloud-init only
+  # runs once, so an already-provisioned VPS needs that manual step too.
+  - timeout 60 tailscale serve --bg --https=443 http://127.0.0.1:8000 || echo "tailscale serve not applied; see provision-vps.md step 24"
+
   # --- Host firewall + sshd bind (defence in depth) -----------------------
   # ufw default-deny + allow tailscale0 only. First boot has bootstrap_ssh=true,
   # so SSH from admin_cidr stays allowed and ssh.socket is left on all

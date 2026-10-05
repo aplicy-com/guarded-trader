@@ -37,6 +37,14 @@ services:
       TELEGRAM_ALLOWED_CHAT_IDS: ""
       FREQTRADE__TELEGRAM__TOKEN: ""
       FREQTRADE__TELEGRAM__CHAT_ID: ""
+      # Same for the 3A-5 observability secrets: the healthchecks.io ping URL and the Backblaze
+      # write-only backup key belong to the conductor container only.
+      HEALTHCHECK_PING_URL: ""
+      BACKUP_B2_BUCKET: ""
+      BACKUP_B2_ENDPOINT: ""
+      BACKUP_B2_KEY_ID: ""
+      BACKUP_B2_APP_KEY: ""
+      BACKUP_B2_REGION: ""
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/api/v1/ping"]
       interval: 30s
@@ -44,11 +52,12 @@ services:
       retries: 5
       start_period: 30s
 
-  # Conductor: internal only. NO ports are published; it is reachable solely
-  # by other containers on this compose network (Freqtrade's API is reached at
-  # http://freqtrade:8080). It deliberately does NOT use env_file: ../.env, so
-  # the Kraken keys and Freqtrade's Telegram token never enter this container;
-  # it receives only the variables listed below.
+  # Conductor: its one published port (the read-only dashboard, 3A-5) is bound to host
+  # loopback; `tailscale serve` is the only thing that exposes it, and only to the tailnet
+  # (docs/06-runbooks/provision-vps.md, ADR-0017). Otherwise it is reachable solely by other
+  # containers on this compose network (Freqtrade's API is at http://freqtrade:8080). It
+  # deliberately does NOT use env_file: ../.env, so the Kraken keys and Freqtrade's Telegram
+  # token never enter this container; it receives only the variables listed below.
   conductor:
     build:
       context: ../services/conductor
@@ -58,6 +67,10 @@ services:
     depends_on:
       freqtrade:
         condition: service_healthy
+    # 127.0.0.1 only. Never "8000:8000" or "0.0.0.0:8000": Docker's published ports bypass
+    # ufw (docs/04-architecture/security.md). tests/test_compose.py fails if this changes.
+    ports:
+      - "127.0.0.1:8000:8000"
     environment:
       TRADING_MODE: ${TRADING_MODE:-dry_run}
       PRINCIPAL_USD: ${PRINCIPAL_USD:?set PRINCIPAL_USD in .env}
@@ -77,13 +90,27 @@ services:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_ALLOWED_CHAT_IDS: ${TELEGRAM_ALLOWED_CHAT_IDS:-}
       TELEGRAM_COMMANDS_ENABLED: ${TELEGRAM_COMMANDS_ENABLED:-true}
+      # 3A-5 heartbeat: ping every HEARTBEAT_INTERVAL_SECONDS only while healthy, /fail otherwise.
+      HEALTHCHECK_PING_URL: ${HEALTHCHECK_PING_URL:-}
+      # 3A-5 nightly backup (03:15 UTC) to Backblaze B2 (S3 API). The key is WRITE-ONLY.
+      # Blank = backups off (all four or none).
+      BACKUP_B2_BUCKET: ${BACKUP_B2_BUCKET:-}
+      BACKUP_B2_ENDPOINT: ${BACKUP_B2_ENDPOINT:-}
+      BACKUP_B2_KEY_ID: ${BACKUP_B2_KEY_ID:-}
+      BACKUP_B2_APP_KEY: ${BACKUP_B2_APP_KEY:-}
+      BACKUP_B2_REGION: ${BACKUP_B2_REGION:-}
+      BACKUP_FREQTRADE_DB_PATH: /freqtrade-user-data/tradesv3.dryrun.sqlite
       FREQTRADE__API_SERVER__USERNAME: ${FREQTRADE__API_SERVER__USERNAME:?set in .env}
       FREQTRADE__API_SERVER__PASSWORD: ${FREQTRADE__API_SERVER__PASSWORD:?set in .env}
     volumes:
       - conductor-data:/data
+      # Read-only, for the nightly backup of Freqtrade's dry-run DB. The DB is in WAL mode, so
+      # the directory is mounted (a lone file would hide its -wal/-shm and give a stale copy).
+      # Conductor never writes here; the backup opens the DB mode=ro.
+      - ../services/freqtrade/user_data:/freqtrade-user-data:ro
     read_only: true
     tmpfs:
-      - /tmp
+      - /tmp:size=512m
     cap_drop:
       - ALL
     security_opt:

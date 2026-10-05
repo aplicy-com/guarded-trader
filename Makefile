@@ -95,14 +95,17 @@ vps-lockdown:
 	$(TF) init -input=false
 	$(TF) apply -var bootstrap_ssh=false
 
-# Fails (exit 1) if TCP 22 on the public IP accepts a connection. Run after
-# every lockdown. Needs a network where outbound 22 is not itself blocked, and
-# no Tailscale exit node (check `tailscale status`).
+# Fails (exit 1) if any of TCP 22 (ssh), 443 (tailscale serve), 8000 (dashboard) or 8080
+# (Freqtrade API) on the public IP accepts a connection. Run after every lockdown and after
+# every deploy that touches published ports. Needs a network where those outbound ports are
+# not themselves blocked, and no Tailscale exit node (check `tailscale status`).
 verify-lockdown:
 	@ip=$$($(TF) output -raw ipv4) && test -n "$$ip" || { echo "cannot read ipv4 from terraform output"; exit 2; }; \
-	if nc -z -G 8 "$$ip" 22 2>/dev/null; then \
-		echo "FAIL: TCP 22 on $$ip ACCEPTS connections - lockdown is NOT effective"; exit 1; \
-	else echo "OK: TCP 22 on $$ip does not accept connections"; fi
+	bad=0; for port in 22 443 8000 8080; do \
+		if nc -z -G 8 "$$ip" $$port 2>/dev/null; then \
+			echo "FAIL: TCP $$port on $$ip ACCEPTS connections - lockdown is NOT effective"; bad=1; \
+		else echo "OK: TCP $$port on $$ip does not accept connections"; fi; \
+	done; exit $$bad
 
 # Over the tailnet by default. Before lockdown/Tailscale is up, use the public
 # IP:  make ssh VPS_HOST=$$(terraform -chdir=infra/terraform output -raw ipv4)
