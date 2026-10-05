@@ -114,6 +114,14 @@ Expect `"dry_run": true`.
   protections enabled that produced
   [`../docs/research/03-baseline-backtest.md`](../docs/research/03-baseline-backtest.md)
   (work package 2C).
+- `make go-live` / `make go-dry-run` / `make trading-mode-status` — the live-pilot
+  switch (ADR-0019), run on the VPS over ssh; see
+  [`../docs/06-runbooks/go-live-pilot.md`](../docs/06-runbooks/go-live-pilot.md).
+  `infra/docker-compose.live.yml` is the live override (own ledger volume, live
+  Freqtrade config, the Kraken key); on the VPS use `scripts/compose.sh` instead of
+  a bare `docker compose` so the right files are chosen.
+- `make pilot-sizing` — re-checks that the live stake clears Kraken's minimums
+  (public endpoints, no key; writes `docs/research/04-live-pilot-sizing.md`).
 - `make shell` — drops into a throwaway container with a bash shell and
   the same image/mounts, for debugging (`freqtrade` CLI subcommands,
   inspecting `user_data/`).

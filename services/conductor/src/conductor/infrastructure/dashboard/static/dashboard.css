@@ -47,3 +47,6 @@ th { color: var(--muted); font-weight: 600; font-size: .8rem; }
 tr.active td { background: var(--bad-bg); }
 footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 1.5rem 1rem; }
 @media (max-width: 30rem) { .health dl { grid-template-columns: 1fr; } .mode { margin-left: 0; } }
+
+.live-banner { background: var(--bad); color: #fff; text-align: center; font-weight: 700; letter-spacing: .04em; padding: .4rem 1rem; }
+.mode.live { background: var(--bad); color: #fff; font-weight: 700; padding: .1rem .5rem; border-radius: 4px; }

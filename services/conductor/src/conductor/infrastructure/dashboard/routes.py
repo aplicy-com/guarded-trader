@@ -15,6 +15,7 @@ from conductor.application.dashboard import (
     build_overview,
     build_positions,
 )
+from conductor.domain.trading_mode import TradingMode
 
 HERE = Path(__file__).parent
 CENT = Decimal("0.01")
@@ -64,8 +65,9 @@ def static_files() -> StaticFiles:
 
 def _render(request: Request, name: str, **context: Any) -> HTMLResponse:
     now = request.app.state.clock()
+    live = request.app.state.settings.trading_mode is TradingMode.LIVE
     return templates.TemplateResponse(
-        request, name, {"now": now, "active": context.pop("active", ""), **context}
+        request, name, {"now": now, "live": live, "active": context.pop("active", ""), **context}
     )
 
 

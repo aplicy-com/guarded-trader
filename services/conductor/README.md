@@ -80,6 +80,9 @@ active halts to Freqtrade:
     record-transfer --amount ...  record a manual transfer already made on Kraken
     value-trades                  fetch BoC rates and value closed trades now
     halts [--all]                 list active (or all) halts
+    isolation-check               R5: per whitelisted asset, what is unexplained (exit 1 if any)
+    exclude-balance --asset A --operator N [--amount X]   R5 AC5.4: record a pre-existing balance
+    soak-check --started-at ISO   live-pilot gate (dry-run ledger): has the soak been clean?
     kill --operator NAME          kill switch: pause new entries on every instance
     nuclear --operator NAME --confirm-flatten-everything
                                   cancel orders, market-exit all, stop

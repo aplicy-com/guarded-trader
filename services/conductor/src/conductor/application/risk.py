@@ -22,6 +22,7 @@ from conductor.application.capital import capital_from_ledger
 from conductor.application.halts import StepResult, enforce_halts, engage_halt
 from conductor.application.ingest import FreqtradeInstance, IngestReport, run_ingest
 from conductor.application.ledger_ports import EquitySnapshot, Ledger, LedgerRepo
+from conductor.application.live_guard import StartGate
 from conductor.application.notify import safe_send
 from conductor.application.ports import Notifier
 from conductor.application.reachability import ReachabilityTracker
@@ -111,6 +112,7 @@ def run_risk_cycle(
     notifier: Notifier,
     tracker: ReachabilityTracker | None = None,
     boot_guard: BootGuard | None = None,
+    start_gate: StartGate | None = None,
 ) -> RiskReport:
     ingest = run_ingest(ledger, instances, now=now, notifier=notifier)
     if tracker is not None:
@@ -142,6 +144,11 @@ def run_risk_cycle(
     boot: tuple[StepResult, ...] = ()
     if boot_guard is not None:  # last: this cycle's halts must already be in the ledger
         boot = start_if_clear(
-            ledger, instances, boot_guard, equity_known=equity_known, notifier=notifier
+            ledger,
+            instances,
+            boot_guard,
+            equity_known=equity_known,
+            notifier=notifier,
+            start_gate=start_gate,
         )
     return RiskReport(ingest, breaches, tuple(new_ids), enforcement, equity_known, boot)

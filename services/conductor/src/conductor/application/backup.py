@@ -7,6 +7,9 @@ write-only, so the object store port has exactly one operation, ``put``: there i
 to list, head, read or delete, and therefore nothing here that depends on doing so. Proof
 that an upload is restorable comes from the restore drill, not from reading it back.
 
+Keys are namespaced by trading mode (``backups/live/...`` vs ``backups/dry_run/...``, ADR-0019)
+so a restore can never pick up the other mode's ledger as "the latest backup".
+
 Every outcome is recorded in the ledger audit log; any failure raises one Telegram alert.
 """
 
@@ -23,6 +26,7 @@ import structlog
 from conductor.application.ledger_ports import Ledger
 from conductor.application.notify import safe_send
 from conductor.application.ports import Notifier
+from conductor.domain.trading_mode import TradingMode
 
 log = structlog.get_logger()
 Clock = Callable[[], datetime]
@@ -84,10 +88,15 @@ class BackupReport:
         return all(o.ok for o in self.outcomes)
 
 
-def backup_key(label: str, at: datetime, token: str) -> str:
-    """Dated, unique, sortable key: later backups sort later, and a repeat never reuses a key."""
+def backup_key(label: str, at: datetime, token: str, mode: TradingMode) -> str:
+    """Dated, unique, sortable key: later backups sort later, and a repeat never reuses a key.
+
+    ``backups/<mode>/<label>/<label>-<UTC time>-<random>.sqlite.gz`` with mode ``live`` or
+    ``dry_run``. (Before ADR-0019 the mode segment did not exist; those older keys are
+    ``backups/<label>/...`` and are dry-run backups.)
+    """
     stamp = at.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
-    return f"{KEY_PREFIX}/{label}/{label}-{stamp}-{token}.sqlite.gz"
+    return f"{KEY_PREFIX}/{mode.value}/{label}/{label}-{stamp}-{token}.sqlite.gz"
 
 
 def _audit(ledger: Ledger, at: datetime, action: str, detail: dict[str, object]) -> None:
@@ -105,9 +114,10 @@ def _backup_one(
     store: ObjectStore,
     now: Clock,
     token: Callable[[], str],
+    mode: TradingMode,
 ) -> tuple[str, Snapshot, str | None]:
     with snapshotter.snapshot(source.path) as snap:
-        key = backup_key(source.label, now(), token())
+        key = backup_key(source.label, now(), token(), mode)
         etag = store.put(key, snap.path)
         return key, snap, etag
 
@@ -118,15 +128,19 @@ def run_backup(
     snapshotter: DatabaseSnapshotter,
     store: ObjectStore,
     *,
+    mode: TradingMode,
     now: Clock,
     notifier: Notifier | None,
     token: Callable[[], str] = lambda: secrets.token_hex(3),
 ) -> BackupReport:
-    """Back up every source independently (one failing never skips the other)."""
+    """Back up every source independently (one failing never skips the other).
+
+    ``mode`` is required on purpose: it decides the key prefix, and a default would let a
+    forgotten argument mix live and dry-run backups."""
     outcomes: list[BackupOutcome] = []
     for source in sources:
         try:
-            key, snap, etag = _backup_one(source, snapshotter, store, now, token)
+            key, snap, etag = _backup_one(source, snapshotter, store, now, token, mode)
         except Exception as exc:
             detail = f"{type(exc).__name__}: {exc}"[:MAX_DETAIL_CHARS]
             log.error("backup_failed", label=source.label, error=detail)
@@ -139,6 +153,7 @@ def run_backup(
             BACKUP_COMPLETED,
             {
                 "label": source.label,
+                "mode": mode.value,
                 "key": key,
                 "raw_bytes": snap.raw_bytes,
                 "gz_bytes": snap.gz_bytes,

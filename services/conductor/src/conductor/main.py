@@ -25,6 +25,7 @@ from conductor.application.heartbeat import (
 from conductor.application.ingest import FreqtradeInstance, run_ingest
 from conductor.application.isolation import IsolationCheckUnavailableError
 from conductor.application.ledger_ports import FxRateProvider, Ledger
+from conductor.application.live_guard import ModeMismatchError, make_start_gate
 from conductor.application.notify import safe_send
 from conductor.application.ports import Heartbeat, Notifier
 from conductor.application.reachability import ReachabilityTracker
@@ -35,6 +36,7 @@ from conductor.application.telegram_commands import CommandProcessor
 from conductor.domain.capital import PrincipalMismatchError
 from conductor.domain.isolation import AccountIsolationError
 from conductor.domain.risk import RiskLimits
+from conductor.domain.trading_mode import mode_banner
 from conductor.infrastructure.config import Settings, load_settings
 from conductor.infrastructure.dashboard import dashboard_router, static_files
 from conductor.infrastructure.db import create_db_engine, create_session_factory, journal_mode_probe
@@ -54,7 +56,12 @@ from conductor.infrastructure.scheduler import LedgerJobs, build_scheduler
 log = structlog.get_logger()
 
 # Startup refusals: the process must exit non-zero rather than serve (R1, R5).
-STARTUP_REFUSALS = (PrincipalMismatchError, AccountIsolationError, IsolationCheckUnavailableError)
+STARTUP_REFUSALS = (
+    PrincipalMismatchError,
+    AccountIsolationError,
+    IsolationCheckUnavailableError,
+    ModeMismatchError,
+)
 
 
 # The dashboard loads only its own files (htmx and Chart.js are vendored) and never framed.
@@ -147,7 +154,13 @@ def create_app(
         snapshotter = build_snapshotter()
         sources = build_backup_sources(settings)
         backup_job = lambda: run_backup(  # noqa: E731
-            ledger, sources, snapshotter, store, now=clock, notifier=notifier
+            ledger,
+            sources,
+            snapshotter,
+            store,
+            mode=settings.trading_mode,
+            now=clock,
+            notifier=notifier,
         )
     limits = RiskLimits(
         daily_loss_limit_pct=settings.daily_loss_limit_pct,
@@ -155,6 +168,8 @@ def create_app(
         consecutive_loss_limit=settings.consecutive_loss_limit,
         max_positions=settings.max_concurrent_positions,
     )
+
+    start_gate = make_start_gate(settings.trading_mode, ledger)
 
     def run_risk() -> RiskReport:
         report = run_risk_cycle(
@@ -165,6 +180,7 @@ def create_app(
             notifier=notifier,
             tracker=tracker,
             boot_guard=boot_guard,
+            start_gate=start_gate,
         )
         risk_monitor.record_success(clock())  # only reached if the cycle did not raise
         return report
@@ -220,7 +236,8 @@ def create_app(
             bot.start()  # best effort: a dead bot never affects the risk checks
         safe_send(
             notifier,
-            f"Conductor started: v{__version__}, mode={settings.trading_mode.value}, "
+            f"{mode_banner(settings.trading_mode)}Conductor started: v{__version__}, "
+            f"mode={settings.trading_mode.value}, "
             f"telegram={'on' if bot is not None else 'off'}, "
             f"heartbeat={'on' if settings.healthchecks_ping_url else 'off'}, "
             f"backup={'on' if backup_job is not None else 'off'}",

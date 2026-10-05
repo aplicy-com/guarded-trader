@@ -1,0 +1,8 @@
+# Used only by scripts/kraken-access-check.sh: hands the Kraken key to a throw-away Freqtrade
+# container (the same image and env the live bot would use) so the key can be tested from the
+# VPS without ever putting it in a shell. Nothing here starts a bot.
+services:
+  freqtrade:
+    environment:
+      FREQTRADE__EXCHANGE__KEY: ${KRAKEN_API_KEY:?set KRAKEN_API_KEY in .env}
+      FREQTRADE__EXCHANGE__SECRET: ${KRAKEN_API_SECRET:?set KRAKEN_API_SECRET in .env}

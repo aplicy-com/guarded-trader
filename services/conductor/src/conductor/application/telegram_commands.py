@@ -22,7 +22,7 @@ from conductor.application.ledger_ports import Ledger
 from conductor.application.ports import Notifier
 from conductor.application.risk import build_risk_inputs
 from conductor.domain.confirmation import ConfirmationBook, Outcome
-from conductor.domain.trading_mode import TradingMode
+from conductor.domain.trading_mode import TradingMode, mode_banner
 
 log = structlog.get_logger()
 Clock = Callable[[], datetime]
@@ -85,7 +85,9 @@ class CommandProcessor:
         arg = arg.strip()
         try:
             if command in ("/help", "/start"):
-                return [HELP]
+                return [
+                    f"{mode_banner(self._mode)}\n{HELP}" if self._mode is TradingMode.LIVE else HELP
+                ]
             if command == "/status":
                 return [self._status()]
             if command == "/capital":
@@ -117,7 +119,7 @@ class CommandProcessor:
         with self._lock:
             pending = self._book.request(chat_id, action, self._now())
         return (
-            f"{description}\n"
+            f"{mode_banner(self._mode)}{description}\n"
             f"Reply `yes {pending.code}` within 60 s to confirm. Otherwise nothing happens."
         )
 
@@ -227,7 +229,7 @@ class CommandProcessor:
 
     def _status(self) -> str:
         at = self._now().astimezone(UTC)
-        lines = [f"Mode: {self._mode.value}"]
+        lines = [f"{mode_banner(self._mode)}Mode: {self._mode.value}".strip()]
         with self._ledger.transaction(write=False) as repo:
             halts = repo.active_halts()
             positions = repo.open_positions()

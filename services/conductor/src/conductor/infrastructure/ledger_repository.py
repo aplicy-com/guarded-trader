@@ -14,6 +14,7 @@ from conductor.application.ledger_ports import (
     AuditRow,
     ClosedTradeSummary,
     EquitySnapshot,
+    ExclusionRecord,
     LedgerRepo,
     OpenPosition,
     OpenTradeRow,
@@ -23,7 +24,7 @@ from conductor.application.ledger_ports import (
     UpsertOutcome,
 )
 from conductor.domain.halt import Halt, HaltType
-from conductor.domain.isolation import base_asset
+from conductor.domain.isolation import base_asset, effective_exclusions
 from conductor.domain.ledger import LedgerTrade, merge_trade
 from conductor.domain.tax import CadValuation, FxRate
 from conductor.infrastructure import ledger_schema as t
@@ -110,6 +111,25 @@ class SqliteLedgerRepo:
             asset = base_asset(pair)
             out[asset] = out.get(asset, ZERO) + amount
         return out
+
+    # --- R5 ---
+    def exclusion_history(self) -> list[ExclusionRecord]:
+        rows = self._s.execute(
+            sa.select(t.isolation_exclusions).order_by(t.isolation_exclusions.c.id)
+        )
+        return [ExclusionRecord(r.asset, r.amount, r.recorded_at, r.operator, r.note) for r in rows]
+
+    def exclusions(self) -> dict[str, Decimal]:
+        return effective_exclusions(self.exclusion_history())
+
+    def add_exclusion(
+        self, asset: str, amount: Decimal, at: datetime, operator: str, note: str | None
+    ) -> None:
+        self._s.execute(
+            sa.insert(t.isolation_exclusions).values(
+                asset=asset, amount=amount, recorded_at=at, operator=operator, note=note
+            )
+        )
 
     # --- R3 ---
     def fenced_total(self) -> Decimal:

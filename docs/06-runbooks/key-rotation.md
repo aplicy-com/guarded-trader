@@ -12,6 +12,15 @@ overlap with two valid ones.
 
 ## Kraken API key rotation
 
+**Live pilot (ADR-0019):** while the server is live, the key is also what
+`scripts/kraken-access-check.sh --scope trade` verifies (read + create/cancel orders, **no**
+deposit or withdraw: it fails loudly otherwise) and it is only ever in the `freqtrade`
+container. For a rotation in live mode: first `/kill`, do the steps below (step 5 is
+`make push-env`; step 6 is `scripts/compose.sh up -d --force-recreate freqtrade`, not a plain
+restart; step 7 is `scripts/kraken-access-check.sh --scope trade`), then `/resume`. The key
+creation screen, permission list and IP are written out in
+[`go-live-pilot.md`](go-live-pilot.md) Part C.
+
 1. Log into Kraken directly (not via any automation).
 2. Create a **new** API key with exactly these permissions (see
    `docs/04-architecture/security.md`):

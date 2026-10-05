@@ -18,6 +18,16 @@ Freqtrade to read `paused` for up to about a minute after a start, until
 Conductor starts it (see [`kill-switch.md`](kill-switch.md), "If Freqtrade
 restarts while a halt is active").
 
+**Live pilot (ADR-0019):** once the server has been switched to live
+(`scripts/trading-mode.sh live`, see [`go-live-pilot.md`](go-live-pilot.md)), the file
+`.trading-mode` says `live` and every `docker compose ...` above must go through
+`scripts/compose.sh ...` instead (it adds the live override: `scripts/compose.sh up -d`,
+`scripts/compose.sh down`, `scripts/compose.sh ps`). A plain
+`docker compose -f infra/docker-compose.yml up -d` would start the **dry-run** stack
+over the live one (safe direction: it cannot place real orders, but it is not what you
+meant). `make deploy` already uses the wrapper. To switch modes use only
+`scripts/trading-mode.sh`; never edit `.trading-mode` by hand.
+
 **Before you start:** know which mode you intend — `dry_run` (paper) or
 `live`. If you are not 100% sure which one you mean, treat it as
 `dry_run` and check `TRADING_MODE` in `.env` before proceeding.
@@ -107,3 +117,56 @@ restarts while a halt is active").
 Do not push through. Stop, and if positions are open and you're unsure of
 system state, go straight to [`nuclear-protocol.md`](nuclear-protocol.md)
 rather than continuing this runbook.
+
+## R5 abort — Conductor refuses to start, or will not start Freqtrade, because of an unexplained balance
+
+**What you see:** `STARTUP REFUSED: R5 account isolation violated: <pair>: unexplained <n> <ASSET>`
+in `docker logs ai-trading-agent-conductor` and a Telegram alert `REFUSING TO START (R5)`; or,
+with Conductor already running, a Telegram alert `BOOT primary: NOT started, stays paused: R5
+account isolation: ...` (Freqtrade stays paused: it cannot open a position). Or
+`scripts/trading-mode.sh live` stops at "R5 gate failed" and the server is `live-pending`.
+
+**What it means (requirement R5, AC5.3):** a coin the system trades (a whitelisted pair's base
+asset) is on the Kraken account in an amount the system did not buy and the ledger has not been
+told to ignore. The system will not guess whether that is yours to keep or its to trade. **It
+never clears itself, and restarting does not help.**
+
+**Which tool to use:** on the VPS, in `/opt/ai-trading-agent`, every command below is
+`scripts/trading-mode.sh cli <command>` (it runs the Conductor CLI against the **live** ledger,
+and works whether or not the live Conductor is running).
+
+1. See exactly what is unexplained:
+   ```
+   scripts/trading-mode.sh cli isolation-check
+   ```
+   Expected: a table with one row per whitelisted asset (BTC, XRP, SOL, LINK, LTC) and the line
+   `R5 CHECK FAIL: unexplained <ASSET>`. The `unexplained` column is the amount in question.
+2. Decide, for each unexplained asset, which of these is true. If you are not sure, do **A**.
+   - **A. It is yours and you want to keep it** (an old purchase, a gift, a deposit):
+     record it as excluded. This is a permanent, audited declaration made in your name:
+     ```
+     scripts/trading-mode.sh cli exclude-balance --asset LTC --operator <your name> --note "bought 2025, personal"
+     ```
+     Expected: `excluded <n> LTC (total now excluded for that asset)`. It refuses to exclude
+     more than the account holds beyond the system's own positions. To exclude only part of the
+     balance add `--amount <n>`.
+   - **B. It should not be on this account** (a mistaken deposit): move it off Kraken by hand,
+     on Kraken's own site (never by anything in this repo), wait for it to leave, then go to 3.
+   - **C. The system bought it** but the ledger does not know (this should never happen): stop.
+     Do not exclude it. Engage `/kill`, and treat it as an incident: record what you saw and ask
+     for help; the ledger and Freqtrade disagree.
+3. Prove it is clear:
+   ```
+   scripts/trading-mode.sh cli isolation-check
+   ```
+   Expected: `R5 CHECK PASS`.
+4. Resume:
+   - Conductor refused at startup: `scripts/compose.sh up -d conductor` (or re-run
+     `scripts/trading-mode.sh live` if you were switching). Expected: the container stays `Up`.
+   - Conductor was running and only withheld the Freqtrade start: nothing to do. It re-checks
+     every minute, starts Freqtrade once the check passes, and sends `BOOT primary: ... started`.
+5. Check: `scripts/drill-check.sh` shows `freqtrade: running` (or `paused` if a halt is active).
+
+Never "fix" this by deleting rows from the ledger (the table refuses edits and deletes), by
+adding the asset to the blacklist *and* ignoring the alert, or by editing the whitelist to hide
+it: R5 exists so that none of those can quietly turn your own coins into the system's.

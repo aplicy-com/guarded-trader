@@ -42,6 +42,7 @@ class FakeFreqtrade:
     startup_ts: int | None = 1_790_000_000  # bumped by tests to simulate a Freqtrade restart
     control_fail: bool = False
     exit_works: bool = True  # False: force_exit_all is accepted but nothing closes
+    dry_run: bool = True  # Freqtrade's own mode; live-mode tests set False
     control_calls: list[str] = field(default_factory=list)
 
     def _check(self, name: str) -> None:
@@ -55,7 +56,17 @@ class FakeFreqtrade:
     def show_config(self) -> BotConfigView:
         self._check("show_config")
         return BotConfigView(
-            "bot", "2026.8", "S", True, "spot", "USD", "unlimited", 2, "4h", "kraken", self.state
+            "bot",
+            "2026.8",
+            "S",
+            self.dry_run,
+            "spot",
+            "USD",
+            "unlimited",
+            2,
+            "4h",
+            "kraken",
+            self.state,
         )
 
     def health(self) -> BotHealthView:

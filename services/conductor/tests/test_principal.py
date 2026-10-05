@@ -112,4 +112,5 @@ def test_startup_refusals_cover_the_safety_exceptions() -> None:
         "PrincipalMismatchError",
         "AccountIsolationError",
         "IsolationCheckUnavailableError",
+        "ModeMismatchError",
     }

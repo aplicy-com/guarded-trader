@@ -39,7 +39,7 @@ can do to the backups matters as much as having them.
    restricting it to the one bucket is also expected (operator-side, checked in the
    runbook). The object-store port has a single operation,
    `put`, so no code path can depend on reading back. Each upload uses a fresh,
-   dated, unique key (`backups/<source>/<source>-<UTC timestamp>-<random>.sqlite.gz`),
+   dated, unique key (`backups/<mode>/<source>/<source>-<UTC timestamp>-<random>.sqlite.gz`, mode `live` or `dry_run`; the `<mode>/` segment was added by ADR-0019, older keys are `backups/<source>/...`),
    so nothing is ever overwritten, and a compromised VPS can add garbage but cannot
    delete or replace good backups. B2's lifecycle rule (delete after 30 days) is
    the only thing that removes files.

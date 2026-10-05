@@ -108,6 +108,10 @@ def test_append_only_tables_reject_update_and_delete(
         " VALUES ('kill_switch','r','x','o')"
     )
     conn.execute("INSERT INTO halt_clears (halt_id, cleared_at, operator) VALUES (1, 'x', 'o')")
+    conn.execute(
+        "INSERT INTO isolation_exclusions (asset, amount, recorded_at, operator)"
+        " VALUES ('ETH', '1', 'x', 'o')"
+    )
     conn.commit()
     for stmt in (f"UPDATE {table} SET id = id", f"DELETE FROM {table}"):  # noqa: S608
         with pytest.raises(sqlite3.DatabaseError, match="append-only"):

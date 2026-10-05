@@ -149,19 +149,41 @@ deliberately moved off this gate entirely, onto Phase 4's.
 to fund the account with the $100 principal (R1) and go live — this is
 not an automatic transition.
 
-- [ ] **TODO (blocks going live):** the R5 exclusion mechanism must exist —
-      an exclusions table in the ledger, a CLI command to record an
-      excluded pre-existing balance (or confirm it was moved out), and the
-      AC5.4 clearance runbook (extend `06-runbooks/start-stop.md`). Until
-      then any pre-existing balance in a whitelisted pair permanently
-      blocks a `TRADING_MODE=live` start (3A-2 implemented only the check).
-- [ ] **TODO (blocks going live): fresh live ledger.** The dry-run ledger is
-      never carried into live: go live on a new, empty ledger database (new
-      volume / file), principal recorded from the real funding, so simulated
-      trades, equity history, fence totals and halts cannot contaminate real
-      R1/R2/R4 figures.
+- [x] **R5 exclusion mechanism** (blocked going live; done for the pilot,
+      ADR-0019): `isolation_exclusions` table, `isolation-check` /
+      `exclude-balance` CLI, the startup check honouring exclusions, and the
+      AC5.4 clearance runbook (`06-runbooks/start-stop.md`, "R5 abort").
+- [x] **Fresh live ledger** (blocked going live; done for the pilot, ADR-0019):
+      `infra/docker-compose.live.yml` gives the live Conductor its own volume
+      and Freqtrade its own trade DB; `scripts/trading-mode.sh` refuses to go
+      live over anything but an empty ledger or one with principal 20, and
+      archives the dry-run ledger first.
 - [ ] Re-record the Freqtrade `/balance` fixture from the live-mode instance
-      (the VPS dry-run one shows simulated balances only).
+      (the VPS dry-run one shows simulated balances only). Part of the pilot's
+      first-day checks (`06-runbooks/go-live-pilot.md`).
+
+### Live pilot ahead of Gate 2 (ADR-0019, decided 2026-10-05)
+
+A **$20** plumbing pilot of `Baseline4h` (a known no-edge strategy) on Kraken,
+one position at a time, to validate the real-exchange path. It is **not** a
+promotion: it does not count toward Gate 2 or Gate 3, and the remaining **$80
+stays undeposited, gated behind Gate 2**.
+
+**Pilot entry gate** (enforced by `scripts/trading-mode.sh live`, which has no
+skip flags): a **72-hour clean soak counted from the 2026-10-05 rebuild**
+(instead of the 7 days in the 3A exit gate; `infra/live/soak-start`) - no
+halt raised by the system since, none active; Kraken key scopes verified from
+the VPS (query + create/cancel orders only, IP-whitelisted, no withdraw or
+funding); fresh live ledger; dry-run ledger archived; R5 passes against the
+real balances. Procedure: [`06-runbooks/go-live-pilot.md`](06-runbooks/go-live-pilot.md).
+Not waived: the accountant consultation on tax classification (risk register
+T1/T4) is still open and the runbook has the operator acknowledge it before
+funding.
+
+**Pilot exit:** judged on plumbing, not P&L - real orders placed/filled/
+cancelled and ingested correctly, kill switch and nuclear exercised against the
+real exchange, R5 and the loss limits behaved, fees/minimums as predicted. The
+write-up goes in `docs/drills/`. Anything beyond $20 needs Gate 2 and a new ADR.
 
 **Scope:**
 - Live trading begins at 25% of `max_deployed_capital`, real orders,

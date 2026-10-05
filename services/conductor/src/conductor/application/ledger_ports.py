@@ -106,6 +106,15 @@ class TransferRecord:
     note: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class ExclusionRecord:
+    asset: str
+    amount: Decimal
+    recorded_at: datetime
+    operator: str
+    note: str | None
+
+
 class LedgerRepo(Protocol):
     # R1
     def get_principal(self) -> Decimal | None: ...
@@ -117,6 +126,19 @@ class LedgerRepo(Protocol):
     def open_holdings(self) -> dict[str, Decimal]:
         """Base-asset amounts held by open long trades the system itself opened."""
         ...
+
+    # R5
+    def exclusions(self) -> dict[str, Decimal]:
+        """Pre-existing amount per asset declared not-the-system's by the operator (newest wins)."""
+        ...
+
+    def exclusion_history(self) -> list[ExclusionRecord]:
+        """Every declaration, oldest first."""
+        ...
+
+    def add_exclusion(
+        self, asset: str, amount: Decimal, at: datetime, operator: str, note: str | None
+    ) -> None: ...
 
     # R3
     def fenced_total(self) -> Decimal: ...

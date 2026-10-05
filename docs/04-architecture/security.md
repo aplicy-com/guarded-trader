@@ -19,6 +19,12 @@ as non-negotiable regardless of principal size (see `CLAUDE.md` §0).
 | **Withdraw Funds** | **Disabled — always** |
 | IP whitelist | Enabled, restricted to the trading host's static/known egress IP |
 
+For the live pilot (ADR-0019) the same table applies, with Query Ledger Entries optional, and
+the IP is the VPS's primary IPv4 (203.0.113.10). The key is handed to the `freqtrade` container
+only (`infra/docker-compose.live.yml`; never `conductor`, and blank in the dry-run stack), and
+`scripts/kraken-access-check.sh` verifies the scopes behaviourally from the VPS: it expects
+"permission denied" on deposit and withdraw lookups and fails otherwise.
+
 This mirrors NFR2/AC1.3 and risk register S2. Verified at key creation and
 at every rotation — see
 [`06-runbooks/key-rotation.md`](../06-runbooks/key-rotation.md). Deposits
