@@ -67,6 +67,7 @@ Expected, for each of `conductor` and `freqtrade`, a block like:
     ...
     trades                   17
    principal: 100 USD
+   halts still active in this copy: (none)
    latest audit entry: 2026-10-05T03:15:14.000000+00:00  backup_completed
 ```
 and, last, `RESTORE TEST PASSED` (exit status 0).
@@ -92,11 +93,14 @@ unset RESTORE_B2_KEY_ID RESTORE_B2_APP_KEY
 Then, in the B2 console, **delete the `restore-test` key**.
 
 **A9. Record it.** Note the date and result for the 3A-6 drill record
-(`docs/drills/`).
+([`docs/drills/`](../drills/README.md), drill 5).
 
 ## Part B — Real restore (onto the VPS)
 
-Use this only when you actually need the old data back. A restore **rewinds
+Use this only when you actually need the old data back. This Part B replaces the data of a
+**running** system. To restore onto a freshly rebuilt server that has never
+been started, use [`rebuild-vps.md`](rebuild-vps.md) step 7 instead (its order
+avoids starting an empty ledger first). A restore **rewinds
 that database to the time of the backup**; anything after it is gone from that
 file. Read the three consequences first:
 

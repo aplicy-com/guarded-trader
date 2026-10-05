@@ -13,6 +13,7 @@ from conductor.adapters.freqtrade import FreqtradeApiError, FreqtradeRestClient
 ROUTES = {
     "/api/v1/ping": "ping",
     "/api/v1/show_config": "show_config",
+    "/api/v1/health": "health",
     "/api/v1/status": "status",
     "/api/v1/trades": "trades",
     "/api/v1/profit": "profit",
@@ -58,6 +59,20 @@ def test_show_config(fixture_json: Callable[[str], Any]) -> None:
     assert cfg.dry_run is True
     assert cfg.stake_amount == "unlimited"
     assert (cfg.max_open_trades, cfg.timeframe, cfg.exchange) == (3, "4h", "kraken")
+
+
+def test_health_exposes_the_startup_marker(fixture_json: Callable[[str], Any]) -> None:
+    assert make_client(fixture_json).health().startup_ts == 1790000123
+
+
+def test_health_without_a_startup_time_is_none() -> None:
+    c = FreqtradeRestClient(
+        "http://freqtrade:8080",
+        "u",
+        "p",
+        transport=httpx.MockTransport(lambda r: httpx.Response(200, json={"last_process": None})),
+    )
+    assert c.health().startup_ts is None
 
 
 def test_status_maps_open_trades_with_decimal_money(fixture_json: Callable[[str], Any]) -> None:
@@ -145,6 +160,7 @@ def test_public_surface_is_read_only() -> None:
     assert public == {
         "ping",
         "show_config",
+        "health",
         "status",
         "trades",
         "profit",

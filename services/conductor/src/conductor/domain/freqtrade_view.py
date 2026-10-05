@@ -26,6 +26,14 @@ class BotConfigView:
 
 
 @dataclass(frozen=True, slots=True)
+class BotHealthView:
+    """Freqtrade `/health`. `startup_ts` (epoch seconds) is reset every time the bot process
+    boots (and on a stopped -> running/paused transition), so a change means "restarted"."""
+
+    startup_ts: int | None
+
+
+@dataclass(frozen=True, slots=True)
 class OpenTradeView:
     trade_id: int
     pair: str

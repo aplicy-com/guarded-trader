@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict
 
 from conductor.domain.freqtrade_view import (
     BotConfigView,
+    BotHealthView,
     OpenTradeView,
     ProfitSummary,
     TradesPage,
@@ -28,6 +29,13 @@ class _Wire(BaseModel):
 
 class PingWire(_Wire):
     status: str
+
+
+class HealthWire(_Wire):
+    bot_startup_ts: int | None = None
+
+    def to_view(self) -> BotHealthView:
+        return BotHealthView(startup_ts=self.bot_startup_ts)
 
 
 class ShowConfigWire(_Wire):

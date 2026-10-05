@@ -14,6 +14,10 @@ never left the host; nothing secret in the responses). Caveat: a dry-run
 `/balance` shows simulated wallets only; re-record it from a live-mode instance
 before relying on it for the real R5 check.
 
+`health.json` is **hand-written from the 2026.8 source** (`RPC.health()` and the `Health` response model in
+`rpc/api_server/api_schemas.py`), not recorded. Conductor reads only `bot_startup_ts` from it. Re-record it from
+the VPS (`curl .../api/v1/health`) and replace this file the next time you are on the box.
+
 `status_empty.json` (`[]`) is hand-written: the "no open positions" case.
 
 Real-data quirks the contract tests now cover: `max_open_trades` arrives as

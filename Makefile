@@ -2,7 +2,7 @@ COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
 .PHONY: up down logs download-data backtest shell market-facts \
 	vps-plan vps-apply vps-lockdown verify-lockdown ssh \
-	conductor-test conductor-lint conductor-shell push-env deploy logs-remote
+	conductor-test conductor-lint conductor-shell push-env deploy-files deploy logs-remote
 
 up:
 	$(COMPOSE) up -d
@@ -124,11 +124,15 @@ push-env:
 		&& sudo mv -f $(VPS_DIR)/.env.incoming $(VPS_DIR)/.env' < .env
 	@echo "pushed .env -> $(VPS_HOST):$(VPS_DIR)/.env (root:deploy 0640)"
 
-# Deploy the committed state of main (not the working tree) and start it.
-deploy:
+# Copy the committed state of main (not the working tree) to the VPS WITHOUT starting
+# anything. Used by rebuild-vps.md to restore data before the first start.
+deploy-files:
 	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && \
 		git archive main | tar -x -C "$$tmp" && \
 		rsync -az --delete $(RSYNC_KEEP) -e "ssh $(SSH_OPTS)" "$$tmp"/ $(VPS_USER)@$(VPS_HOST):$(VPS_DIR)/
+
+# Deploy the committed state of main and start it.
+deploy: deploy-files
 	ssh $(SSH_OPTS) $(VPS_USER)@$(VPS_HOST) 'cd $(VPS_DIR) && docker compose --env-file .env -f infra/docker-compose.yml up -d --build'
 
 logs-remote:

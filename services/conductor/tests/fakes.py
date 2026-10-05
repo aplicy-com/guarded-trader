@@ -7,7 +7,13 @@ from decimal import Decimal
 from typing import Any
 
 from conductor.application.ledger_ports import FxUnavailableError
-from conductor.domain.freqtrade_view import BotConfigView, OpenTradeView, TradesPage, TradeView
+from conductor.domain.freqtrade_view import (
+    BotConfigView,
+    BotHealthView,
+    OpenTradeView,
+    TradesPage,
+    TradeView,
+)
 from conductor.domain.tax import FxRate
 
 D = Decimal
@@ -33,6 +39,7 @@ class FakeFreqtrade:
     calls: list[str] = field(default_factory=list)
     # --- control surface (doubles as the FreqtradeController) ---
     state: str = "running"
+    startup_ts: int | None = 1_790_000_000  # bumped by tests to simulate a Freqtrade restart
     control_fail: bool = False
     exit_works: bool = True  # False: force_exit_all is accepted but nothing closes
     control_calls: list[str] = field(default_factory=list)
@@ -50,6 +57,10 @@ class FakeFreqtrade:
         return BotConfigView(
             "bot", "2026.8", "S", True, "spot", "USD", "unlimited", 2, "4h", "kraken", self.state
         )
+
+    def health(self) -> BotHealthView:
+        self._check("health")
+        return BotHealthView(self.startup_ts)
 
     def _ctl(self, name: str) -> None:
         self.control_calls.append(name)

@@ -1,6 +1,6 @@
 """Read-only Freqtrade REST client.
 
-Exposes GET-only calls: ping, show_config, status, trades, profit, balance,
+Exposes GET-only calls: ping, show_config, health, status, trades, profit, balance,
 whitelist. There is no
 method that can change state, and the HTTP layer refuses any non-GET request,
 so a future edit cannot quietly turn a "reader" into an order path (ADR-0003).
@@ -18,6 +18,7 @@ from pydantic import BaseModel, ValidationError
 
 from conductor.domain.freqtrade_view import (
     BotConfigView,
+    BotHealthView,
     OpenTradeView,
     ProfitSummary,
     TradesPage,
@@ -25,6 +26,7 @@ from conductor.domain.freqtrade_view import (
 
 from .schemas import (
     BalanceWire,
+    HealthWire,
     OpenTradeWire,
     PingWire,
     ProfitWire,
@@ -94,6 +96,9 @@ class FreqtradeRestClient:
 
     def show_config(self) -> BotConfigView:
         return self._parse(ShowConfigWire, "/show_config", self._get("/show_config")).to_view()
+
+    def health(self) -> BotHealthView:
+        return self._parse(HealthWire, "/health", self._get("/health")).to_view()
 
     def status(self) -> tuple[OpenTradeView, ...]:
         payload = self._get("/status")

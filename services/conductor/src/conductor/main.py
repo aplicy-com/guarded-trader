@@ -13,6 +13,7 @@ from conductor import __version__
 from conductor.adapters.boc_valet import BankOfCanadaFx
 from conductor.adapters.telegram_bot import TelegramBot
 from conductor.application.backup import ObjectStore, run_backup
+from conductor.application.boot import BootGuard
 from conductor.application.fence import run_daily_fence
 from conductor.application.health import check_health
 from conductor.application.heartbeat import (
@@ -135,6 +136,7 @@ def create_app(
             ),
         )
     tracker = ReachabilityTracker()
+    boot_guard = BootGuard()
     risk_monitor = RiskCycleMonitor()
     heartbeat_log = HeartbeatLog()
     if backup_store is None and settings.backup_enabled:
@@ -156,7 +158,13 @@ def create_app(
 
     def run_risk() -> RiskReport:
         report = run_risk_cycle(
-            ledger, instances, limits, now=clock, notifier=notifier, tracker=tracker
+            ledger,
+            instances,
+            limits,
+            now=clock,
+            notifier=notifier,
+            tracker=tracker,
+            boot_guard=boot_guard,
         )
         risk_monitor.record_success(clock())  # only reached if the cycle did not raise
         return report

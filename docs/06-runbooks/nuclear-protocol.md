@@ -34,15 +34,19 @@ take back.
    4-character code it shows) within 60 s. This closes every open position
    at market, so the confirmation is deliberate: a wrong code or a late
    answer does nothing, send `/flatten` again.
-4. Expect a reply `Nuclear #<n>: all steps ok` listing each step
-   (`pause_entries`, `cancel_order:<id>`, `force_exit_all`, `confirm_flat`,
-   `stop`), and a matching `NUCLEAR #<n>` alert. If a step says `FAILED`, the
+4. Expect a reply `Nuclear #<n>: all steps ok` listing each step, each
+   prefixed with the instance name (`primary: pause_entries: ok`, then
+   `cancel_order:<id>` only if an order was open, `force_exit_all` only if a
+   position was open, `confirm_flat`, `stop`), and a matching `NUCLEAR #<n>`
+   alert. It can take up to ~30 s after the `yes` for the reply to arrive. If a step says `FAILED`, the
    halt is still recorded and entries stay blocked; see step 9.
    - **If you get no reply within a couple of minutes**, Telegram control
      may be down along with whatever else is wrong. Go to step 8
      (manual/host-level fallback) now — do not keep retrying Telegram.
 5. Once confirmed, verify independently on Kraken's own web/app interface
-   (not just the bot's word for it):
+   (not just the bot's word for it). *In dry-run (Phase 3) nothing exists on
+   Kraken: skip this and use `scripts/drill-check.sh` on the VPS instead,
+   which reads Freqtrade's own view.*
    - Open Orders — should show none remaining (or only ones you
      understand and expect, e.g. one caught mid-cancel — re-check in a
      minute).
@@ -57,11 +61,13 @@ take back.
 7. **You do not need to fix the underlying cause right now.** The system
    is halted and flat (or as flat as it could get). Go back to sleep if
    that's why you're reading this. Full incident review can happen in the
-   morning.
-   **CLI (current, until Telegram lands in 3A-4)** — this is the same
-   action as `/flatten`:
+   morning. To resume later, see "Re-enabling" in `kill-switch.md`
+   (`/resume <halt id>`, or `clear-halt` on the CLI).
+8. **Fallback if Telegram is unreachable but the host is:** run the same
+   action as `/flatten` from the host's shell (`make ssh`, then
+   `cd /opt/ai-trading-agent`):
    ```
-   docker compose --env-file .env -f infra/docker-compose.yml exec conductor \
+   docker exec ai-trading-agent-conductor \
      python -m conductor.cli nuclear --operator <your name> --confirm-flatten-everything
    ```
    Expected output: `halt #<n> engaged`, then per step `ok` lines in this
@@ -69,13 +75,14 @@ take back.
    `confirm_flat`, `stop`. If `confirm_flat` says `FAILED`, positions were
    not all closed within 30 s: the bot is left **paused, not stopped**, so it
    keeps managing its exits; check Kraken and go to step 9 if needed.
-   To resume later, see "Re-enabling" in `kill-switch.md` (`clear-halt`).
-8. **Fallback if Telegram/Conductor is unreachable:**
-   - Connect to the host (Tailscale SSH, or directly).
+
+   **Fallback if Conductor itself is unreachable:**
+   - Connect to the host (`make ssh`, or directly).
    - Stop Freqtrade to guarantee no further automated activity:
      ```
-     docker compose -f infra/docker-compose.yml stop freqtrade
+     docker stop ai-trading-agent-freqtrade
      ```
+     (Plain `docker stop`: `docker compose` needs `.env` to parse the file.)
    - Log into Kraken directly (web or app) and manually cancel any open
      orders and close any open positions.
    - This is slower and more manual than the automated path, but it works
@@ -100,7 +107,8 @@ take back.
 3. Decide whether re-enabling is appropriate, and whether any strategy
    should be demoted back to paper first (see
    [`kill-switch.md`](kill-switch.md) re-enabling section — nuclear
-   protocol re-enables the same way, `/resume nuclear`).
+   protocol re-enables the same way: `/resume <halt id>`, with the id from
+   `/halts`; it also starts the stopped bot again).
 4. If this exposed a real gap (e.g. Telegram was down when you needed it,
    a position wouldn't flatten), that's a risk-register/runbook update to
    make once you're rested — not a 2am task.

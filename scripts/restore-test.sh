@@ -114,6 +114,7 @@ restore_one() {
   row_counts "$db"
   if [ "$label" = conductor ]; then
     echo "   principal: $(sqlite3 -readonly "$db" 'SELECT amount || " " || currency FROM principal;')"
+    echo "   halts still active in this copy: $(sqlite3 -readonly "$db" "SELECT coalesce((SELECT group_concat('#' || h.id || ' ' || h.halt_type, ', ') FROM halts h LEFT JOIN halt_clears c ON c.halt_id = h.id WHERE c.id IS NULL), '(none)');")"
     echo "   latest audit entry: $(sqlite3 -readonly "$db" 'SELECT coalesce((SELECT at || "  " || action FROM audit_log ORDER BY id DESC LIMIT 1), "(none)");')"
   fi
   [ -z "$KEEP" ] || echo "   kept at: $db"
