@@ -67,6 +67,15 @@ class OpenPosition:
 
 
 @dataclass(frozen=True, slots=True)
+class ClosedTradeSummary:
+    instance: str
+    pair: str
+    close_date: datetime
+    profit: Decimal
+    exit_reason: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class TransferRecord:
     amount: Decimal
     destination: str
@@ -117,6 +126,10 @@ class LedgerRepo(Protocol):
 
     def realized_profit_before(self, at: datetime) -> Decimal:
         """Realized profit of trades closed strictly before ``at``."""
+        ...
+
+    def recent_closed_trades(self, limit: int) -> list[ClosedTradeSummary]:
+        """Newest first."""
         ...
 
     def snapshot_at(self, at: datetime) -> EquitySnapshot | None:

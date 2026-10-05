@@ -12,15 +12,18 @@ from pydantic import ValidationError
 from conductor import __version__
 from conductor.adapters.boc_valet import BankOfCanadaFx
 from conductor.adapters.healthchecks import LogHeartbeat
-from conductor.adapters.telegram import LogNotifier
+from conductor.adapters.telegram_bot import TelegramBot
 from conductor.application.fence import run_daily_fence
 from conductor.application.ingest import FreqtradeInstance, run_ingest
 from conductor.application.isolation import IsolationCheckUnavailableError
 from conductor.application.ledger_ports import FxRateProvider, Ledger
+from conductor.application.notify import safe_send
 from conductor.application.ports import Notifier
+from conductor.application.reachability import ReachabilityTracker
 from conductor.application.risk import run_risk_cycle
 from conductor.application.startup import run_startup_checks
 from conductor.application.tax import value_closed_trades
+from conductor.application.telegram_commands import CommandProcessor
 from conductor.domain.capital import PrincipalMismatchError
 from conductor.domain.isolation import AccountIsolationError
 from conductor.domain.risk import RiskLimits
@@ -30,6 +33,7 @@ from conductor.infrastructure.freqtrade_instances import build_instances
 from conductor.infrastructure.http import router
 from conductor.infrastructure.ledger_repository import SqliteLedger
 from conductor.infrastructure.logging import configure_logging
+from conductor.infrastructure.notifier import build_notifier
 from conductor.infrastructure.scheduler import LedgerJobs, build_scheduler
 
 log = structlog.get_logger()
@@ -48,6 +52,7 @@ def create_app(
     instances: list[FreqtradeInstance] | None = None,
     fx: FxRateProvider | None = None,
     notifier: Notifier | None = None,
+    bot: TelegramBot | None = None,
     clock: Callable[[], datetime] = utc_now,
 ) -> FastAPI:
     """Build the app and run the startup gate (raises one of STARTUP_REFUSALS to refuse)."""
@@ -57,9 +62,12 @@ def create_app(
     engine = create_db_engine(settings.database_url)
     session_factory = create_session_factory(engine)
     ledger: Ledger = SqliteLedger(session_factory)
-    notifier = notifier or LogNotifier()
 
     closers: list[Callable[[], None]] = []
+    token = settings.telegram_bot_token.get_secret_value() if settings.telegram_bot_token else None
+    if notifier is None:
+        notifier, notifier_closers = build_notifier(settings)
+        closers.extend(notifier_closers)
     if instances is None:
         instances, instance_closers = build_instances(settings)
         closers.extend(instance_closers)
@@ -83,6 +91,19 @@ def create_app(
             close()
         raise
 
+    if bot is None and token is not None and settings.telegram_commands_enabled:
+        bot = TelegramBot(
+            token,
+            settings.telegram_allowed_chat_ids,
+            CommandProcessor(
+                ledger=ledger,
+                instances=instances,
+                trading_mode=settings.trading_mode,
+                notifier=notifier,
+                now=clock,
+            ),
+        )
+    tracker = ReachabilityTracker()
     limits = RiskLimits(
         daily_loss_limit_pct=settings.daily_loss_limit_pct,
         max_drawdown_pct=settings.max_drawdown_pct,
@@ -90,19 +111,22 @@ def create_app(
         max_positions=settings.max_concurrent_positions,
     )
     jobs = LedgerJobs(
-        ingest=lambda: run_ingest(ledger, instances, now=clock),
+        ingest=lambda: run_ingest(ledger, instances, now=clock, notifier=notifier),
         fence=lambda: (
-            run_ingest(ledger, instances, now=clock),  # fresh profit first, best effort
+            run_ingest(ledger, instances, now=clock, notifier=notifier),  # fresh profit first
             run_daily_fence(
                 ledger,
                 daily_profit_cap=settings.daily_profit_cap_usd,
                 manual_move_threshold=settings.manual_move_threshold_usd,
                 now=clock,
+                notifier=notifier,
             ),
         ),
         valuation=lambda: value_closed_trades(ledger, fx, now=clock),
         ingest_interval_seconds=settings.ingest_interval_seconds,
-        risk=lambda: run_risk_cycle(ledger, instances, limits, now=clock, notifier=notifier),
+        risk=lambda: run_risk_cycle(
+            ledger, instances, limits, now=clock, notifier=notifier, tracker=tracker
+        ),
         risk_interval_seconds=settings.risk_check_interval_seconds,
     )
     scheduler = build_scheduler(
@@ -116,11 +140,20 @@ def create_app(
         log.info(
             "conductor_starting", version=__version__, trading_mode=settings.trading_mode.value
         )
+        if bot is not None:
+            bot.start()  # best effort: a dead bot never affects the risk checks
+        safe_send(
+            notifier,
+            f"Conductor started: v{__version__}, mode={settings.trading_mode.value}, "
+            f"telegram={'on' if bot is not None else 'off'}",
+        )
         if settings.scheduler_enabled:
             scheduler.start()
         try:
             yield
         finally:
+            if bot is not None:
+                bot.stop()
             if scheduler.running:
                 scheduler.shutdown(wait=False)
             engine.dispose()

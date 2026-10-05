@@ -70,8 +70,8 @@
     }
   ],
   "telegram": {
-    "$comment": "Status-only mode (work package 2D, hardened in a follow-up review). Token/chat_id are blank here and injected via FREQTRADE__TELEGRAM__TOKEN / FREQTRADE__TELEGRAM__CHAT_ID env vars (same blank-in-config pattern as api_server below) -- see infra/README.md 'Telegram bot (status-only)'. Deliberately a SEPARATE bot/token from the Conductor bot reserved in .env.example's TELEGRAM_BOT_TOKEN (Phase 3+). IMPORTANT, read infra/README.md before trusting this label: Freqtrade 2026.8 has NO config-level per-command permission system -- verified directly against freqtrade/rpc/telegram.py and rpc.py (work package 2D follow-up). Every command it registers (including /forceexit, /stop, /stopbuy, /delete, /reload_config, /pause, /blacklist_delete) is reachable by anyone who can message this bot as the configured chat_id -- `keyboard` below only restricts which buttons the Telegram client SHOWS, it does not block a manually-typed command. The one command that IS genuinely blocked server-side, regardless of the keyboard, is /forcebuy and /forceshort, via force_entry_enable: false below (confirmed live against the running instance, verified in freqtrade/rpc/rpc.py `_rpc_force_entry`). `allow_custom_messages: false` disables the strategy's own ability to push arbitrary custom messages, unrelated to incoming commands. Real enforcement of 'status-only' rests on keeping the token/chat_id private (risk register S4) and on every other reachable command being risk-neutral-or-reducing (stop/pause/delete/reload never increase exposure) -- not on a technical command block Freqtrade doesn't provide.",
-    "enabled": true,
+    "$comment": "DISABLED in work package 3A-4 (ADR-0015). Conductor owns the Telegram bot now, with a chat-ID allowlist and confirmed writes; Freqtrade's own bot had ~35 commands (/forceexit, /stop, /reload_config, ...) reachable by anyone in the configured chat and no way to restrict them. With enabled=false none of those commands exist. Trade open/close notifications now come from Conductor (ingest).",
+    "enabled": false,
     "token": "",
     "chat_id": "",
     "allow_custom_messages": false,

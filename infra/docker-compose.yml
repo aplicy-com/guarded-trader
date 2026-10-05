@@ -27,6 +27,16 @@ services:
       - "127.0.0.1:8080:8080"
     env_file:
       - ../.env
+    # Telegram is Conductor's now (3A-4, ADR-0015). env_file hands Freqtrade the whole .env,
+    # and Freqtrade lets FREQTRADE__* variables override its config file, so a leftover
+    # FREQTRADE__TELEGRAM__ENABLED=true in .env would silently re-enable its bot. Pin it off
+    # and blank every Telegram variable: the bot token reaches the conductor container only.
+    environment:
+      FREQTRADE__TELEGRAM__ENABLED: "false"
+      TELEGRAM_BOT_TOKEN: ""
+      TELEGRAM_ALLOWED_CHAT_IDS: ""
+      FREQTRADE__TELEGRAM__TOKEN: ""
+      FREQTRADE__TELEGRAM__CHAT_ID: ""
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/api/v1/ping"]
       interval: 30s
@@ -63,6 +73,10 @@ services:
       CONSECUTIVE_LOSS_LIMIT: ${CONSECUTIVE_LOSS_LIMIT:-3}
       MAX_CONCURRENT_POSITIONS: ${MAX_CONCURRENT_POSITIONS:-2}
       RISK_CHECK_INTERVAL_SECONDS: ${RISK_CHECK_INTERVAL_SECONDS:-60}
+      # Telegram (3A-4): the only container that receives the token. Blank = Telegram off.
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_ALLOWED_CHAT_IDS: ${TELEGRAM_ALLOWED_CHAT_IDS:-}
+      TELEGRAM_COMMANDS_ENABLED: ${TELEGRAM_COMMANDS_ENABLED:-true}
       FREQTRADE__API_SERVER__USERNAME: ${FREQTRADE__API_SERVER__USERNAME:?set in .env}
       FREQTRADE__API_SERVER__PASSWORD: ${FREQTRADE__API_SERVER__PASSWORD:?set in .env}
     volumes:

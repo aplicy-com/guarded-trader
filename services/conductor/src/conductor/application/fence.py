@@ -9,6 +9,8 @@ import structlog
 
 from conductor.application.capital import capital_from_ledger, record_snapshot
 from conductor.application.ledger_ports import Ledger, TransferRecord
+from conductor.application.notify import safe_send
+from conductor.application.ports import Notifier
 from conductor.domain.fence import (
     MoveDue,
     manual_move_due,
@@ -45,6 +47,7 @@ def run_daily_fence(
     daily_profit_cap: Decimal | None,
     manual_move_threshold: Decimal,
     now: Clock,
+    notifier: Notifier | None = None,
 ) -> FenceReport:
     """Fence working profit above ``daily_profit_cap``. No exchange call, ever.
 
@@ -115,6 +118,27 @@ def run_daily_fence(
         log.warning("fence_run_missed", days=[d.isoformat() for d in missed])
     if ran:
         log.info("fence_run", fence_date=today.isoformat(), fenced_amount=str(fenced))
+    if ran:  # one alert set per UTC day, not one per restart
+        if fenced > ZERO:
+            safe_send(
+                notifier,
+                f"FENCED {fenced:.2f} USD of profit (fence run {today.isoformat()}); "
+                f"max deployed capital is now {cap.max_deployed_capital - fenced:.2f} USD",
+            )
+        if missed:
+            safe_send(
+                notifier,
+                f"Fence run MISSED for {len(missed)} UTC day(s): "
+                + ", ".join(d.isoformat() for d in missed)
+                + " (caught up now)",
+            )
+        if due.due:
+            why = "over threshold" if due.over_threshold else "30 days since last move"
+            safe_send(
+                notifier,
+                f"MANUAL MOVE DUE: {due.unmoved:.2f} USD fenced and not yet moved "
+                f"({why}). Move it by hand on Kraken, then record it.",
+            )
     if due.due:
         # Alerting arrives in 3A-4; for now this is a log line. The system never moves funds.
         log.warning(

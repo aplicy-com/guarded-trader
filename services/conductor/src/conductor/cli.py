@@ -26,7 +26,6 @@ from decimal import Decimal, InvalidOperation
 from pydantic import ValidationError
 
 from conductor.adapters.boc_valet import BankOfCanadaFx
-from conductor.adapters.telegram import LogNotifier
 from conductor.application.capital import PrincipalNotSetError, get_capital
 from conductor.application.fence import record_manual_transfer
 from conductor.application.halts import clear_halt, kill_switch, nuclear
@@ -35,6 +34,7 @@ from conductor.infrastructure.config import Settings, load_settings
 from conductor.infrastructure.db import create_db_engine, create_session_factory
 from conductor.infrastructure.freqtrade_instances import build_instances
 from conductor.infrastructure.ledger_repository import SqliteLedger
+from conductor.infrastructure.notifier import build_notifier
 
 
 def _decimal(text: str) -> Decimal:
@@ -116,6 +116,8 @@ def _halt_command(args: argparse.Namespace, ledger: SqliteLedger, settings: Sett
         )
         return 1
     instances, closers = build_instances(settings)
+    notifier, notifier_closers = build_notifier(settings)  # alerts from the host reach Telegram too
+    closers = [*notifier_closers, *closers]
     try:
         if args.command == "clear-halt":
             report = clear_halt(
@@ -125,6 +127,7 @@ def _halt_command(args: argparse.Namespace, ledger: SqliteLedger, settings: Sett
                 operator=args.operator,
                 note=args.note,
                 now=now,
+                notifier=notifier,
             )
             print(
                 ("cleared" if report.newly_cleared else "already cleared")
@@ -135,9 +138,7 @@ def _halt_command(args: argparse.Namespace, ledger: SqliteLedger, settings: Sett
             steps, ok = report.resumed, report.ok
         else:
             action = kill_switch if args.command == "kill" else nuclear
-            hreport = action(
-                ledger, instances, operator=args.operator, now=now, notifier=LogNotifier()
-            )
+            hreport = action(ledger, instances, operator=args.operator, now=now, notifier=notifier)
             print(
                 f"halt #{hreport.halt_id} {'engaged' if hreport.created else 'was already active'}"
             )

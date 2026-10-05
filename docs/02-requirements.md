@@ -219,10 +219,13 @@ thereafter on the re-validation cadence in `07-roadmap.md`.
   (new day-window start, peak reset to the equity at the clear, streak
   counted from the clear), so re-enabling is not instantly undone by the
   same old loss, while a genuinely new breach halts again.
-- **AC4.2 gap:** on a drawdown breach Conductor halts entries and alerts
-  but does **not** automatically flatten positions. Flattening is the
-  explicit `cli nuclear` command. Whether drawdown should auto-flatten is
-  TBD (Phase 3, decision for the operator).
+- **AC4.2 — decided 2026-10-05:** on a drawdown breach Conductor **halts new
+  entries and alerts; it does not flatten automatically.** Flattening is a
+  manual, human decision only (`/flatten` on Telegram, or `cli nuclear`).
+  This amends AC4.2's "flattens open positions where safely possible":
+  automatic liquidation was judged riskier than holding exit-managed
+  positions under a halt (it would sell into the very conditions that
+  caused the drawdown, with no human having looked). See ADR-0014.
 
 ---
 

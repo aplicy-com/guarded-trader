@@ -79,15 +79,39 @@ Conductor:
 Both persist their state in the ledger (AC4.5) and both require an
 explicit, logged human action to clear (AC4.6).
 
-## Telegram command surface (draft — finalized Phase 3)
+## Telegram command surface
 
-| Command | Effect | Auth |
+Implemented in 3A-4 ([`ADR-0015`](../05-adr/0015-conductor-owns-telegram.md)).
+Outbound long polling only; only allow-listed chat IDs are answered (anyone else
+is ignored silently and logged). Writes ask first: the bot replies with a random
+4-character code, and the action runs only if the **same chat** answers
+`yes <code>` within 60 s (a wrong code, a late answer, or another chat does
+nothing). The chat ID is recorded as the operator identity (`telegram:<id>`).
+No command can open or size a trade.
+
+| Command | Effect | Confirmation |
 |---|---|---|
-| `/status` | Current halt state, open positions, today's P&L, promotion-pipeline status | Allow-listed chat ID |
-| `/kill` | Engage kill switch (block new entries) | Allow-listed chat ID |
-| `/flatten` | Engage nuclear protocol | Allow-listed chat ID |
-| `/resume` | Clear a halt — requires the specific halt type as an argument, logged with operator identity | Allow-listed chat ID |
-| `/approve <strategy-id>` | Human sign-off gate. **Required** for (a) a new code version's first entry into the paper stage, and (b) every live allocation change (paper→25%, 25%→100%) — see [`ADR-0007`](../05-adr/0007-candidate-code-admission.md). Numeric gates otherwise pass automatically once met; this is the one place a human explicitly reviews before real capital exposure changes. | Allow-listed chat ID |
+| `/status` | Mode, active halts, Freqtrade state per instance, open positions, today's P&L (UTC) | no |
+| `/capital` | Principal, realized profit, fenced, working profit, max deployed capital | no |
+| `/halts` | Active halts with reason, scope, time and who raised them | no |
+| `/trades` | Last 10 closed trades | no |
+| `/help` | Command list | no |
+| `/kill` | Kill switch: block new entries (`kill_switch` halt) | **yes** |
+| `/flatten` | Nuclear: pause, cancel orders, market-exit all, confirm flat, stop | **yes** |
+| `/resume <halt_id>` | Clear that halt and resume if no other halt covers the instance | **yes** |
+| `/approve <strategy-id>` | Human sign-off gate for promotion (ADR-0007) — **Phase 3B**, not implemented yet | n/a |
+
+### Alerts (Conductor to the allow-listed chats)
+
+Halt created (R4/R2/R7, kill, nuclear) and cleared; kill/nuclear step results
+(nuclear always, kill only on failure); trade opened/closed (from ingest, only
+for events in the last 6 h, once per ledger transition, so restarts and the
+first import never replay history); fence events, missed fence days and
+"manual move due" (once per UTC day); Freqtrade unreachable for more than 10
+minutes (and recovery); Conductor startup. Identical alerts are deduplicated
+for 5 minutes and delivery is capped at 10 per minute (overflow is summarised).
+Alerts are best effort and **never** on the risk path: a Telegram outage cannot
+block, delay or fail a risk check, halt or enforcement.
 
 ## Heartbeat
 

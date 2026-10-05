@@ -106,12 +106,23 @@ trading.
 - Every incoming command checked against `TELEGRAM_ALLOWED_CHAT_IDS`
   before execution; unauthorized senders are logged and ignored, not
   replied to with any system detail.
-- All commands (`/kill`, `/flatten`, `/resume`, `/approve`) are logged in
-  the ledger with sender identity and timestamp (AC4.6).
-- By design, every command an unauthorized party could send is either a
-  no-op or *reduces* risk (kill, flatten) — there is no Telegram command
-  that can raise exposure, change `max_deployed_capital`, or export a
-  secret.
+- Long polling only (outbound HTTPS); no webhook, no inbound port. The
+  token is passed to the conductor container only, and is redacted from
+  Conductor's logs (the token sits in the request URL).
+- Every write (`/kill`, `/flatten`, `/resume`) needs a second step: a random
+  4-character code that the same chat must send back as `yes <code>` within
+  60 s. A wrong code, a late answer, or a different chat does nothing, and a
+  code cannot be replayed.
+- All writes are logged in the ledger with the sender's chat ID as operator
+  identity and a timestamp (AC4.6).
+- There is no Telegram command that opens or sizes a trade, changes
+  `max_deployed_capital` or exports a secret. Two commands reduce risk (kill,
+  flatten). **`/resume` does the opposite**: it clears a halt and lets
+  Freqtrade enter again, so it is the command that matters if the token or an
+  allow-listed account is compromised. Its protections are the allowlist and
+  the confirmation step; a breach that is still true re-halts within a minute.
+- Freqtrade's own Telegram bot is disabled (ADR-0015), so its `/forceexit`,
+  `/stop` and `/reload_config` are no longer reachable from chat.
 
 ## VPS threat model
 

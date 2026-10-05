@@ -53,6 +53,14 @@ that is still true simply re-halts on the next cycle.
 confirm flat → `stop`. `stop` is withheld if the account is not flat in time,
 so an unmanaged position is never orphaned.
 
+**6. Drawdown halts, it does not flatten (decided 2026-10-05).** R4 AC4.2 was
+drafted as "flatten where safely possible and halt". Conductor does the halt and
+the alert only. Open positions keep their own exits under Freqtrade; a human
+decides whether to flatten (`/flatten` or `cli nuclear`). Rationale: an
+automatic market exit triggered by a loss threshold sells into the conditions
+that caused the loss, and removes the one moment a human reviews before capital
+is liquidated. R4 is amended accordingly.
+
 ## Consequences
 
 - R2 enforcement is by pausing entries only. The plan's idea of writing
