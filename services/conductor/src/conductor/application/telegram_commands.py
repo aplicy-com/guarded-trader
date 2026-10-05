@@ -146,6 +146,7 @@ class CommandProcessor:
                     operator=operator,
                     now=self._now,
                     notifier=self._notifier,
+                    announce_result=False,  # the reply below is the result
                 )
                 return [self._steps(f"Kill switch #{r.halt_id}", r.ok, r.steps)]
             if action == "flatten":
@@ -156,6 +157,7 @@ class CommandProcessor:
                     now=self._now,
                     notifier=self._notifier,
                     sleep=self._sleep,
+                    announce_result=False,  # the reply below is the result
                 )
                 return [self._steps(f"Nuclear #{r.halt_id}", r.ok, r.steps)]
             if action.startswith("resume:"):
@@ -207,11 +209,17 @@ class CommandProcessor:
             still_active = repo.is_halt_active(halt_id)
         if halt is None:
             return f"No halt #{halt_id}. /halts lists active ones."
-        what = "" if still_active else " (already cleared: this only re-sends resume to Freqtrade)"
+        if not still_active:
+            with self._ledger.transaction(write=False) as repo:
+                active = repo.active_halts()
+            listing = "\n".join(f"#{h.id} {h.halt_type.value}" for h in active)
+            return f"Halt #{halt_id} is already cleared. Nothing to confirm.\n" + (
+                f"Active halts:\n{listing}" if listing else "No active halts."
+            )
         return self._ask(
             chat_id,
             f"resume:{halt_id}",
-            f"RESUME: clear halt #{halt_id} [{halt.halt_type.value}] and resume trading{what}.\n"
+            f"RESUME: clear halt #{halt_id} [{halt.halt_type.value}] and resume trading.\n"
             f"Reason was: {halt.reason}",
         )
 

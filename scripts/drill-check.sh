@@ -94,13 +94,43 @@ FT_STATE='unreachable(no output)'}"
 }
 
 # --- Halts: Conductor's CLI when it is up; a read-only ledger peek when it is stopped ------
+# Same line format as `conductor.cli halts`. $1 = "active" | "--all".
+HALTS_PY=$(cat <<'PY'
+import sqlite3, sys
+db = sqlite3.connect("file:/data/conductor.db?mode=ro", uri=True)
+rows = db.execute(
+    "SELECT h.id, h.halt_type, h.instance, h.reason, c.cleared_at, c.operator "
+    "FROM halts h LEFT JOIN halt_clears c ON c.halt_id = h.id ORDER BY h.id DESC LIMIT 200"
+).fetchall()
+shown = 0
+for id_, kind, inst, reason, cleared_at, by in rows:
+    if cleared_at is not None and sys.argv[1] != "--all":
+        continue
+    state = "ACTIVE" if cleared_at is None else "cleared %s by %s" % (cleared_at[:16], by)
+    print("#%s %s [%s] %s :: %s" % (id_, kind, inst or "all instances", state, reason))
+    shown += 1
+if not shown:
+    print("no active halts")
+PY
+)
+# Prints the halts, or a line starting UNREADABLE when the ledger cannot be read. Callers
+# must treat UNREADABLE as "unknown", never as "no halts".
 halts_text() {  # $1 = "" (active) | --all
+  local out
   if running "$CD"; then
-    docker exec "$CD" python -m conductor.cli halts $1 2>&1
+    if out=$(docker exec "$CD" python -m conductor.cli halts $1 2>&1); then
+      printf '%s\n' "$out"
+    else
+      echo "UNREADABLE: conductor CLI failed: $(printf '%s' "$out" | tail -1 | cut -c1-150)"
+    fi
   elif docker image inspect "$CD_IMAGE" >/dev/null 2>&1 && docker volume inspect "$LEDGER_VOLUME" >/dev/null 2>&1; then
     # Conductor is stopped, so nothing else is writing the ledger.
-    printf '%s\n' "$HALTS_PY" | docker run --rm -i --entrypoint python -v "$LEDGER_VOLUME":/data \
-      "$CD_IMAGE" - "${1:-active}" 2>&1 | sed 's/^/(conductor stopped; read from ledger) /'
+    if out=$(printf '%s\n' "$HALTS_PY" | docker run --rm -i --entrypoint python -v "$LEDGER_VOLUME":/data \
+      "$CD_IMAGE" - "${1:-active}" 2>&1); then
+      printf '%s\n' "$out" | sed 's/^/(conductor stopped; read from ledger) /'
+    else
+      echo "UNREADABLE: could not read the ledger while conductor is stopped: $(printf '%s' "$out" | tail -1 | cut -c1-150)"
+    fi
   else
     echo "UNREADABLE: conductor container stopped and the ledger volume/image is missing"
   fi
@@ -174,7 +204,7 @@ collect() {
     esac
   done < <(ft_vars)
   HALTS_ACTIVE_TEXT=$(halts_text "")
-  if printf '%s' "$HALTS_ACTIVE_TEXT" | grep -q 'UNREADABLE'; then HALT_COUNT="?"
+  if printf '%s' "$HALTS_ACTIVE_TEXT" | grep -q 'UNREADABLE'; then HALT_COUNT="unknown"
   else HALT_COUNT=$(printf '%s\n' "$HALTS_ACTIVE_TEXT" | grep -c '\] ACTIVE ::' || true); fi
   HB=$(heartbeat_text)
 }
