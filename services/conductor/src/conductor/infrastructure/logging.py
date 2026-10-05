@@ -41,7 +41,8 @@ def configure_logging(level: str = "INFO", *, json: bool = True) -> None:
         handler.addFilter(_RedactingFilter())
     logging.getLogger("apscheduler").setLevel(logging.WARNING)
     # httpx logs every request URL at INFO: for Telegram that URL contains the token.
-    for noisy in ("httpx", "httpcore", "hpack"):
+    # botocore at DEBUG logs request headers (key id, signature) and URLs; keep it quiet always.
+    for noisy in ("httpx", "httpcore", "hpack", "boto3", "botocore", "s3transfer", "urllib3"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     renderer: structlog.types.Processor = (
         structlog.processors.JSONRenderer() if json else structlog.dev.ConsoleRenderer()

@@ -4,7 +4,7 @@ Use cases open one transaction at a time via `Ledger.transaction()`; everything
 inside commits or rolls back together. Conductor is the only ledger writer.
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, replace
 from datetime import date, datetime
@@ -67,6 +67,27 @@ class OpenPosition:
 
 
 @dataclass(frozen=True, slots=True)
+class OpenTradeRow:
+    """An open position with the detail the dashboard shows."""
+
+    instance: str
+    pair: str
+    open_date: datetime
+    open_rate: Decimal
+    amount: Decimal
+    stake_amount: Decimal
+
+
+@dataclass(frozen=True, slots=True)
+class AuditRow:
+    id: int
+    at: datetime
+    actor: str
+    action: str
+    detail: Mapping[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
 class ClosedTradeSummary:
     instance: str
     pair: str
@@ -120,6 +141,10 @@ class LedgerRepo(Protocol):
 
     # risk (3A-3)
     def open_positions(self) -> list[OpenPosition]: ...
+    def open_trade_rows(self) -> list[OpenTradeRow]:
+        """Open long positions, oldest first (dashboard)."""
+        ...
+
     def closed_profits(self, instance: str, since: datetime | None) -> list[Decimal]:
         """Realized profit of closed trades (oldest first), closed after ``since``."""
         ...
@@ -157,6 +182,9 @@ class LedgerRepo(Protocol):
     def add_audit(
         self, at: datetime, actor: str, action: str, detail: Mapping[str, Any]
     ) -> None: ...
+    def recent_audit(self, limit: int, *, actions: Sequence[str] | None = None) -> list[AuditRow]:
+        """Newest first; only the given ``actions`` if provided."""
+        ...
 
     # NFR6
     def get_fx(self, requested: date) -> FxRate | None: ...

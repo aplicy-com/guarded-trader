@@ -375,7 +375,7 @@ See [`ADR-0013`](05-adr/0013-correlation-guard-single-exposure-group.md).
 | NFR1 | **Auditability / replayability** — every LLM prompt/response and every order-path decision is logged with enough fidelity to reconstruct why a trade happened. | Prompt/response logged with content hash; strategy versions pinned to git commit; ledger links each order to the strategy version and (if applicable) research-loop run that produced it. | Log/ledger review; replay of a sampled decision, Phase 3+. |
 | NFR2 | **Key scoping** — the exchange API key used by the running system can never withdraw funds. | Key created with query + trade only, no withdrawal, IP-whitelisted (see `04-architecture/security.md`). | Verified at key creation and at each rotation (`06-runbooks/key-rotation.md`). |
 | NFR3 | **Secrets hygiene** — no secret ever enters the git history. | `.gitignore` covers `.env`/keys; secrets live in env vars / LastPass only; pre-commit secret scan — gitleaks (`.pre-commit-config.yaml`, resolved Phase 2). | Pre-commit hook + manual review before first public push. |
-| NFR4 | **Reliability / heartbeat** — a silent failure (host asleep, process crashed, network down) is detected, not just an active error. | Heartbeat signal expected on a fixed interval; alert fires on missed heartbeat. Exact interval TBD (Phase 3). | Manual drill: kill the process and confirm alert fires. |
+| NFR4 | **Reliability / heartbeat** — a silent failure (host asleep, process crashed, network down) is detected, not just an active error. | Conductor pings healthchecks.io every 5 min only while healthy (and `/fail`s when not); the check is configured with a 10 min grace, so an outage alerts after about 15 min (`04-architecture/conductor.md`, 3A-5). | Manual drill: kill the process and confirm alert fires. |
 | NFR5 | **Overfitting defence** — strategies promoted to paper/live are not curve-fit to backtest data. | ≤6 tunable parameters per strategy; anchored + rolling walk-forward validation; reject if out-of-sample Sharpe < 50% of in-sample Sharpe; conservative fee/slippage assumptions in backtests (research review §4). | Enforced in the promotion-gate code path (Phase 3), reviewed per strategy. |
 | NFR6 | **Legal/tax record-keeping** — every trade produces a record sufficient for Canadian tax reporting. | Ledger stores CAD-equivalent fair value at time of each fill, cost basis, and disposition, exportable as a report. | Manual review with an accountant before first live trade with real profit; see `03-risk-register.md` T1–T2. |
 | NFR7 | **Open-source readiness** — the repo is safe to make public at any commit. | No secrets, no PII beyond the operator's own attribution, licence present, docs coherent standalone. | Reviewed before each push if the repo is public; see `CLAUDE.md` §5. |
@@ -390,7 +390,7 @@ See [`ADR-0013`](05-adr/0013-correlation-guard-single-exposure-group.md).
   N=3) are what Conductor's second layer runs with in the meantime.
 - ~~CAD vs USD principal/quote currency~~ — resolved Phase 2: USD, see
   [`ADR-0008`](05-adr/0008-usd-quote-currency.md).
-- Heartbeat interval and alert channel timing — TBD (Phase 3).
+- ~~Heartbeat interval and alert channel timing~~ — resolved 3A-5: 5 min ping, 10 min grace, healthchecks.io alerting by email/phone.
 - ~~Pre-commit secret-scanning tool choice~~ — resolved Phase 2: gitleaks
   (`.pre-commit-config.yaml`).
 - R5 startup-abort clearance runbook (extending `06-runbooks/start-stop.md`)

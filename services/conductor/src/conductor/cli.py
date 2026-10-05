@@ -9,10 +9,14 @@
     python -m conductor.cli kill --operator NAME
     python -m conductor.cli nuclear --operator NAME --confirm-flatten-everything
     python -m conductor.cli clear-halt HALT_ID --operator NAME [--note ...]
+    python -m conductor.cli backup-now
 
 `kill` blocks new entries; `nuclear` also cancels open orders, market-exits every
 position and stops the bot; `clear-halt` is the only way to resume (named
 operator, logged). All three persist in the ledger first.
+
+`backup-now` runs the nightly backup immediately (same code path and audit record as the
+03:15 UTC job); it needs the BACKUP_B2_* settings. Use it to prove the B2 setup after a deploy.
 
 `record-transfer` only RECORDS a move you already made by hand on Kraken's own
 interface. Nothing here can move money or talk to an exchange.
@@ -26,6 +30,7 @@ from decimal import Decimal, InvalidOperation
 from pydantic import ValidationError
 
 from conductor.adapters.boc_valet import BankOfCanadaFx
+from conductor.application.backup import run_backup
 from conductor.application.capital import PrincipalNotSetError, get_capital
 from conductor.application.fence import record_manual_transfer
 from conductor.application.halts import clear_halt, kill_switch, nuclear
@@ -35,6 +40,11 @@ from conductor.infrastructure.db import create_db_engine, create_session_factory
 from conductor.infrastructure.freqtrade_instances import build_instances
 from conductor.infrastructure.ledger_repository import SqliteLedger
 from conductor.infrastructure.notifier import build_notifier
+from conductor.infrastructure.observability import (
+    build_backup_sources,
+    build_object_store,
+    build_snapshotter,
+)
 
 
 def _decimal(text: str) -> Decimal:
@@ -84,6 +94,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("halt_id", type=int)
     c.add_argument("--operator", required=True)
     c.add_argument("--note", default=None)
+    sub.add_parser("backup-now", help="run the nightly backup now (needs BACKUP_B2_* settings)")
     e = sub.add_parser("export-tax", help="write the CAD tax export as CSV")
     e.add_argument("--out", default="-", help="file path, or - for stdout")
     return p
@@ -157,6 +168,28 @@ def _halt_command(args: argparse.Namespace, ledger: SqliteLedger, settings: Sett
             close()
 
 
+def _backup_now(ledger: SqliteLedger, settings: Settings) -> int:
+    if not settings.backup_enabled:
+        print("ERROR: backups are not configured (set the BACKUP_B2_* variables)", file=sys.stderr)
+        return 1
+    notifier, closers = build_notifier(settings)  # a failure alerts Telegram, as the job does
+    try:
+        report = run_backup(
+            ledger,
+            build_backup_sources(settings),
+            build_snapshotter(),
+            build_object_store(settings),
+            now=lambda: datetime.now(UTC),
+            notifier=notifier,
+        )
+    finally:
+        for close in closers:
+            close()
+    for o in report.outcomes:
+        print(f"{o.label}: {'ok ' + str(o.key) if o.ok else 'FAILED ' + o.detail}")
+    return 0 if report.ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -202,6 +235,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1 if report.failed else 0
         elif args.command in {"halts", "kill", "nuclear", "clear-halt"}:
             return _halt_command(args, ledger, settings)
+        elif args.command == "backup-now":
+            return _backup_now(ledger, settings)
         elif args.command == "export-tax":
             if args.out == "-":
                 n = export_tax_csv(ledger, sys.stdout)

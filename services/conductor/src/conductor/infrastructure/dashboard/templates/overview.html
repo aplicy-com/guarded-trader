@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block head %}<script src="/static/chart.umd.min.js" defer></script><script src="/static/dashboard.js" defer></script>{% endblock %}
+{% block content %}
+<h1>Overview</h1>
+<div hx-get="/partials/overview" hx-trigger="every 30s" hx-swap="innerHTML">
+  {% include "_overview.html" %}
+</div>
+<section class="chart">
+  <h2>Equity, last 30 days</h2>
+  <div class="chart-box"><canvas id="equity" data-src="/data/equity.json" role="img" aria-label="Equity curve"></canvas></div>
+  <p id="equity-empty" class="muted" hidden>No equity snapshots in this window yet.</p>
+</section>
+{% endblock %}

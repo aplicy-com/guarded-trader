@@ -8,12 +8,13 @@ It never places an exchange order itself, and no LLM code can reach its Freqtrad
 write client ([ADR-0003](../../docs/05-adr/0003-llm-never-orders.md),
 [ADR-0014](../../docs/05-adr/0014-conductor-write-surface-and-halt-state.md)).
 
-**Status: 3A-4 Telegram.** (3A-3 risk layer below it.) (3A-2 below, plus the halt/enforcement features
+**Status: 3A-5 observability.** Heartbeat (healthchecks.io), nightly off-host
+backups, and a read-only dashboard; see "Observability (3A-5)" below.
+(3A-4 Telegram, 3A-3 risk layer below it.) (3A-2 below, plus the halt/enforcement features
 in "Risk layer".) Conductor now has a *minimal, allowlisted* write surface
 toward Freqtrade (ADR-0014). The 3A-2 ledger, read-only ingest, R1
 principal, R2 capital *computation*, R3 fence, R5 startup check and NFR6 CAD
-export are implemented. Telegram alerts are 3A-4, healthchecks and dashboard
-3A-5.
+export, Telegram (3A-4) and the 3A-5 observability features are implemented.
 
 ## Risk layer (3A-3)
 
@@ -97,6 +98,22 @@ active halts to Freqtrade:
 
 `tests/test_architecture.py` enforces the dependency rules.
 
+## Observability (3A-5)
+
+- **Heartbeat** (`HEALTHCHECK_PING_URL`): pings every 5 min while healthy, `/fail`
+  with a reason when not; silence makes healthchecks.io alert. See
+  [`conductor.md`](../../docs/04-architecture/conductor.md) "Heartbeat".
+- **Backups** (`BACKUP_B2_BUCKET`, `BACKUP_B2_ENDPOINT`, `BACKUP_B2_KEY_ID`,
+  `BACKUP_B2_APP_KEY`; all four or none; the key is **write-only**): nightly 03:15
+  UTC, ledger + Freqtrade dry-run DB, integrity-checked and gzipped.
+  `python -m conductor.cli backup-now` runs one immediately. Restore:
+  [`restore-backup.md`](../../docs/06-runbooks/restore-backup.md).
+- **Dashboard**: read-only, served by this service on port 8000 (published on host
+  loopback only; exposed to the tailnet with `tailscale serve`). Pages: `/`
+  overview, `/positions`, `/halts`, placeholders `/strategies` and `/research`.
+  htmx and Chart.js are vendored under
+  `src/conductor/infrastructure/dashboard/static/` (`VENDORED.md`).
+
 ## Commands (from the repo root)
 
     make conductor-test    # pytest
@@ -119,13 +136,15 @@ Optional: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_ALLOWED_CHAT_IDS` (both or neither),
 300, min 30), `FREQTRADE_INSTANCE_NAME` (ledger label, default `primary`),
 `TRADING_MODE` (`dry_run` default | `live`), `FREQTRADE_API_URL`
 (default `http://freqtrade:8080`), `SCHEDULER_ENABLED`,
-`HEARTBEAT_INTERVAL_SECONDS` (default 300, min 30), `LLM_BACKEND`
+`HEARTBEAT_INTERVAL_SECONDS` (default 300, min 30), `HEALTHCHECK_PING_URL`,
+`BACKUP_B2_REGION` (derived from a Backblaze endpoint if blank),
+`BACKUP_FREQTRADE_DB_PATH` (compose sets it), `LLM_BACKEND`
 (`none` | `claude_code_headless` | `anthropic_api`), `LOG_LEVEL`, `LOG_JSON`.
 
 ## Runtime
 
 - `GET /capital` (internal): R2 figures as strings; compute only.
-- `GET /health` (internal; no port is published to the host): 200 when the DB
+- `GET /health` (internal; the port is published on host loopback only): 200 when the DB
   is in WAL mode and the scheduler is running, else 503. `/docs` and
   `/openapi.json` are disabled.
 - The container runs as non-root uid 10001, read-only root filesystem, all

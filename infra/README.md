@@ -50,9 +50,9 @@ to be running. The chosen mechanism, closing the Phase 2 TBD in
   about). Amphetamine's assertion is tied to a persistent login session,
   not a shell process, so it survives terminal restarts and SSH
   disconnects.
-- This does not replace heartbeat monitoring (NFR4, Phase 3) — it
+- This does not replace heartbeat monitoring (NFR4) — it
   addresses the sleep half of risk O1, not the crash/network-partition
-  half.
+  half. Heartbeat monitoring is Conductor's healthchecks.io ping (3A-5).
 
 ## Start
 

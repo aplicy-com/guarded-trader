@@ -253,6 +253,8 @@ Freqtrade dry-run stack.
     **If any port shows `open`, stop and treat it as an incident:** run
     `make vps-lockdown` again, re-scan, and if it persists follow
     [`rebuild-vps.md`](rebuild-vps.md).
+    Both scans cover port 8000 (the dashboard) and 443 (`tailscale serve`)
+    too, so they must also show no `open` there once step 25 is done.
     Save the scan output (it is not secret) for the 3A exit gate
     ("zero public inbound ports verified").
 
@@ -312,11 +314,116 @@ Freqtrade dry-run stack.
     Expected: the `ss` output lists only `sshd` on port 22 (reachable only
     via the tailnet, because the firewall drops public traffic) and
     `tailscaled`. `docker ps` shows
-    `ai-trading-agent-freqtrade  127.0.0.1:8080->8080/tcp`. Any other
+    `ai-trading-agent-freqtrade  127.0.0.1:8080->8080/tcp` and
+    `ai-trading-agent-conductor  127.0.0.1:8000->8000/tcp`. Any other
     `0.0.0.0:` mapping means stop and fix the compose file.
 
-23. Done. Record the VPS dry-run start time (UTC) wherever the Phase 2
+23. Record the VPS dry-run start time (UTC) wherever the Phase 2
     dry-run start was recorded, so Gate 2's clock is unambiguous.
+
+## Dashboard, heartbeat and backups (work package 3A-5)
+
+Decision records:
+[`ADR-0017`](../05-adr/0017-read-only-dashboard-over-tailscale.md) (dashboard
+and access), [`ADR-0016`](../05-adr/0016-backups-write-only-key-no-client-side-encryption.md)
+(backups). On a VPS that was provisioned **before** 3A-5, do steps 24-31 by hand
+(cloud-init only runs on first boot). On a fresh VPS cloud-init already tried
+step 25 for you; still do 24 first, then check step 25 says it is applied.
+
+24. Tailnet prerequisites (Tailscale admin console, in your browser):
+    - **DNS → HTTPS Certificates → Enable.** `tailscale serve` needs it to get a
+      certificate for `ai-trader-vps.<your-tailnet>.ts.net`.
+    - **Access controls:** limit who can reach this server. Keep your existing
+      rules for everything else, and make sure only **your own user's devices**
+      can reach `ai-trader-vps` on TCP **22** and **443**. Use the console's
+      *Preview rules* to check the result. (Details and the reasoning:
+      [`security.md`](../04-architecture/security.md), "Tailnet access".)
+
+25. Expose the dashboard to the tailnet only. On the VPS:
+    ```
+    make ssh
+    sudo tailscale serve --bg --https=443 http://127.0.0.1:8000
+    sudo tailscale serve status
+    sudo tailscale funnel status
+    ```
+    Expected, `serve status`: a line `https://ai-trader-vps.<tailnet>.ts.net`
+    marked **(tailnet only)** and `|-- / proxy http://127.0.0.1:8000`. Expected,
+    `funnel status`: **no** entry marked `(Funnel on)`. If anything says Funnel
+    is on, run `sudo tailscale funnel reset` and stop: that would be public.
+    (`--bg` makes it permanent: it survives reboots. To remove it:
+    `sudo tailscale serve reset`.) Then `exit`.
+
+26. Add the new values to your local `.env` (never anywhere else), then push:
+    - `HEALTHCHECK_PING_URL`: in healthchecks.io create a check for this system with
+      **Period 5 minutes, Grace Time 10 minutes** (so it alerts after about 15
+      minutes of silence), add an alert channel that does not depend on the VPS or Conductor (email
+      or the phone app; healthchecks.io's own Telegram integration is separate
+      from Conductor's bot), and copy its ping URL.
+    - `BACKUP_B2_BUCKET`, `BACKUP_B2_ENDPOINT`, `BACKUP_B2_KEY_ID`,
+      `BACKUP_B2_APP_KEY`: the bucket and the **write-only** application key
+      (limited to that bucket; lifecycle rule "delete after 30 days" set on the
+      bucket). All four or none.
+    ```
+    make push-env
+    make deploy
+    ```
+    Expected: `Container ai-trading-agent-conductor  Started`. Conductor refuses to
+    start if only some of the four backup values are set; the message names the
+    missing ones.
+
+27. Prove the port really is loopback-only, on the VPS (this is the "Docker
+    bypasses ufw" check):
+    ```
+    make ssh
+    sudo ss -ltn 'sport = :8000'
+    sudo iptables -t nat -S DOCKER | grep -- '--dport 8000'
+    exit
+    ```
+    Expected: `ss` shows `127.0.0.1:8000` and **not** `0.0.0.0:8000` or `*:8000`;
+    the iptables rule contains `-d 127.0.0.1/32`. A rule without `-d 127.0.0.1/32`,
+    or a `0.0.0.0` listener, means stop and fix the compose file. Even if Docker
+    did bypass ufw, the Hetzner Cloud Firewall (zero inbound rules) still drops
+    public traffic before the host sees it; step 29 proves that from outside.
+
+28. Open the dashboard from a device on your tailnet (Mac or phone):
+    `https://ai-trader-vps.<your-tailnet>.ts.net/`
+    Expected: the *Overview* page with principal `$100.00` and "No active halts".
+    Check *Positions*, *Halts & audit*, *Strategies* and *Research* load.
+    Then turn Tailscale **off** on that device (phone on mobile data) and reload:
+    expected, the page does not load (it must not be reachable without the tailnet).
+
+29. From outside, prove nothing new is public. Same conditions as step 17
+    (different network, no Tailscale exit node):
+    ```
+    make verify-lockdown
+    ```
+    Expected: four `OK:` lines (TCP 22, 443, 8000 and 8080 do not accept
+    connections) and exit status 0. Repeat the `nmap` scans from step 17 and keep
+    the output for the 3A exit gate.
+
+30. Prove the heartbeat. Wait about 6 minutes after the deploy, then check
+    healthchecks.io: the check shows **up** with a recent ping. The dashboard's
+    *Monitoring* box shows Heartbeat **ok**. (The silence drill, stopping the
+    container and getting the alert after about 15 minutes, is part of 3A-6.)
+
+31. Prove the backup, from the VPS, without waiting for 03:15 UTC:
+    ```
+    make ssh
+    docker exec ai-trading-agent-conductor python -m conductor.cli backup-now
+    exit
+    ```
+    Expected:
+    ```
+    conductor: ok backups/conductor/conductor-<time>-<id>.sqlite.gz
+    freqtrade: ok backups/freqtrade/freqtrade-<time>-<id>.sqlite.gz
+    ```
+    If either says `FAILED`, read the reason and go to
+    [`restore-backup.md`](restore-backup.md) Troubleshooting. Then prove the files
+    are restorable: do **Part A of [`restore-backup.md`](restore-backup.md)** from
+    your Mac. The write-only key cannot read the files back, so only that test proves
+    the backup is usable. The dashboard *Monitoring* box now shows both backups ok.
+
+32. Done.
 
 ## Later infra changes
 

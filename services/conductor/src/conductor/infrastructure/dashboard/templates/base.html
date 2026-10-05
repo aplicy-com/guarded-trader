@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false}'>
+  <title>{% block title %}Conductor{% endblock %} · ai-trading-agent</title>
+  <link rel="stylesheet" href="/static/dashboard.css">
+  <script src="/static/htmx.min.js" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="bar">
+    <span class="brand">Conductor</span>
+    <nav>
+      <a href="/" {% if active == 'overview' %}aria-current="page"{% endif %}>Overview</a>
+      <a href="/positions" {% if active == 'positions' %}aria-current="page"{% endif %}>Positions</a>
+      <a href="/halts" {% if active == 'halts' %}aria-current="page"{% endif %}>Halts &amp; audit</a>
+      <a href="/strategies" {% if active == 'strategies' %}aria-current="page"{% endif %}>Strategies</a>
+      <a href="/research" {% if active == 'research' %}aria-current="page"{% endif %}>Research</a>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer>Read-only view · all times UTC · changes are made on Telegram</footer>
+</body>
+</html>

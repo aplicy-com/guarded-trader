@@ -27,7 +27,9 @@ flowchart TB
     Freqtrade -- "fills, balances, order state" --> Conductor
     Freqtrade -- "orders (query/trade only key)" <--> Kraken
     Operator -- "manual transfer via Kraken's own UI,<br/>triggered by threshold/monthly alert" --> SweepAcct
-    Conductor -- "alerts: halts, errors,<br/>fencing/move-due, heartbeat silence" --> Telegram
+    Conductor -- "alerts: halts, errors,<br/>fencing/move-due, backup failures" --> Telegram
+    Conductor -- "heartbeat ping (only while healthy);<br/>silence alerts the operator" --> Healthchecks["healthchecks.io"]
+    Conductor -- "nightly DB backups<br/>(write-only key)" --> B2["Backblaze B2"]
 ```
 
 **Key invariant visible in this diagram:** Claude has no arrow to Kraken,

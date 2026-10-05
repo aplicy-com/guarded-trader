@@ -1,11 +1,12 @@
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import structlog
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from conductor.application.heartbeat import send_heartbeat
+from conductor.application.heartbeat import HeartbeatDecision, HeartbeatLog, send_heartbeat
 from conductor.application.ports import Heartbeat
 
 log = structlog.get_logger()
@@ -16,6 +17,8 @@ FENCE_STARTUP_JOB_ID = "daily_fence_startup"
 VALUATION_JOB_ID = "cad_valuation"
 RISK_JOB_ID = "risk_cycle"
 RISK_STARTUP_JOB_ID = "risk_cycle_startup"
+BACKUP_JOB_ID = "nightly_backup"
+BACKUP_HOUR_UTC, BACKUP_MINUTE_UTC = 3, 15
 
 VALUATION_INTERVAL_SECONDS = 3600
 
@@ -30,6 +33,8 @@ class LedgerJobs:
     ingest_interval_seconds: int
     risk: Callable[[], object] | None = None
     risk_interval_seconds: int = 60
+    # 3A-5. None = backups not configured (no job is scheduled).
+    backup: Callable[[], object] | None = None
 
 
 def build_scheduler(
@@ -37,15 +42,19 @@ def build_scheduler(
     *,
     heartbeat_interval_seconds: int,
     ledger_jobs: LedgerJobs | None = None,
+    heartbeat_decision: Callable[[], HeartbeatDecision] = lambda: HeartbeatDecision(True),
+    heartbeat_history: HeartbeatLog | None = None,
+    clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> BackgroundScheduler:
     """UTC scheduler. Job failures are logged, never propagated. Ledger jobs share
-    one lock so Conductor's own writes never overlap (SQLite, single writer)."""
+    one lock so Conductor's own writes never overlap (SQLite, single writer). The backup
+    job deliberately does NOT take that lock: an upload must never delay a risk cycle."""
     scheduler = BackgroundScheduler(timezone="UTC")
     ledger_lock = threading.Lock()
 
     def heartbeat_job() -> None:
         try:
-            send_heartbeat(heartbeat)
+            send_heartbeat(heartbeat, heartbeat_decision, now=clock, history=heartbeat_history)
         except Exception:
             log.exception("heartbeat_failed")
 
@@ -101,6 +110,26 @@ def build_scheduler(
             max_instances=1,
             coalesce=True,
         )
+        if ledger_jobs.backup is not None:
+            backup = ledger_jobs.backup
+
+            def backup_job() -> None:
+                try:
+                    backup()
+                except Exception:
+                    log.exception("job_failed", job=BACKUP_JOB_ID)
+
+            # Nightly, outside the ledger lock. misfire grace lets a late start still run it.
+            scheduler.add_job(
+                backup_job,
+                "cron",
+                hour=BACKUP_HOUR_UTC,
+                minute=BACKUP_MINUTE_UTC,
+                id=BACKUP_JOB_ID,
+                max_instances=1,
+                coalesce=True,
+                misfire_grace_time=3600,
+            )
         if ledger_jobs.risk is not None:
             # R4/R2/R7 + halt enforcement. Runs once on start, then on a short interval.
             scheduler.add_job(

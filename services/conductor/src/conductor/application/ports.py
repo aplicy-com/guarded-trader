@@ -60,9 +60,15 @@ class Notifier(Protocol):
 
 
 class Heartbeat(Protocol):
-    """Outbound dead-man's-switch ping (healthchecks.io from 3A-5). Push, never pull."""
+    """Outbound dead-man's-switch ping (healthchecks.io, 3A-5). Push, never pull."""
 
-    def ping(self) -> None: ...
+    def ok(self) -> None:
+        """Conductor is alive and healthy."""
+        ...
+
+    def fail(self, reason: str) -> None:
+        """Conductor is alive but unhealthy: signal failure now instead of by silence."""
+        ...
 
 
 class LlmClient(Protocol):

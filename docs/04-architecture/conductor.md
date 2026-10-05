@@ -18,7 +18,10 @@ this system entirely (R3).
 | Promotion-gate engine | Evaluates each admitted candidate against the numeric gates in `08-paper-exit-criteria.md`, routes required human `/approve` steps, and — once approved — advances a strategy through paper → 25% → 100% allocation. Enforces NFR5 (overfitting defence) and the ≤6-parameter cap. Never skips a stage or an approval. |
 | Risk-limit checker | Independently re-derives daily loss, drawdown from peak, and consecutive-loss state from the ledger (not from Freqtrade's own view) and can halt Freqtrade via its REST API even if Freqtrade's own protections have not fired — the second layer required by R4/AC4.4. |
 | Profit-fence job | Once per UTC day, computes working profit and, if it exceeds `daily_profit_cap`, fences the excess in the ledger — a ledger-only operation, no exchange call (R3). Alerts the operator when cumulative fenced-but-unmoved profit crosses the manual-move threshold or a month has passed, but never initiates a transfer itself — the physical move off-exchange is always a manual, human action. |
-| Telegram bot handler | Authenticates commands against an allow-list of chat IDs; exposes kill switch, flatten, status, re-enable, and `/approve`; posts alerts (halts, missed fencing runs, manual-move due, heartbeat silence). |
+| Telegram bot handler | Authenticates commands against an allow-list of chat IDs; exposes kill switch, flatten, status, re-enable, and `/approve`; posts alerts (halts, missed fencing runs, manual-move due, backup failures). Heartbeat silence is announced by healthchecks.io, not by Conductor, since a dead Conductor cannot send anything. |
+| Heartbeat | Every 5 minutes pings healthchecks.io **only while Conductor is healthy** (DB ok, scheduler running, last risk cycle succeeded within 3 min); pings `/fail` with a reason otherwise; silence means dead (see "Heartbeat" below). |
+| Backup job | Nightly 03:15 UTC: consistent SQLite online backups of the ledger and Freqtrade's dry-run DB, integrity-checked, gzipped, uploaded to Backblaze B2 with a write-only key; audit-logged, Telegram alert on failure ([`ADR-0016`](../05-adr/0016-backups-write-only-key-no-client-side-encryption.md)). |
+| Dashboard | Read-only web UI (FastAPI + Jinja + HTMX, Chart.js vendored): overview, positions and trades, halts and audit log; strategies and research are placeholders until 3B. Tailnet-only ([`ADR-0017`](../05-adr/0017-read-only-dashboard-over-tailscale.md)). |
 | Ledger | SQLite in WAL mode, single file written only by Conductor ([`ADR-0009`](../05-adr/0009-sqlite-ledger.md)), migrated with Alembic — append-mostly record of: principal, every fill (ingested by Conductor by polling Freqtrade's REST API — **Freqtrade never writes to the ledger directly**), every halt/resume event with operator identity, every fencing event and manual transfer, every promotion-gate decision including `/approve` actions, every candidate-code-admission result (static-analysis verdict, sandbox metrics), every LLM prompt/response hash. |
 
 ## Nightly research-loop flow
@@ -115,27 +118,65 @@ block, delay or fail a risk check, halt or enforcement.
 
 ## Heartbeat
 
-Heartbeat monitoring is **push, not pull**: Conductor pushes an outbound
-ping to a dead-man's-switch monitoring service — [healthchecks.io](
-https://healthchecks.io/) free tier is the current default choice — on a
-fixed interval (TBD Phase 3, NFR4). The monitoring service, not the
-trading host, is responsible for noticing silence: if a ping doesn't
-arrive within its configured grace period, the service itself fires the
-alert.
+Implemented in 3A-5. Heartbeat monitoring is **push, not pull**: Conductor
+pushes an outbound ping to a dead-man's-switch service
+([healthchecks.io](https://healthchecks.io/), `HEALTHCHECK_PING_URL`) and the
+service, not the trading host, is responsible for noticing silence.
 
-This is deliberate. A pull-based watchdog would need to reach *into* the
-host to check on it, which means an inbound endpoint on a host that
-otherwise has none (`security.md`'s no-inbound-ports posture). Push
-avoids that entirely — the host only ever makes outbound calls, same as
-its Kraken and Anthropic API traffic — and it naturally covers the case
-that matters most: if the host is down, asleep, or network-partitioned,
-the ping simply stops arriving and the external service notices without
-needing anything on the (unreachable) host to run.
+| Situation | What Conductor does | What healthchecks.io does |
+|---|---|---|
+| Healthy | pings the check URL every 5 min | nothing (check stays up) |
+| Alive but unhealthy | pings `<url>/fail` with a short reason (it shows in the alert) | alerts immediately |
+| Dead / VPS down / network partitioned | nothing (it cannot) | alerts after the grace period |
+
+**Healthy** means all of: the database answers and is in WAL mode, the
+scheduler is running, and the last risk cycle *completed without raising*
+within the last 3 minutes. A risk cycle that ran but found Freqtrade
+unreachable still counts as completed: that condition has its own Telegram
+alert after 10 minutes, and the heartbeat answers "is Conductor itself
+working". The decision is a pure function (`application/heartbeat.py`).
+
+Configure the check with **Period 5 min, Grace 10 min** so an outage alerts
+after about 15 minutes of silence (NFR4). The ping URL contains the check's
+UUID, so it is a secret: it is a `SecretStr`, never logged, and never in an
+error message. Delivery is outbound HTTPS only (one retry); a failed ping is
+logged, shown on the dashboard, and never affects trading. With no URL set
+the heartbeat logs only and makes no network call.
+
+## Backups
+
+Implemented in 3A-5; decision and trade-offs in
+[`ADR-0016`](../05-adr/0016-backups-write-only-key-no-client-side-encryption.md).
+At 03:15 UTC each source database (Conductor's ledger; Freqtrade's dry-run DB
+through a read-only mount of its `user_data` directory) is copied with SQLite's
+online backup API, `PRAGMA integrity_check`ed on the copy, gzipped, and uploaded
+to B2's S3 API under a dated, unique key. The credential is write-only, so the
+code only ever calls PutObject; nothing is read back, listed or deleted by
+Conductor, and B2's lifecycle rule expires files after 30 days. Each outcome is
+an audit-log row (`backup_completed` / `backup_failed`); a failure sends one
+Telegram alert. `python -m conductor.cli backup-now` runs it on demand. Proof
+that a backup is restorable comes from
+[`restore-backup.md`](../06-runbooks/restore-backup.md).
+
+## Dashboard
+
+Implemented in 3A-5; decision in
+[`ADR-0017`](../05-adr/0017-read-only-dashboard-over-tailscale.md). Strictly
+read-only: GET routes only, no forms, no write actions (writes stay on
+Telegram, behind confirmation). Pages: **Overview** (principal, working,
+fenced, max deployed, halt state, equity curve, heartbeat and backup status),
+**Positions & trades**, **Halts & audit log**; **Strategies** and **Research**
+are placeholders until Phase 3B. Static assets (htmx, Chart.js) are vendored
+and served by Conductor itself; a strict CSP forbids anything else. The port is
+published on host loopback only and exposed to the tailnet with
+`tailscale serve` ([`provision-vps.md`](../06-runbooks/provision-vps.md) steps
+24-29). There is no login: the tailnet is the authentication.
 
 ## TBD
 
-- Exact heartbeat ping interval and healthchecks.io grace-period
-  configuration — TBD (Phase 3).
+- ~~Exact heartbeat ping interval and healthchecks.io grace-period
+  configuration~~ — resolved 3A-5: 5 min ping, 10 min grace.
+- Backup restore-drill cadence after the first one — TBD (Phase 3, 3A-6).
 - Sandbox runtime implementation and static-analysis tooling for
   candidate code admission — TBD (Phase 3), re-tagged from "Phase 2/3"
   during Phase 2 closure (Conductor doesn't exist until Phase 3), see

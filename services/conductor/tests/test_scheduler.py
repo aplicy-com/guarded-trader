@@ -90,3 +90,49 @@ def test_risk_cycle_runs_on_start_and_on_an_interval() -> None:
     risk = s.get_job(sch.RISK_JOB_ID)
     assert risk is not None
     assert risk.trigger.interval.total_seconds() == 60
+
+
+def test_backup_job_runs_nightly_at_0315_utc_only_when_configured() -> None:
+    off = build_scheduler(LogHeartbeat(), heartbeat_interval_seconds=300, ledger_jobs=jobs())
+    assert off.get_job(sch.BACKUP_JOB_ID) is None
+
+    on = build_scheduler(
+        LogHeartbeat(),
+        heartbeat_interval_seconds=300,
+        ledger_jobs=jobs(backup=lambda: None),
+    )
+    job = on.get_job(sch.BACKUP_JOB_ID)
+    assert job is not None
+    assert str(job.trigger.timezone) == "UTC"
+    assert (str(job.trigger.fields[5]), str(job.trigger.fields[6])) == ("3", "15")  # hour, minute
+
+
+def test_backup_never_waits_for_the_ledger_lock_and_a_failure_is_only_logged() -> None:
+    """A slow upload must not delay risk cycles, and a slow ledger job must not delay a backup."""
+    release = threading.Event()
+    backup_ran = threading.Event()
+
+    def slow_ingest() -> None:
+        release.wait(5)
+
+    def backup() -> None:
+        backup_ran.set()
+        raise RuntimeError("boom")
+
+    s = build_scheduler(
+        LogHeartbeat(),
+        heartbeat_interval_seconds=300,
+        ledger_jobs=jobs(ingest=slow_ingest, backup=backup),
+    )
+    ingest, bk = s.get_job(sch.INGEST_JOB_ID), s.get_job(sch.BACKUP_JOB_ID)
+    assert ingest is not None and bk is not None
+    holder = threading.Thread(target=ingest.func)
+    holder.start()  # holds the shared ledger lock
+    try:
+        runner = threading.Thread(target=bk.func)
+        runner.start()
+        assert backup_ran.wait(2), "backup was blocked behind the ledger lock"
+        runner.join(2)  # and its exception was swallowed (logged), not raised
+    finally:
+        release.set()
+        holder.join()

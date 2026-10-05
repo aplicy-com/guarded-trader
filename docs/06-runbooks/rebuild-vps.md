@@ -139,8 +139,9 @@ ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@ai-trader-vps \
 Expected: no output. Check with
 `make ssh` then `ls -l /opt/ai-trading-agent/services/freqtrade/user_data/*.sqlite`,
 which lists `tradesv3.dryrun.sqlite`.
-(Automated restore from off-host backups: TBD (3A-5), will become
-`restore-backup.md`.)
+(To restore from the off-host nightly backups instead, use
+[`restore-backup.md`](restore-backup.md): Part A downloads and checks the
+latest copies, Part B puts them back.)
 
 ### 8. Deploy and verify the app
 
@@ -150,7 +151,10 @@ make logs-remote
 ```
 Expected: `Container ai-trading-agent-freqtrade  Started`, then a log line
 containing `Dry run is enabled`. Ctrl-C to leave. Then run
-`provision-vps.md` step 22 (nothing listens publicly).
+`provision-vps.md` step 22 (nothing listens publicly), and steps 24-29 and 31
+(tailnet HTTPS, `tailscale serve`, the loopback check, the external scan, and a
+backup-now proof). A rebuilt server is a new tailnet device: the dashboard URL's
+hostname is the same only if the old device was removed from the tailnet first.
 
 ### 9. Wrap up
 
