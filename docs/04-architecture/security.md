@@ -222,6 +222,12 @@ with the `100.x.y.z` replaced by the VPS's address from `tailscale status`:
 ]
 ```
 
+After a VPS rebuild the server is a new tailnet device with a **new** `100.x`
+address, so the `hosts` alias above must be updated to it
+([`rebuild-vps.md`](../06-runbooks/rebuild-vps.md) step 6b); otherwise the rule
+no longer matches the new server (and could match an unrelated device that is
+later given the old address).
+
 `autogroup:member` is every user in the tailnet; if other people are in it,
 replace it with your own user. `tailscale funnel` (public) must never be enabled
 for this host (`provision-vps.md` step 25 checks).

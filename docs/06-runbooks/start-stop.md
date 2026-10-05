@@ -4,6 +4,19 @@
 restarting after a config change, or shutting down deliberately (e.g.
 before travel, before a host update).
 
+**On the VPS** (the normal host since 3A-0): `make ssh`, then `cd /opt/ai-trading-agent`.
+Every `docker compose` command there needs `--env-file .env`, i.e.
+`docker compose --env-file .env -f infra/docker-compose.yml ...` (the compose file
+refuses to parse without the variables in `.env`). Where the steps below say
+"Amphetamine" or `git pull`, they describe the old Mac host and do not apply:
+the VPS is updated with `make deploy` from your Mac. After any start or restart
+run `scripts/drill-check.sh`, which prints halt state, Freqtrade state, open
+positions, data counts and the last heartbeat in one go. A restart of either
+container is safe while a halt is active: the halt is stored in Conductor's
+ledger, and Conductor re-pauses Freqtrade within about a minute (see
+[`kill-switch.md`](kill-switch.md), "If Freqtrade restarts while a halt is
+active").
+
 **Before you start:** know which mode you intend — `dry_run` (paper) or
 `live`. If you are not 100% sure which one you mean, treat it as
 `dry_run` and check `TRADING_MODE` in `.env` before proceeding.
@@ -51,8 +64,9 @@ before travel, before a host update).
      stop and investigate the log output before trying again.
 9. Confirm Conductor reports healthy and **not halted**:
    - Telegram: send `/status`.
-   - Expect: current mode (`dry_run`/`live`), no active halt, last
-     heartbeat time recent.
+   - Expect: `Mode: dry_run` (or `live`), `Halts: none`,
+     `Freqtrade primary: running`. (Heartbeat: the dashboard's Monitoring box,
+     or `scripts/drill-check.sh`, shows it `ok` within about 5 minutes of a start.)
    - If `/status` shows an active halt you did not expect, **do not
      assume it's stale** — go to
      [`kill-switch.md`](kill-switch.md) to understand why before clearing

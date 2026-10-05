@@ -16,36 +16,45 @@ the nuclear protocol instead.
 1. Open Telegram, go to the bot chat.
 2. Send: `/kill`
 3. The bot replies with a confirmation prompt containing a 4-character
-   code, e.g. `Reply yes K7QX within 60 s`. Send exactly that: `yes K7QX`.
-   (If you wait longer than 60 s or mistype the code, nothing happens:
-   just send `/kill` again.) You then get a reply such as
-   `Kill switch #3: all steps ok`, and an alert `HALT #3 [kill_switch] ...`.
+   code, e.g. `Reply \`yes K7QX\` within 60 s`. Send exactly that: `yes K7QX`.
+   (If you wait longer than 60 s or mistype the code, nothing happens, and
+   the bot says `Confirmation expired` or `Wrong code`: just send `/kill`
+   again.) You then get a reply such as
+   `Kill switch #3: all steps ok` followed by `primary: pause_entries: ok`,
+   and an alert `HALT #3 [kill_switch] ...`.
    - If you get **no reply** within a few minutes: the Telegram control
      path itself may be down. Go to the host directly (see step 4).
-4. If Telegram isn't responding, connect to the host (SSH via Tailscale,
-   or directly if you're at the machine) and stop new entries at the
+4. If Telegram isn't responding, connect to the host (`make ssh` from the
+   Mac, then `cd /opt/ai-trading-agent`) and stop new entries at the
    source:
    ```
-   docker compose --env-file .env -f infra/docker-compose.yml exec conductor \
-     python -m conductor.cli kill --operator <your name>
+   docker exec ai-trading-agent-conductor python -m conductor.cli kill --operator <your name>
    ```
    Expected output: `halt #<n> engaged` then `primary: pause_entries: ok`.
    If a line says `FAILED`, the halt is still recorded and Conductor
    re-applies it every minute; check again with
-   `python -m conductor.cli halts`. (**Until Telegram lands in 3A-4 this CLI
-   is the primary way, not just the fallback.**)
+   `python -m conductor.cli halts`. (This CLI is the fallback for when
+   Telegram is unreachable; it does exactly what `/kill` does.)
 
    If Conductor itself cannot be reached and you need to act now, stopping
    the `freqtrade` container directly prevents any new order placement:
    ```
-   docker compose -f infra/docker-compose.yml stop freqtrade
+   docker stop ai-trading-agent-freqtrade
    ```
+   (Plain `docker stop`, not `docker compose`: compose needs the `.env`
+   variables to even parse the file and can fail when you least want it to.
+   The container stays stopped until you run
+   `docker start ai-trading-agent-freqtrade`; `restart: unless-stopped` does
+   not bring back a container you stopped by hand.)
    This is a blunter tool than the kill switch — it also stops management
    of existing positions' exits, so only use it if you can't reach
    Conductor and need to act now. Follow up with proper diagnosis once
    you're able to.
 5. Verify the kill switch actually engaged:
-   - Telegram: `/status` — should show halt type `kill_switch`, active.
+   - Telegram: `/status` — should show `HALTED (1):` with `#<id> kill_switch`
+     and `Freqtrade primary: paused`.
+   - On the VPS: `scripts/drill-check.sh --expect-state paused --expect-halts 1`
+     prints `CHECK PASS`.
    - CLI: `python -m conductor.cli halts` lists active halts, e.g.
      `#1 kill_switch [all instances] ACTIVE :: kill switch engaged by ...`.
 6. **You do not need to do anything else right now.** New entries are
@@ -92,14 +101,28 @@ walking straight back into the same condition.
    Freqtrade stays paused (safe): fix the cause and run the same command
    again. If the original breach is still true the halt comes back within a
    minute: that is the system working, not a bug.
-3. Expect a confirmation reply with your identity and timestamp logged.
-4. Verify: `/status` — halt should show cleared, mode active.
+3. Expect a reply `Cleared halt #<id>.` and `primary: resume: ok`. Your
+   identity and the time are logged in the audit log.
+4. Verify: `/status` — `Halts: none` and `Freqtrade primary: running`
+   (or `scripts/drill-check.sh --expect-state running --expect-halts 0`).
 5. If the halt reason suggested a specific strategy or pair should stay
    paused even though the global kill switch is cleared — TBD (Phase 3):
    per-strategy pause is not yet a separate control from the global kill
    switch. For now, treat any doubt about a specific strategy as a reason
    to leave the global kill switch engaged until the research loop or a
    human review addresses it.
+
+## If Freqtrade restarts while a halt is active
+
+Freqtrade itself always boots `running` (`initial_state` in its config); it
+does not remember it was paused. The halt lives in Conductor's ledger, and
+Conductor re-applies the pause on its next risk cycle (every 60 s). So after
+a Freqtrade restart (a crash, a host reboot, an unattended upgrade) there can
+be up to about a minute where `freqtrade` reads `running` even though a halt
+is active. This is expected and is measured in the 3A-6 restart drill
+([`docs/drills/README.md`](../drills/README.md), drill 3). If it is still
+`running` after 3 minutes, Conductor is not enforcing: check
+`docker logs ai-trading-agent-conductor`, and engage the kill switch again.
 
 ## Common mistakes to avoid
 
