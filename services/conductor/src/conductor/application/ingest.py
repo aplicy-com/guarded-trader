@@ -10,7 +10,7 @@ import structlog
 
 from conductor.application.capital import PrincipalNotSetError, record_snapshot
 from conductor.application.ledger_ports import Ledger
-from conductor.application.ports import FreqtradeReader
+from conductor.application.ports import FreqtradeController, FreqtradeReader
 from conductor.domain.ledger import LedgerTrade, from_closed, from_open
 
 log = structlog.get_logger()
@@ -24,6 +24,7 @@ MAX_PAGES = 1000  # safety valve against a misbehaving pagination contract
 class FreqtradeInstance:
     name: str
     reader: FreqtradeReader
+    controller: FreqtradeController | None = None  # write surface; None = read-only
 
 
 @dataclass(frozen=True, slots=True)

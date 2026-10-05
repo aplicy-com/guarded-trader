@@ -5,6 +5,14 @@
         --tx-id ... --operator maduka [--at 2026-10-04T12:00:00Z] [--note ...]
     python -m conductor.cli value-trades
     python -m conductor.cli export-tax [--out file.csv]     (default: stdout)
+    python -m conductor.cli halts [--all]
+    python -m conductor.cli kill --operator NAME
+    python -m conductor.cli nuclear --operator NAME --confirm-flatten-everything
+    python -m conductor.cli clear-halt HALT_ID --operator NAME [--note ...]
+
+`kill` blocks new entries; `nuclear` also cancels open orders, market-exits every
+position and stops the bot; `clear-halt` is the only way to resume (named
+operator, logged). All three persist in the ledger first.
 
 `record-transfer` only RECORDS a move you already made by hand on Kraken's own
 interface. Nothing here can move money or talk to an exchange.
@@ -18,11 +26,14 @@ from decimal import Decimal, InvalidOperation
 from pydantic import ValidationError
 
 from conductor.adapters.boc_valet import BankOfCanadaFx
+from conductor.adapters.telegram import LogNotifier
 from conductor.application.capital import PrincipalNotSetError, get_capital
 from conductor.application.fence import record_manual_transfer
+from conductor.application.halts import clear_halt, kill_switch, nuclear
 from conductor.application.tax import export_tax_csv, value_closed_trades
-from conductor.infrastructure.config import load_settings
+from conductor.infrastructure.config import Settings, load_settings
 from conductor.infrastructure.db import create_db_engine, create_session_factory
+from conductor.infrastructure.freqtrade_instances import build_instances
 from conductor.infrastructure.ledger_repository import SqliteLedger
 
 
@@ -58,9 +69,91 @@ def build_parser() -> argparse.ArgumentParser:
     t.add_argument("--at", type=_instant, default=None, help="when it was made (default: now)")
     t.add_argument("--note", default=None)
     sub.add_parser("value-trades", help="fetch BoC rates and value closed trades in CAD")
+    h = sub.add_parser("halts", help="list halts (active only unless --all)")
+    h.add_argument("--all", action="store_true")
+    k = sub.add_parser("kill", help="kill switch: block new entries on every instance")
+    k.add_argument("--operator", required=True)
+    n = sub.add_parser("nuclear", help="cancel orders, market-exit all positions, stop the bot")
+    n.add_argument("--operator", required=True)
+    n.add_argument(
+        "--confirm-flatten-everything",
+        action="store_true",
+        help="required: this closes every open position at market",
+    )
+    c = sub.add_parser("clear-halt", help="clear a halt and resume (the only way back)")
+    c.add_argument("halt_id", type=int)
+    c.add_argument("--operator", required=True)
+    c.add_argument("--note", default=None)
     e = sub.add_parser("export-tax", help="write the CAD tax export as CSV")
     e.add_argument("--out", default="-", help="file path, or - for stdout")
     return p
+
+
+def _halt_command(args: argparse.Namespace, ledger: SqliteLedger, settings: Settings) -> int:
+    now = lambda: datetime.now(UTC)  # noqa: E731
+    if args.command == "halts":
+        with ledger.transaction(write=False) as repo:
+            rows = repo.list_halts(200)
+        shown = 0
+        for halt, cleared_at, cleared_by in rows:
+            if cleared_at is not None and not args.all:
+                continue
+            state = (
+                "ACTIVE"
+                if cleared_at is None
+                else f"cleared {cleared_at:%Y-%m-%d %H:%M}Z by {cleared_by}"
+            )
+            scope = halt.instance or "all instances"
+            print(f"#{halt.id} {halt.halt_type.value} [{scope}] {state} :: {halt.reason}")
+            shown += 1
+        if not shown:
+            print("no active halts")
+        return 0
+    if args.command == "nuclear" and not args.confirm_flatten_everything:
+        print(
+            "ERROR: nuclear closes every open position at market; add --confirm-flatten-everything",
+            file=sys.stderr,
+        )
+        return 1
+    instances, closers = build_instances(settings)
+    try:
+        if args.command == "clear-halt":
+            report = clear_halt(
+                ledger,
+                instances,
+                halt_id=args.halt_id,
+                operator=args.operator,
+                note=args.note,
+                now=now,
+            )
+            print(
+                ("cleared" if report.newly_cleared else "already cleared")
+                + f" halt #{report.halt_id}"
+            )
+            for h in report.still_active:
+                print(f"still active: #{h.id} {h.halt_type.value} :: {h.reason}")
+            steps, ok = report.resumed, report.ok
+        else:
+            action = kill_switch if args.command == "kill" else nuclear
+            hreport = action(
+                ledger, instances, operator=args.operator, now=now, notifier=LogNotifier()
+            )
+            print(
+                f"halt #{hreport.halt_id} {'engaged' if hreport.created else 'was already active'}"
+            )
+            steps, ok = hreport.steps, hreport.ok
+        for s in steps:
+            print(f"  {s.instance}: {s.step}: {'ok' if s.ok else 'FAILED ' + s.detail}")
+        if not ok:
+            print(
+                "WARNING: not every step succeeded; the halt is recorded and will be re-applied "
+                "by the risk cycle (a failed resume leaves Freqtrade paused: re-run clear-halt)",
+                file=sys.stderr,
+            )
+        return 0 if ok else 1
+    finally:
+        for close in closers:
+            close()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -106,6 +199,8 @@ def main(argv: list[str] | None = None) -> int:
                 fx.close()
             print(f"valued={report.valued} pending={report.pending} failed={report.failed}")
             return 1 if report.failed else 0
+        elif args.command in {"halts", "kill", "nuclear", "clear-halt"}:
+            return _halt_command(args, ledger, settings)
         elif args.command == "export-tax":
             if args.out == "-":
                 n = export_tax_csv(ledger, sys.stdout)

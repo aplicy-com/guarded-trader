@@ -183,12 +183,37 @@ trade_cad_valuations = sa.Table(
     sa.Column("valued_at", UtcDateTime, nullable=False),
 )
 
+halts = sa.Table(
+    "halts",
+    metadata,
+    sa.Column("id", sa.Integer, primary_key=True),
+    sa.Column("halt_type", sa.String, nullable=False),
+    sa.Column("instance", sa.String),  # NULL = every instance
+    sa.Column("reason", sa.String, nullable=False),
+    sa.Column("created_at", UtcDateTime, nullable=False),
+    sa.Column("created_by", sa.String, nullable=False),  # "system" or operator
+)
+
+# A halt is active until a row here exists for it. Clearing is its own fact, so the
+# halts table stays strictly append-only.
+halt_clears = sa.Table(
+    "halt_clears",
+    metadata,
+    sa.Column("id", sa.Integer, primary_key=True),
+    sa.Column("halt_id", sa.Integer, sa.ForeignKey("halts.id"), nullable=False, unique=True),
+    sa.Column("cleared_at", UtcDateTime, nullable=False),
+    sa.Column("operator", sa.String, nullable=False),
+    sa.Column("note", sa.String),
+)
+
 # Tables that may never be UPDATEd or DELETEd once written (enforced by triggers).
 APPEND_ONLY_TABLES: tuple[str, ...] = (
     "principal",
     "fence_events",
     "manual_transfers",
     "audit_log",
+    "halts",
+    "halt_clears",
 )
 
 TABLE_NAMES: frozenset[str] = frozenset(metadata.tables)

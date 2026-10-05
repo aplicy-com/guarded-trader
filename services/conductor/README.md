@@ -4,15 +4,37 @@ Python 3.12 / FastAPI service that will own the ledger, capital and risk
 rules, the profit fence, the Telegram control surface and (Phase 3B) the
 nightly LLM research loop. Design:
 [`docs/04-architecture/conductor.md`](../../docs/04-architecture/conductor.md).
-It never places, modifies or cancels an exchange order
-([ADR-0003](../../docs/05-adr/0003-llm-never-orders.md)).
+It never places an exchange order itself, and no LLM code can reach its Freqtrade
+write client ([ADR-0003](../../docs/05-adr/0003-llm-never-orders.md),
+[ADR-0014](../../docs/05-adr/0014-conductor-write-surface-and-halt-state.md)).
 
-**Status: 3A-2 ledger + capital rules.** The ledger, read-only ingest, R1
+**Status: 3A-3 risk layer.** (3A-2 below, plus the halt/enforcement features
+in "Risk layer".) Conductor now has a *minimal, allowlisted* write surface
+toward Freqtrade (ADR-0014). The 3A-2 ledger, read-only ingest, R1
 principal, R2 capital *computation*, R3 fence, R5 startup check and NFR6 CAD
-export are implemented. **Nothing is enforced yet**: Conductor stays strictly
-read-only toward Freqtrade (GET only); enforcement of `max_deployed_capital`
-and the risk layer are 3A-3, Telegram alerts 3A-4, healthchecks and dashboard
+export are implemented. Telegram alerts are 3A-4, healthchecks and dashboard
 3A-5.
+
+## Risk layer (3A-3)
+
+Every `RISK_CHECK_INTERVAL_SECONDS` (60) the risk cycle ingests, evaluates the
+limits **from the ledger**, persists a halt for any breach and re-applies
+active halts to Freqtrade:
+
+- R4: daily loss (3% of trading capital, realized + unrealized), max drawdown
+  from peak equity (10%), consecutive losses (3, per Freqtrade instance).
+- R2: open exposure above `max_deployed_capital`.
+- R7: more than `MAX_CONCURRENT_POSITIONS` (2) open positions: the whole
+  whitelist is one exposure group (ADR-0013). Keep it equal to `max_open_trades`.
+- A halt blocks entries (Freqtrade `stopentry`), is stored in `halts` (append-only),
+  survives restarts, and is re-sent whenever Freqtrade is seen "running" (e.g.
+  after its own restart). Only `clear-halt` with a named operator resumes. If
+  Freqtrade is unreachable the failure is logged and retried; startup is never
+  blocked by it.
+- The write client allows only: `stopentry`, `start`, `stop`, `forceexit` (all, market),
+  cancel one trade's open order. See `adapters/freqtrade/control_client.py`.
+- **Not done:** auto-flatten on drawdown (AC4.2) and writing `available_capital`
+  to Freqtrade (R2 is enforced by pausing entries only).
 
 ## What it does (3A-2)
 
@@ -56,6 +78,11 @@ and the risk layer are 3A-3, Telegram alerts 3A-4, healthchecks and dashboard
     capital                       print the R2 figures
     record-transfer --amount ...  record a manual transfer already made on Kraken
     value-trades                  fetch BoC rates and value closed trades now
+    halts [--all]                 list active (or all) halts
+    kill --operator NAME          kill switch: pause new entries on every instance
+    nuclear --operator NAME --confirm-flatten-everything
+                                  cancel orders, market-exit all, stop
+    clear-halt ID --operator NAME [--note ...]   the only way to resume
     export-tax [--out FILE]       CSV of valued closed trades (stdout by default)
 
 ## Layout (`src/conductor/`)
@@ -84,7 +111,9 @@ change them with `uv add` / `uv lock --upgrade-package`.
 Required (startup fails with a clear message if missing/invalid):
 `PRINCIPAL_USD` (>0), `DATABASE_URL` (`sqlite:///...` only),
 `FREQTRADE__API_SERVER__USERNAME`, `FREQTRADE__API_SERVER__PASSWORD`.
-Optional: `DAILY_PROFIT_CAP_USD` (no code default; `.env.example` sets 10; blank = unset),
+Optional: `DAILY_LOSS_LIMIT_PCT` (3), `MAX_DRAWDOWN_PCT` (10),
+`CONSECUTIVE_LOSS_LIMIT` (3), `MAX_CONCURRENT_POSITIONS` (2),
+`RISK_CHECK_INTERVAL_SECONDS` (60, min 15), `DAILY_PROFIT_CAP_USD` (no code default; `.env.example` sets 10; blank = unset),
 `MANUAL_MOVE_THRESHOLD_USD` (default 25), `INGEST_INTERVAL_SECONDS` (default
 300, min 30), `FREQTRADE_INSTANCE_NAME` (ledger label, default `primary`),
 `TRADING_MODE` (`dry_run` default | `live`), `FREQTRADE_API_URL`

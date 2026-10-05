@@ -103,6 +103,11 @@ def test_append_only_tables_reject_update_and_delete(
         "INSERT INTO manual_transfers (amount, destination, exchange_tx_id,"
         " transferred_at, operator, recorded_at) VALUES ('1', 'd', 'tx', 'x', 'o', 'x')"
     )
+    conn.execute(
+        "INSERT INTO halts (halt_type, reason, created_at, created_by)"
+        " VALUES ('kill_switch','r','x','o')"
+    )
+    conn.execute("INSERT INTO halt_clears (halt_id, cleared_at, operator) VALUES (1, 'x', 'o')")
     conn.commit()
     for stmt in (f"UPDATE {table} SET id = id", f"DELETE FROM {table}"):  # noqa: S608
         with pytest.raises(sqlite3.DatabaseError, match="append-only"):

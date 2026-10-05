@@ -14,6 +14,8 @@ INGEST_JOB_ID = "ledger_ingest"
 FENCE_JOB_ID = "daily_fence"
 FENCE_STARTUP_JOB_ID = "daily_fence_startup"
 VALUATION_JOB_ID = "cad_valuation"
+RISK_JOB_ID = "risk_cycle"
+RISK_STARTUP_JOB_ID = "risk_cycle_startup"
 
 VALUATION_INTERVAL_SECONDS = 3600
 
@@ -26,6 +28,8 @@ class LedgerJobs:
     fence: Callable[[], object]
     valuation: Callable[[], object]
     ingest_interval_seconds: int
+    risk: Callable[[], object] | None = None
+    risk_interval_seconds: int = 60
 
 
 def build_scheduler(
@@ -97,4 +101,17 @@ def build_scheduler(
             max_instances=1,
             coalesce=True,
         )
+        if ledger_jobs.risk is not None:
+            # R4/R2/R7 + halt enforcement. Runs once on start, then on a short interval.
+            scheduler.add_job(
+                guarded(RISK_JOB_ID, ledger_jobs.risk),
+                "interval",
+                seconds=ledger_jobs.risk_interval_seconds,
+                id=RISK_JOB_ID,
+                max_instances=1,
+                coalesce=True,
+            )
+            scheduler.add_job(
+                guarded(RISK_STARTUP_JOB_ID, ledger_jobs.risk), "date", id=RISK_STARTUP_JOB_ID
+            )
     return scheduler

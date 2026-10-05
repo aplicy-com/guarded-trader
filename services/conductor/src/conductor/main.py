@@ -11,7 +11,6 @@ from pydantic import ValidationError
 
 from conductor import __version__
 from conductor.adapters.boc_valet import BankOfCanadaFx
-from conductor.adapters.freqtrade import FreqtradeRestClient
 from conductor.adapters.healthchecks import LogHeartbeat
 from conductor.adapters.telegram import LogNotifier
 from conductor.application.fence import run_daily_fence
@@ -19,12 +18,15 @@ from conductor.application.ingest import FreqtradeInstance, run_ingest
 from conductor.application.isolation import IsolationCheckUnavailableError
 from conductor.application.ledger_ports import FxRateProvider, Ledger
 from conductor.application.ports import Notifier
+from conductor.application.risk import run_risk_cycle
 from conductor.application.startup import run_startup_checks
 from conductor.application.tax import value_closed_trades
 from conductor.domain.capital import PrincipalMismatchError
 from conductor.domain.isolation import AccountIsolationError
+from conductor.domain.risk import RiskLimits
 from conductor.infrastructure.config import Settings, load_settings
 from conductor.infrastructure.db import create_db_engine, create_session_factory, journal_mode_probe
+from conductor.infrastructure.freqtrade_instances import build_instances
 from conductor.infrastructure.http import router
 from conductor.infrastructure.ledger_repository import SqliteLedger
 from conductor.infrastructure.logging import configure_logging
@@ -59,13 +61,8 @@ def create_app(
 
     closers: list[Callable[[], None]] = []
     if instances is None:
-        client = FreqtradeRestClient(
-            str(settings.freqtrade_api_url),
-            settings.freqtrade_username.get_secret_value(),
-            settings.freqtrade_password.get_secret_value(),
-        )
-        closers.append(client.close)
-        instances = [FreqtradeInstance(settings.freqtrade_instance_name, client)]
+        instances, instance_closers = build_instances(settings)
+        closers.extend(instance_closers)
     if fx is None:
         boc = BankOfCanadaFx()
         closers.append(boc.close)
@@ -86,6 +83,12 @@ def create_app(
             close()
         raise
 
+    limits = RiskLimits(
+        daily_loss_limit_pct=settings.daily_loss_limit_pct,
+        max_drawdown_pct=settings.max_drawdown_pct,
+        consecutive_loss_limit=settings.consecutive_loss_limit,
+        max_positions=settings.max_concurrent_positions,
+    )
     jobs = LedgerJobs(
         ingest=lambda: run_ingest(ledger, instances, now=clock),
         fence=lambda: (
@@ -99,6 +102,8 @@ def create_app(
         ),
         valuation=lambda: value_closed_trades(ledger, fx, now=clock),
         ingest_interval_seconds=settings.ingest_interval_seconds,
+        risk=lambda: run_risk_cycle(ledger, instances, limits, now=clock, notifier=notifier),
+        risk_interval_seconds=settings.risk_check_interval_seconds,
     )
     scheduler = build_scheduler(
         LogHeartbeat(),
