@@ -1,7 +1,7 @@
 """SQLite implementation of the ledger port (Conductor is the only writer)."""
 
 import json
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import date, datetime
 from decimal import Decimal
@@ -11,10 +11,12 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session, sessionmaker
 
 from conductor.application.ledger_ports import (
+    AuditRow,
     ClosedTradeSummary,
     EquitySnapshot,
     LedgerRepo,
     OpenPosition,
+    OpenTradeRow,
     TaxRow,
     TransferRecord,
     UnvaluedTrade,
@@ -178,6 +180,17 @@ class SqliteLedgerRepo:
             .order_by(t.trades.c.id)
         )
         return [OpenPosition(r.instance, r.pair, r.stake_amount) for r in rows]
+
+    def open_trade_rows(self) -> list[OpenTradeRow]:
+        rows = self._s.execute(
+            sa.select(t.trades)
+            .where(t.trades.c.is_open.is_(True), t.trades.c.is_short.is_(False))
+            .order_by(t.trades.c.open_date, t.trades.c.id)
+        )
+        return [
+            OpenTradeRow(r.instance, r.pair, r.open_date, r.open_rate, r.amount, r.stake_amount)
+            for r in rows
+        ]
 
     def closed_profits(self, instance: str, since: datetime | None) -> list[Decimal]:
         rows = self._s.execute(
@@ -343,6 +356,15 @@ class SqliteLedgerRepo:
                 detail=json.dumps(detail, sort_keys=True, default=str),
             )
         )
+
+    def recent_audit(self, limit: int, *, actions: Sequence[str] | None = None) -> list[AuditRow]:
+        query = sa.select(t.audit_log).order_by(t.audit_log.c.id.desc()).limit(limit)
+        if actions is not None:
+            query = query.where(t.audit_log.c.action.in_(list(actions)))
+        return [
+            AuditRow(r.id, r.at, r.actor, r.action, json.loads(r.detail))
+            for r in self._s.execute(query)
+        ]
 
     # --- NFR6 ---
     def get_fx(self, requested: date) -> FxRate | None:

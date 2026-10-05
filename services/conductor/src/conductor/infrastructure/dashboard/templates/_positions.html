@@ -1,0 +1,23 @@
+<h2>Open positions</h2>
+{% if p.open_trades %}
+<div class="scroll"><table>
+  <thead><tr><th>Pair</th><th>Instance</th><th>Opened (UTC)</th><th class="num">Open rate</th><th class="num">Amount</th><th class="num">Stake</th></tr></thead>
+  <tbody>
+  {% for t in p.open_trades %}
+  <tr><td>{{ t.pair }}</td><td>{{ t.instance }}</td><td>{{ t.open_date | stamp }}</td><td class="num">{{ t.open_rate }}</td><td class="num">{{ t.amount }}</td><td class="num">{{ t.stake_amount | usd }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="muted">No open positions.</p>{% endif %}
+
+<h2>Recent closed trades</h2>
+{% if p.closed_trades %}
+<div class="scroll"><table>
+  <thead><tr><th>Closed (UTC)</th><th>Pair</th><th>Instance</th><th class="num">Profit</th><th>Exit reason</th></tr></thead>
+  <tbody>
+  {% for t in p.closed_trades %}
+  <tr><td>{{ t.close_date | stamp }}</td><td>{{ t.pair }}</td><td>{{ t.instance }}</td><td class="num {{ t.profit | sign }}">{{ t.profit | usd }}</td><td>{{ t.exit_reason or '' }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="muted">No closed trades yet.</p>{% endif %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Halts &amp; audit log{% endblock %}
+{% block content %}
+<h1>Halts &amp; audit log</h1>
+<h2>Halts</h2>
+{% if h.halts %}
+<div class="scroll"><table>
+  <thead><tr><th>#</th><th>Type</th><th>Scope</th><th>Reason</th><th>Raised (UTC)</th><th>By</th><th>Cleared</th></tr></thead>
+  <tbody>
+  {% for r in h.halts %}
+  <tr class="{{ '' if r.cleared_at else 'active' }}">
+    <td>{{ r.halt.id }}</td><td>{{ r.halt.halt_type.value }}</td><td>{{ r.halt.instance or 'all' }}</td>
+    <td>{{ r.halt.reason }}</td><td>{{ r.halt.created_at | stamp }}</td><td>{{ r.halt.created_by }}</td>
+    <td>{% if r.cleared_at %}{{ r.cleared_at | stamp }} by {{ r.cleared_by }}{% else %}<span class="badge bad">ACTIVE</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="muted">No halts recorded.</p>{% endif %}
+
+<h2>Audit log <span class="muted">(latest 100)</span></h2>
+{% if h.audit %}
+<div class="scroll"><table>
+  <thead><tr><th>#</th><th>Time (UTC)</th><th>Actor</th><th>Action</th><th>Detail</th></tr></thead>
+  <tbody>
+  {% for a in h.audit %}
+  <tr><td>{{ a.id }}</td><td>{{ a.at | stamp }}</td><td>{{ a.actor }}</td><td>{{ a.action }}</td>
+      <td class="detail">{% for k, v in a.detail.items() %}{{ k }}={{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="muted">Audit log is empty.</p>{% endif %}
+{% endblock %}

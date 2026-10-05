@@ -1,4 +1,5 @@
 from decimal import Decimal
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from pydantic import AliasChoices, AnyHttpUrl, Field, SecretStr, field_validator, model_validator
@@ -60,7 +61,25 @@ class Settings(BaseSettings):
     scheduler_enabled: bool = True
     ingest_interval_seconds: int = Field(default=300, ge=30)
     heartbeat_interval_seconds: int = Field(default=300, ge=30)
-    healthchecks_ping_url: AnyHttpUrl | None = None  # unused until 3A-5
+    # 3A-5 heartbeat. The ping URL embeds the check's UUID, so it is a secret: SecretStr,
+    # never logged. Blank = no external heartbeat (log only).
+    healthchecks_ping_url: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("HEALTHCHECK_PING_URL", "healthchecks_ping_url"),
+    )
+
+    # 3A-5 nightly backups to an S3-compatible bucket (Backblaze B2). The key is WRITE-ONLY
+    # (upload only: no list/head/read/delete), so the code may only ever call PutObject.
+    # All four values or none: a half-configured backup would silently never run.
+    backup_b2_bucket: str | None = None
+    backup_b2_endpoint: AnyHttpUrl | None = None
+    backup_b2_key_id: SecretStr | None = None
+    backup_b2_app_key: SecretStr | None = None
+    # Optional: SigV4 region. Derived from a Backblaze endpoint when unset.
+    backup_b2_region: str | None = None
+    # Freqtrade's dry-run DB, as mounted READ-ONLY into this container (WAL mode, so the
+    # whole user_data directory is mounted, not just the file). Blank = skip that source.
+    backup_freqtrade_db_path: Path | None = None
 
     llm_backend: LlmBackendName = "none"
 
@@ -85,10 +104,34 @@ class Settings(BaseSettings):
             raise ValueError("must be a finite number")
         return v
 
-    @field_validator("telegram_bot_token", mode="before")
+    @field_validator(
+        "telegram_bot_token",
+        "healthchecks_ping_url",
+        "backup_b2_bucket",
+        "backup_b2_endpoint",
+        "backup_b2_key_id",
+        "backup_b2_app_key",
+        "backup_b2_region",
+        "backup_freqtrade_db_path",
+        mode="before",
+    )
     @classmethod
-    def _blank_token_is_unset(cls, v: Any) -> Any:
+    def _blank_is_unset(cls, v: Any) -> Any:
         return None if isinstance(v, str) and not v.strip() else v
+
+    @field_validator("healthchecks_ping_url")
+    @classmethod
+    def _ping_url_is_http(cls, v: SecretStr | None) -> SecretStr | None:
+        if v is not None and not v.get_secret_value().startswith(("https://", "http://")):
+            raise ValueError("must be an http(s) URL")
+        return v
+
+    @field_validator("backup_b2_endpoint")
+    @classmethod
+    def _backup_endpoint_is_https(cls, v: AnyHttpUrl | None) -> AnyHttpUrl | None:
+        if v is not None and v.scheme != "https":
+            raise ValueError("must be an https URL")
+        return v
 
     @field_validator("telegram_allowed_chat_ids", mode="before")
     @classmethod
@@ -108,6 +151,26 @@ class Settings(BaseSettings):
         if self.telegram_bot_token is None and self.telegram_allowed_chat_ids:
             raise ValueError("TELEGRAM_BOT_TOKEN is required when TELEGRAM_ALLOWED_CHAT_IDS is set")
         return self
+
+    @model_validator(mode="after")
+    def _backup_consistent(self) -> "Settings":
+        required = {
+            "BACKUP_B2_BUCKET": self.backup_b2_bucket,
+            "BACKUP_B2_ENDPOINT": self.backup_b2_endpoint,
+            "BACKUP_B2_KEY_ID": self.backup_b2_key_id,
+            "BACKUP_B2_APP_KEY": self.backup_b2_app_key,
+        }
+        missing = [name for name, value in required.items() if value is None]
+        if missing and len(missing) != len(required):
+            raise ValueError(
+                "backups need all of BACKUP_B2_BUCKET, BACKUP_B2_ENDPOINT, BACKUP_B2_KEY_ID, "
+                f"BACKUP_B2_APP_KEY (missing: {', '.join(missing)})"
+            )
+        return self
+
+    @property
+    def backup_enabled(self) -> bool:
+        return self.backup_b2_bucket is not None
 
     @property
     def telegram_enabled(self) -> bool:

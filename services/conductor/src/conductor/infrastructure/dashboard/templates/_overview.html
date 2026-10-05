@@ -1,0 +1,57 @@
+{# Refreshed in place by HTMX every 30 s; read-only. #}
+<section class="state {{ 'halted' if o.halted else 'running' }}" aria-live="polite">
+  {% if o.halted %}
+    <strong>TRADING HALTED</strong>
+    <ul>
+      {% for h in o.active_halts %}
+      <li>#{{ h.id }} {{ h.halt_type.value }}{% if h.instance %} ({{ h.instance }}){% endif %}:
+        {{ h.reason }} <span class="muted">since {{ h.created_at | stamp }} by {{ h.created_by }}</span></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <strong>No active halts</strong>
+  {% endif %}
+  <span class="mode">{{ o.trading_mode }}</span>
+</section>
+
+<section class="tiles">
+  <div class="tile"><span class="label">Principal</span><span class="value">{{ o.principal | usd }}</span></div>
+  <div class="tile"><span class="label">Working profit</span><span class="value {{ o.working_profit | sign }}">{{ o.working_profit | usd }}</span></div>
+  <div class="tile"><span class="label">Fenced</span><span class="value">{{ o.fenced_total | usd }}</span></div>
+  <div class="tile"><span class="label">Max deployed</span><span class="value">{{ o.max_deployed_capital | usd }}</span></div>
+  <div class="tile"><span class="label">Realized</span><span class="value {{ o.realized_profit | sign }}">{{ o.realized_profit | usd }}</span></div>
+  <div class="tile"><span class="label">Unrealized</span><span class="value {{ o.unrealized_profit | sign }}">{{ o.unrealized_profit | usd }}</span></div>
+  <div class="tile"><span class="label">Equity</span><span class="value">{{ o.equity | usd }}</span></div>
+  <div class="tile"><span class="label">Open positions</span><span class="value">{{ o.open_positions }}</span></div>
+</section>
+
+<section class="health">
+  <h2>Monitoring</h2>
+  <dl>
+    <dt>Heartbeat</dt>
+    <dd>
+      {% set hb = o.heartbeat %}
+      {% if hb.outcome is none %}<span class="badge warn">none sent since start</span>
+      {% elif hb.outcome == 'ok' %}<span class="badge ok">ok</span> {{ hb.last_ok_at | ago(now) }}
+      {% elif hb.outcome == 'fail_sent' %}<span class="badge bad">reported unhealthy</span> {{ hb.last_attempt_at | ago(now) }}: {{ hb.reason }}
+      {% else %}<span class="badge bad">ping not delivered</span> {{ hb.last_attempt_at | ago(now) }}{% endif %}
+    </dd>
+    <dt>Backups</dt>
+    <dd>
+      {% if not o.backup.configured %}<span class="badge warn">not configured</span>
+      {% elif o.backup.sources | length == 0 %}<span class="badge warn">none recorded yet</span>
+      {% else %}
+        {% for s in o.backup.sources %}
+        <div>
+          {{ s.label }}:
+          {% if s.failing %}<span class="badge bad">last attempt failed</span> {{ s.last_failed_at | ago(now) }}: {{ s.last_error }}
+          {% elif s.last_ok_at %}<span class="badge {{ 'warn' if o.backup.stale else 'ok' }}">ok</span> {{ s.last_ok_at | ago(now) }}
+          {% else %}<span class="badge warn">none</span>{% endif %}
+        </div>
+        {% endfor %}
+        {% if o.backup.stale %}<div><span class="badge bad">stale: no successful backup in 26 h</span></div>{% endif %}
+      {% endif %}
+    </dd>
+  </dl>
+  <p class="muted">As of {{ o.as_of | stamp }}</p>
+</section>
