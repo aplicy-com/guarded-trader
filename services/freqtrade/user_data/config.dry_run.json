@@ -1,6 +1,6 @@
 {
   "$comment": "Phase 2 dry-run config. dry_run is hard-coded true — see docs/04-architecture/execution-freqtrade.md. Never flip this to false by hand; a promotion to live is a Conductor-issued config change (Phase 3+), not a manual edit.",
-  "max_open_trades": 3,
+  "max_open_trades": 2,
   "stake_currency": "USD",
   "stake_amount": "unlimited",
   "tradable_balance_ratio": 0.99,
