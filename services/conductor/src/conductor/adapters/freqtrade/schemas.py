@@ -41,6 +41,7 @@ class ShowConfigWire(_Wire):
     max_open_trades: int
     timeframe: str
     exchange: str
+    state: str = ""
 
     def to_view(self) -> BotConfigView:
         return BotConfigView(
@@ -54,6 +55,7 @@ class ShowConfigWire(_Wire):
             max_open_trades=self.max_open_trades,
             timeframe=self.timeframe,
             exchange=self.exchange,
+            state=self.state,
         )
 
 
@@ -68,6 +70,7 @@ class OpenTradeWire(_Wire):
     current_rate: Decimal | None = None
     profit_abs: Decimal | None = None
     profit_ratio: Decimal | None = None
+    has_open_orders: bool = False
 
     def to_view(self) -> OpenTradeView:
         return OpenTradeView(
@@ -81,6 +84,7 @@ class OpenTradeWire(_Wire):
             current_rate=self.current_rate,
             profit_abs=self.profit_abs,
             profit_ratio=self.profit_ratio,
+            has_open_orders=self.has_open_orders,
         )
 
 

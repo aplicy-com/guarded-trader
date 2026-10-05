@@ -22,6 +22,7 @@ class BotConfigView:
     max_open_trades: int
     timeframe: str
     exchange: str
+    state: str = ""  # "running" | "paused" | "stopped" (Freqtrade bot state)
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +37,7 @@ class OpenTradeView:
     current_rate: Decimal | None
     profit_abs: Decimal | None
     profit_ratio: Decimal | None
+    has_open_orders: bool = False
 
 
 @dataclass(frozen=True, slots=True)
