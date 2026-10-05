@@ -215,7 +215,7 @@ Phase 3 — no remote/manifest to point it at yet), Kraken CA registration
 status (external, blocks 2E specifically). Tax classification moved off
 Phase 2 entirely, re-tagged to block Phase 4 entry (question list ready:
 `docs/09-tax-questions.md`). Phase 3: ledger DB engine (resolved early —
-~~SQLite~~, ADR-0009), heartbeat interval,
+~~SQLite~~, ADR-0009), heartbeat interval (resolved 3A-5),
 daily/drawdown/consecutive-loss exact thresholds, promotion-approval
 stages, backup schedule. Phase 4: mini-PC migration trigger, 25%→100%
 stability criteria, planned-absence procedure.

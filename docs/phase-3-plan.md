@@ -115,10 +115,10 @@ Each package = one branch, plan mode first, one PR-equivalent merge to `main`.
 - Destructive commands require a confirmation reply within 60 s.
 - Alerts: halts, fills, fence events, move-due, missed jobs, budget 80%/100%.
 
-**3A-5 Observability + dashboard** (`feat/dashboard`) · Sonnet
-- healthchecks.io ping every 5 min; alert on 15 min silence.
-- Dashboard pages: **Overview** (principal / working / fenced / deployed, halt state, equity curve), **Positions & trades**, **Strategies & pipeline** (stage per candidate), **Research runs** (prompt hash, cost, outcome), **Audit log** (halts, resumes, approvals).
-- Nightly backup job + restore test script.
+**3A-5 Observability + dashboard** (`feat/observability`) · Sonnet — **implemented**; see ADR-0016 (backups), ADR-0017 (dashboard + Tailscale access), `docs/06-runbooks/restore-backup.md` and `provision-vps.md` steps 24-31.
+- healthchecks.io ping every 5 min while healthy (`/fail` with a reason when not); alert on 15 min silence (period 5 min + grace 10 min).
+- Dashboard (read-only, tailnet-only): **Overview** (principal / working / fenced / deployed, halt state, equity curve, last heartbeat and backup), **Positions & trades**, **Halts & audit log**. **Strategies & pipeline** (stage per candidate) and **Research runs** (prompt hash, cost, outcome) are placeholder pages until 3B produces data; approvals will show in the audit log from 3B-4.
+- Nightly backup job (ledger + Freqtrade dry-run DB, write-only B2 key) + `scripts/restore-test.sh`.
 
 **3A-6 Drills** (`chore/3a-drills`)
 - Kill switch, nuclear, restart-persists-halt, heartbeat silence (stop container), backup restore, VPS rebuild. Results recorded in `docs/drills/`.

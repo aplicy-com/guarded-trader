@@ -60,6 +60,12 @@ initiating one.
   the host, so Docker's iptables rules cannot bypass it. Containers publish
   ports on `127.0.0.1` only. Verified by an external `nmap` scan
   ([`provision-vps.md`](../06-runbooks/provision-vps.md) step 17).
+- The Conductor dashboard is read-only and is published on host loopback
+  (`127.0.0.1:8000`) only; `tailscale serve` exposes it over HTTPS to the
+  tailnet. Docker's published ports bypass ufw, so ufw is **not** what protects
+  it: the compose bind to loopback and the Cloud Firewall above do, and
+  `provision-vps.md` step 27 and `make verify-lockdown` check both
+  ([`ADR-0017`](../05-adr/0017-read-only-dashboard-over-tailscale.md)).
 - Remote access (SSH, Conductor API, dashboard) is via
   [Tailscale](https://tailscale.com/) only. The VPS joins the tailnet as
   `ai-trader-vps` at first boot. Tailscale SSH is off; plain OpenSSH
@@ -137,7 +143,10 @@ revoked.
 |---|---|---|
 | Internet scanning / brute force of SSH | Zero public inbound (firewall); key-only SSH; `fail2ban` | None on the public interface after lockdown. During bootstrap, SSH is reachable only from one `/32`. |
 | Stolen SSH key | Passphrase on the key; host reachable only over the tailnet, so the key alone is not enough | Key plus a tailnet seat is root-equivalent (`deploy` has passwordless sudo and `docker`). Revoke the key by rebuild ([`rebuild-vps.md`](../06-runbooks/rebuild-vps.md)). |
-| Tailscale account takeover | Tailscale account has MFA (operator action, verify); device approval | A takeover could add a device to the tailnet. Tailscale ACLs: TBD (Phase 3), to be written before Conductor's dashboard is exposed. |
+| Tailscale account takeover | Tailscale account has MFA (operator action, verify); device approval; ACL limiting `ai-trader-vps` to your own devices on 22 and 443 (see "Tailnet access") | A takeover could add a device to the tailnet and read the dashboard (P&L, positions, audit log). It is read-only: nothing on it can trade or change state. |
+| Backup key stolen from the VPS | The B2 application key is write-only (and should be limited to the one bucket): it can add files, not read, list or delete them; 30-day lifecycle; uploads use fresh unique keys | An attacker can fill the bucket with junk (cost, and noise in the 30-day window). Backups contain trade history, not secrets ([`ADR-0016`](../05-adr/0016-backups-write-only-key-no-client-side-encryption.md)). |
+| Backblaze account takeover | MFA on the Backblaze account (operator action); SSE-B2 on the bucket; bucket private | Backups are not client-side encrypted (ADR-0016): an attacker with account access reads trade history and fence figures. No API keys or seed phrases are in them. |
+| Dashboard misused as a write path | GET-only routes, no forms, tests that fail if a write route or form appears; strict CSP; all writes remain on Telegram with confirmation | None known; re-check when 3B adds pages. |
 | Hetzner account or API token compromise | Token held in LastPass, in env only during a run; Hetzner account MFA (operator action, verify) | Attacker can rebuild/delete the server, or read its disk. Revoke the token; rotate every secret on the box. |
 | Provider (Hetzner) staff or hypervisor access | Key is trade-only, no withdrawal, IP-whitelisted; $100 principal | Accepted (ADR-0011). Disk not encrypted at rest. |
 | Terraform state leak | State is local and git-ignored; the Tailscale key in it is single-use and expired; no remote backend | State also reveals the server layout; treat as secret anyway (risk register S8). |
@@ -190,16 +199,38 @@ containment, not merely a quality question resolved by backtesting.
 | Hetzner API token | Critical (full control of the project: can delete or rebuild the server) | LastPass; shell env during a Terraform run only |
 | SSH private key (`~/.ssh/ai_trader_vps`) | Critical (root-equivalent on the VPS, given tailnet access) | Mac only, passphrase-protected |
 | Terraform state | High (contains the rendered cloud-init) | Mac only, git-ignored, never pushed |
-| Ledger (fills, balances, P&L) | High (financial, tax-relevant) | Ledger DB, host-local (VPS disk is not encrypted at rest, see ADR-0011); off-host backup TBD (3A-5) |
+| Ledger (fills, balances, P&L) | High (financial, tax-relevant) | Ledger DB, host-local (VPS disk is not encrypted at rest, see ADR-0011); off-host nightly backup to B2 ([`ADR-0016`](../05-adr/0016-backups-write-only-key-no-client-side-encryption.md)) |
 | Strategy code | Medium (IP-adjacent, but repo is open-source by design) | Git, public |
 | LLM prompts/responses | Medium (may reference strategy internals) | Ledger DB |
 | Docs (this repo) | Public by design | Git, public |
 
+## Tailnet access
+
+Operator action, done in the Tailscale admin console (Access controls) before
+exposing the dashboard ([`provision-vps.md`](../06-runbooks/provision-vps.md)
+step 24). The intent, not a copy-paste policy (your tailnet's other rules must
+keep working; use the console's *Preview rules*): only **your own user's
+devices** may reach `ai-trader-vps`, and only on **TCP 22** (SSH) and **TCP 443**
+(the dashboard via `tailscale serve`). Nothing else on the VPS should be
+reachable over the tailnet. As a sketch of the shape (host alias, then a rule),
+with the `100.x.y.z` replaced by the VPS's address from `tailscale status`:
+
+```json
+"hosts": { "ai-trader-vps": "100.x.y.z" },
+"acls": [
+  { "action": "accept", "src": ["autogroup:member"], "dst": ["ai-trader-vps:22,443"] }
+]
+```
+
+`autogroup:member` is every user in the tailnet; if other people are in it,
+replace it with your own user. `tailscale funnel` (public) must never be enabled
+for this host (`provision-vps.md` step 25 checks).
+
 ## TBD
 
-- Tailscale ACL details — TBD (Phase 3), to be written before Conductor's
-  dashboard is exposed on the tailnet. Tailscale itself is installed on
-  the VPS by cloud-init; the operator's Mac and phone are operator actions.
+- Tailscale itself is installed on the VPS by cloud-init; the operator's Mac and
+  phone are operator actions. The ACL itself is verified by hand (above), not by
+  code — TBD (Phase 3, 3A-6 drill) whether to check it from a second device.
 - Blocking container access to the cloud metadata endpoint — TBD (Phase 3,
   optional hardening).
 - ~~Pre-commit secret-scanning tool~~ — resolved: gitleaks.
