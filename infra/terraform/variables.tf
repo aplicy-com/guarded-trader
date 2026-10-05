@@ -12,8 +12,8 @@ variable "tailscale_authkey" {
   sensitive   = true
 
   validation {
-    condition     = startswith(var.tailscale_authkey, "tskey-")
-    error_message = "tailscale_authkey must be a Tailscale auth key (starts with \"tskey-\")."
+    condition     = startswith(var.tailscale_authkey, "tskey-auth-")
+    error_message = "tailscale_authkey must be the Tailscale auth key secret (starts with \"tskey-auth-\"), not the key ID."
   }
 }
 

@@ -123,6 +123,7 @@ def kill_switch(
     operator: str,
     now: Clock,
     notifier: Notifier,
+    announce_result: bool = True,
 ) -> HaltReport:
     """Block new entries on every instance. Open positions keep being managed."""
     operator = _operator(operator)
@@ -137,7 +138,7 @@ def kill_switch(
     steps = [_pause(inst) for inst in instances]
     _audit_steps(ledger, now, operator, "kill_switch_applied", halt_id, steps)
     report = HaltReport(halt_id, created, tuple(steps))
-    if not report.ok:  # success is already announced by the halt alert itself
+    if announce_result and not report.ok:  # success is already announced by the halt alert
         safe_send(notifier, _result_text("KILL SWITCH", report))
     return report
 
@@ -151,6 +152,7 @@ def nuclear(
     notifier: Notifier,
     sleep: Callable[[float], None] = time.sleep,
     flatten_wait_seconds: float = FLATTEN_WAIT_SECONDS,
+    announce_result: bool = True,
 ) -> HaltReport:
     """Pause entries, cancel open orders, market-exit everything, then stop.
 
@@ -158,7 +160,9 @@ def nuclear(
     still running (Freqtrade refuses both once stopped), and `stop` is only sent
     after the account is confirmed flat. If it is not flat in time, the bot is
     left PAUSED (still managing its exits) and the step is reported as failed.
-    Each instance is independent; each step's outcome is audited.
+    Each instance is independent; each step's outcome is audited. Callers that show the
+    returned report to the operator themselves (Telegram) pass announce_result=False so
+    the same result is not also pushed as an alert.
     """
     operator = _operator(operator)
     halt_id, created = engage_halt(
@@ -174,7 +178,8 @@ def nuclear(
         steps.extend(_nuclear_one(inst, sleep, flatten_wait_seconds))
     _audit_steps(ledger, now, operator, "nuclear_applied", halt_id, steps)
     report = HaltReport(halt_id, created, tuple(steps))
-    safe_send(notifier, _result_text("NUCLEAR", report))
+    if announce_result:
+        safe_send(notifier, _result_text("NUCLEAR", report))
     return report
 
 

@@ -236,7 +236,7 @@ def test_flatten_runs_the_nuclear_sequence(
     reply = one(bot.handle(CHAT, "yes AB12"))
     assert "Nuclear #1: all steps ok" in reply
     assert freqtrade.control_calls == ["pause_entries", "cancel:1", "force_exit_all", "stop"]
-    assert any("NUCLEAR" in m for m in notifier.sent)
+    assert any(m.startswith("HALT #1 [nuclear]") for m in notifier.sent)
 
 
 def test_resume_with_confirmation_clears_as_that_chat_and_resumes(
@@ -324,3 +324,69 @@ def test_a_failing_use_case_reports_and_does_not_crash(
     bot.handle(CHAT, "/kill")
     reply = one(bot.handle(CHAT, "yes AB12"))
     assert "NOT every step succeeded" in reply
+
+
+def test_flatten_result_is_sent_once_as_the_reply_not_also_as_an_alert(
+    bot: CommandProcessor, freqtrade: FakeFreqtrade, notifier: RecordingNotifier
+) -> None:
+    freqtrade.open_trades = [open_view(1)]
+    bot.handle(CHAT, "/flatten")
+    assert "Nuclear #1" in one(bot.handle(CHAT, "yes AB12"))
+    assert not any("NUCLEAR #1" in m for m in notifier.sent)
+    assert any(m.startswith("HALT #1") for m in notifier.sent)  # the halt alert still goes out
+
+
+def test_failed_kill_result_is_sent_once_as_the_reply(
+    bot: CommandProcessor, freqtrade: FakeFreqtrade, notifier: RecordingNotifier
+) -> None:
+    freqtrade.fail = True
+    bot.handle(CHAT, "/kill")
+    assert "NOT every step succeeded" in one(bot.handle(CHAT, "yes AB12"))
+    assert not any("KILL SWITCH #1" in m for m in notifier.sent)
+
+
+def test_resume_of_an_already_cleared_halt_says_so_without_asking_for_a_code(
+    bot: CommandProcessor,
+    ledger: SqliteLedger,
+    freqtrade: FakeFreqtrade,
+    clock: Clock,
+    notifier: RecordingNotifier,
+) -> None:
+    for halt_type in (HaltType.KILL_SWITCH, HaltType.NUCLEAR):
+        engage_halt(
+            ledger,
+            halt_type=halt_type,
+            reason="r",
+            actor="op",
+            now=clock,
+            notifier=notifier,
+        )
+    freqtrade.state = "paused"
+    bot.handle(CHAT, "/resume 1")
+    bot.handle(CHAT, "yes AB12")  # clears #1
+    assert halts(ledger) == [(2, HaltType.NUCLEAR)]
+    freqtrade.control_calls.clear()
+
+    reply = one(bot.handle(CHAT, "/resume 1"))
+    assert "already cleared" in reply
+    assert "#2 nuclear" in reply
+    assert "yes " not in reply  # no confirmation code was issued
+    assert one(bot.handle(CHAT, "yes AB12")) == "Nothing is waiting for confirmation."
+    assert freqtrade.control_calls == []
+
+
+def test_resume_of_a_cleared_halt_with_nothing_active(
+    bot: CommandProcessor,
+    ledger: SqliteLedger,
+    freqtrade: FakeFreqtrade,
+    clock: Clock,
+    notifier: RecordingNotifier,
+) -> None:
+    engage_halt(
+        ledger, halt_type=HaltType.KILL_SWITCH, reason="r", actor="op", now=clock, notifier=notifier
+    )
+    freqtrade.state = "paused"
+    bot.handle(CHAT, "/resume 1")
+    bot.handle(CHAT, "yes AB12")
+    reply = one(bot.handle(CHAT, "/resume 1"))
+    assert "already cleared" in reply and "No active halts" in reply

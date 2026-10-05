@@ -72,6 +72,8 @@ RSYNC_KEEP := --exclude=/.env \
 define require_tf_env
 	@test -n "$$TF_VAR_hcloud_token" || { echo "TF_VAR_hcloud_token is not set (see provision-vps.md)"; exit 1; }
 	@test -n "$$TF_VAR_tailscale_authkey" || { echo "TF_VAR_tailscale_authkey is not set (see provision-vps.md)"; exit 1; }
+	@case "$$TF_VAR_tailscale_authkey" in tskey-auth-*) ;; \
+		*) echo "TF_VAR_tailscale_authkey does not start with \"tskey-auth-\". You probably pasted the key ID, not the secret key (shown once, when you generate it). Create a new key (provision-vps.md step 5)."; exit 1 ;; esac
 endef
 
 # BOOTSTRAP=true previews the first provision; BOOTSTRAP=false previews lockdown.
