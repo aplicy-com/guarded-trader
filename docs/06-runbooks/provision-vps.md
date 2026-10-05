@@ -71,6 +71,11 @@ Freqtrade dry-run stack.
      Generate auth key. Set **Reusable: off**, **Ephemeral: off**,
      **Expiry: 1 day**. Copy it (starts with `tskey-auth-`). Do not save
      it anywhere: it works once.
+     **Copy the secret key, not the key ID.** The secret is shown once,
+     right after you click Generate. The key ID in the key list afterwards
+     is not a key: with it, `tailscale up` fails on first boot and the
+     server never joins the tailnet. `make vps-plan`/`vps-apply` refuse a
+     value that does not start with `tskey-auth-`.
 
 6. Put them in your shell (this terminal tab only). These two lines
    prompt silently, so the secrets never land in your shell history:
@@ -441,7 +446,11 @@ temporary re-open. Updating the app is `make deploy`; updating secrets is
   (needs a **new** Tailscale auth key, since the first was probably
   consumed).
 - **The server never appears in `tailscale status`.** The auth key was
-  wrong, expired, or already used. Do not lock down. Rebuild with a new
+  wrong, expired, or already used (the most common mistake: the key ID was
+  pasted instead of the `tskey-auth-...` secret). Confirm on the server:
+  `sudo grep -A5 "CLOUD-INIT ERROR" /var/log/cloud-init-output.log`; a
+  failed join prints a boxed `CLOUD-INIT ERROR: 'tailscale up' FAILED`
+  message there. Do not lock down. Rebuild with a new
   key ([`rebuild-vps.md`](rebuild-vps.md)).
 - **`id -u deploy` is not 1000.** The Freqtrade container runs as uid 1000
   and writes into the deployed `user_data/` directory. Fix on the VPS:

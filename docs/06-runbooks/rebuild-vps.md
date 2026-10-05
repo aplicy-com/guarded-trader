@@ -75,7 +75,9 @@ that names the old `100.x` address must be updated (step 6).
    current state.
 3. You need: `TF_VAR_hcloud_token` (from LastPass) and a **new** Tailscale
    auth key. Create the key exactly as in `provision-vps.md` step 5
-   (Reusable off, Ephemeral off, Expiry 1 day).
+   (Reusable off, Ephemeral off, Expiry 1 day). **Copy the secret key
+   (`tskey-auth-...`, shown once), not the key ID.** With the ID the server
+   boots but never joins the tailnet.
 4. Write down, before touching anything (they are what "restored" is
    compared against):
    ```
@@ -139,7 +141,8 @@ read -rs "TF_VAR_hcloud_token?Hetzner token: "; export TF_VAR_hcloud_token; echo
 read -rs "TF_VAR_tailscale_authkey?Tailscale auth key: "; export TF_VAR_tailscale_authkey; echo
 [ -n "$TF_VAR_hcloud_token" ] && [ -n "$TF_VAR_tailscale_authkey" ] && echo both-set
 ```
-Expected: `both-set`. Also confirm
+Expected: `both-set`. The auth key must start with `tskey-auth-` (key ID
+is not the key; `make` and Terraform refuse anything else). Also confirm
 `infra/terraform/terraform.tfvars` exists and `admin_cidr` is your
 **current** IP (`curl -4 https://ifconfig.me`), and that
 `infra/terraform/terraform.tfstate` exists (it is the only record of which
@@ -175,7 +178,13 @@ follow `provision-vps.md` from step 7 instead of continuing here.
 
 ### 6. Verify, join the tailnet, harden, lock down
 
-First boot takes 3-6 minutes. Follow [`provision-vps.md`](provision-vps.md),
+First boot takes 3-6 minutes. During that time public SSH may refuse
+(`Connection refused` or `timed out`) while first boot is still running:
+that is normal. Wait and retry; do **not** go to rescue mode yet. If it
+still refuses after 10 minutes, first check the node in the Tailscale admin
+console / `tailscale status | grep ai-trader-vps`, then the Hetzner console's
+web terminal for `cloud-init status` (see Troubleshooting: "Public SSH keeps
+refusing" and "Hetzner rescue mode"). Follow [`provision-vps.md`](provision-vps.md),
 in this order, running each step's "Expected" check:
 - Step 9 (wait for cloud-init; the host key changed, so first run
   `ssh-keygen -R $IP`) and step 10.
@@ -235,13 +244,20 @@ Then on the VPS, create the containers without starting them, and put the data i
 make ssh
 cd /opt/ai-trading-agent
 docker compose --env-file .env -f infra/docker-compose.yml up --no-start --build
+chmod 0644 /tmp/conductor.sqlite /tmp/freqtrade.sqlite && \
 docker run --rm --entrypoint sh -v infra_conductor-data:/data -v /tmp:/in:ro ai-trading-agent-conductor:0.1.0 \
-  -c 'cp /in/conductor.sqlite /data/conductor.db && ls -l /data'
-cp /tmp/freqtrade.sqlite services/freqtrade/user_data/tradesv3.dryrun.sqlite
-chmod 0644 services/freqtrade/user_data/tradesv3.dryrun.sqlite
-rm /tmp/conductor.sqlite /tmp/freqtrade.sqlite
+  -c 'cp /in/conductor.sqlite /data/conductor.db && ls -l /data' && \
+cp /tmp/freqtrade.sqlite services/freqtrade/user_data/tradesv3.dryrun.sqlite && \
+chmod 0644 services/freqtrade/user_data/tradesv3.dryrun.sqlite && \
+rm /tmp/conductor.sqlite /tmp/freqtrade.sqlite && \
 ls -l services/freqtrade/user_data/*.sqlite
 ```
+The `chmod 0644` is needed: `scp` leaves the files mode 600 (owned by
+`deploy`), and the Conductor container runs as a different user, so without
+it the `cp` fails with `Permission denied`. The commands are chained with `&&`
+so that if any step fails, the next ones (above all the `rm`, which deletes
+your only copy on the server) do not run. If a step fails, stop and read its
+error; the files are still in `/tmp`.
 Expected: the `up --no-start` prints `Container ai-trading-agent-conductor  Created`
 and `Volume "infra_conductor-data"  Created`; `ls -l /data` shows `conductor.db`
 owned by `conductor`; the second `ls` lists `tradesv3.dryrun.sqlite` owned by
@@ -310,6 +326,23 @@ halt and `/resume <id>` clears it when you are ready (see
   to "get going": that records a brand-new principal and loses history.
   Read the message; try the insurance copy or the previous night's B2 backup;
   see [`restore-backup.md`](restore-backup.md) Troubleshooting.
+- **Public SSH keeps refusing right after the rebuild.** First boot is
+  slow (3-6 minutes, longer if apt mirrors are slow) and sshd is restarted
+  near the end, so refusals are normal for a while. Before using rescue mode,
+  check, in this order: (1) `tailscale status | grep ai-trader-vps`: if the
+  node is online, use `make ssh` over the tailnet instead; (2) the Hetzner
+  console web terminal (Server → Console) and `cloud-init status`; wait while
+  it says `running`; (3) `sudo grep -A5 "CLOUD-INIT ERROR" /var/log/cloud-init-output.log`.
+  Only if the server is truly unreachable after that, use rescue mode (next entry).
+- **Hetzner rescue mode (last resort).** In the Hetzner console: Server →
+  Rescue → Enable rescue & Power cycle, choose your SSH key `ai_trader_vps`,
+  then `ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes root@$IP` (root login
+  works with the key in rescue mode only; the host key is new, so run
+  `ssh-keygen -R $IP` first). The server's disk is **not** mounted: mount it
+  (`mount /dev/sda1 /mnt`, check with `lsblk`) to read `/mnt/var/log/cloud-init-output.log`.
+  **When you are done, disable rescue** (Server → Rescue → Disable rescue, then
+  reboot normally), otherwise the server boots into rescue again and nothing
+  runs. If the disk looks wrong, rebuilding with step 5A is faster than repairing.
 - **cloud-init failed / Tailscale did not join.** Public SSH from `admin_cidr`
   is still open (you have not locked down yet), so
   `ssh -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes deploy@$IP 'sudo tail -60 /var/log/cloud-init-output.log'`

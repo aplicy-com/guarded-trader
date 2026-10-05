@@ -110,8 +110,22 @@ runcmd:
   - install -d -o deploy -g deploy -m 0750 /opt/ai-trading-agent
 
   # --- Join the tailnet. --ssh is off: we use normal sshd over the tailnet. -
+  # A failed join must be impossible to miss in the log, but must NOT abort cloud-init:
+  # the rest (firewall, sshd) still has to run so public SSH from admin_cidr stays
+  # usable for recovery. The usual cause is pasting the key's ID instead of the secret
+  # (tskey-auth-...). The key itself is never echoed.
   - systemctl enable --now tailscaled
-  - tailscale up --authkey='${tailscale_authkey}' --hostname='${hostname}' --ssh=false
+  - |
+    if ! tailscale up --authkey='${tailscale_authkey}' --hostname='${hostname}' --ssh=false; then
+      {
+        echo "################################################################"
+        echo "# CLOUD-INIT ERROR: 'tailscale up' FAILED - this server is NOT on the tailnet."
+        echo "# Most likely the auth key is wrong, expired or already used. Common mistake:"
+        echo "# the key ID was pasted instead of the secret (tskey-auth-...)."
+        echo "# Do NOT lock down. Fix it: see rebuild-vps.md / provision-vps.md troubleshooting."
+        echo "################################################################"
+      } | tee -a /var/log/cloud-init-output.log /dev/console >&2 || true
+    fi
 
   # --- Conductor dashboard: tailnet-only HTTPS (3A-5, ADR-0017) ------------
   # `serve` (tailnet only), never `funnel` (public). Proxies to the loopback port the
