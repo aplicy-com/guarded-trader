@@ -1,0 +1,4 @@
+{
+  "$comment": "THE single backtest cost assumption (ADR-0021). Every backtest merges this overlay (`--config config.dry_run.json --config config.backtest-costs.json`): `make backtest`, the research harness (services/research reads this file), and any ad-hoc run. Do not pass --fee on the command line; change this value instead, in its own commit. fee = 0.0080 Kraken Tier-1 taker (official fee page, verified 2026-10-14; Tier-1 maker is 0.0040) + 0.0010 slippage buffer, charged per side on entry and exit. Conservative by design: every fill is priced as taker, because Freqtrade's backtester fills limit orders whenever price touches them, which overstates maker fills (docs/research/evidence-review-2026-10/04-validation-upgrades.md section 11). Never used by dry-run or live.",
+  "fee": 0.009
+}
