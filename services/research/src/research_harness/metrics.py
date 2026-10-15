@@ -47,8 +47,9 @@ class TradeSummary:
     close_date: pd.Timestamp
     profit_abs: float  # net of fees
     fees_abs: float
-    stake: float
+    stake: float  # cost of all entry fills (not Freqtrade's stake_amount, which shrinks on partial exits)
     exit_reason: str
+    scale_downs: int  # exit fills before the final one
 
 
 def fills_from_trades(trades: Iterable[Mapping]) -> list[Fill]:
@@ -75,11 +76,13 @@ def fills_from_trades(trades: Iterable[Mapping]) -> list[Fill]:
 def summarise_trades(trades: Iterable[Mapping]) -> list[TradeSummary]:
     out = []
     for t in trades:
+        filled = [o for o in t["orders"] if o.get("amount") and o.get("order_filled_timestamp") is not None]
         fees = sum(
             float(o["amount"]) * float(o["safe_price"]) * float(t["fee_open"] if o["ft_is_entry"] else t["fee_close"])
-            for o in t["orders"]
-            if o.get("amount") and o.get("order_filled_timestamp") is not None
+            for o in filled
         )
+        entry_cost = sum(float(o["amount"]) * float(o["safe_price"]) for o in filled if o["ft_is_entry"])
+        exits = sum(1 for o in filled if not o["ft_is_entry"])
         out.append(
             TradeSummary(
                 pair=t["pair"],
@@ -87,8 +90,9 @@ def summarise_trades(trades: Iterable[Mapping]) -> list[TradeSummary]:
                 close_date=pd.Timestamp(t["close_date"]),
                 profit_abs=float(t["profit_abs"]),
                 fees_abs=fees,
-                stake=float(t["stake_amount"]),
+                stake=entry_cost,
                 exit_reason=str(t["exit_reason"]),
+                scale_downs=max(exits - 1, 0),
             )
         )
     return out
@@ -174,6 +178,7 @@ class Metrics:
     avg_net_profit_pct: float
     top_trade_share_of_net: float | None
     top_trade_share_of_gross_wins: float | None
+    scale_downs: int
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -226,6 +231,7 @@ def compute_metrics(
         avg_net_profit_pct=float(np.mean([s.profit_abs / s.stake for s in summ])) if summ else 0.0,
         top_trade_share_of_net=best / net if net > 0 else None,
         top_trade_share_of_gross_wins=best / gross_wins if gross_wins > 0 else None,
+        scale_downs=sum(s.scale_downs for s in summ),
     )
     return metrics, rets
 

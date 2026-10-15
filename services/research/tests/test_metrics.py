@@ -93,6 +93,11 @@ def test_equity_handles_partial_scale_down():
     }
     eq = metrics.daily_equity(metrics.fills_from_trades([t]), closes([10, 11, 12]), D, close_ts, 100)
     assert list(eq.to_numpy()) == [100, 102, 103]
+    # Per-trade % uses the entry cost, not a stake that shrank after the partial exit.
+    t.update(open_date=open_ts, close_date=close_ts, profit_abs=3.0, stake_amount=10.0, exit_reason="exit_signal")
+    (s,) = metrics.summarise_trades([t])
+    assert s.stake == 20.0
+    assert s.scale_downs == 1
 
 
 def test_equity_refuses_to_mark_without_a_price():
