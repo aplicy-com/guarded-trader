@@ -25,6 +25,10 @@ services/freqtrade/user_data/backtest_results/
 services/freqtrade/user_data/logs/
 services/freqtrade/user_data/notebooks/.ipynb_checkpoints/
 
+# Research harness state (trial registry) and run output; see services/research/README.md
+services/research/state/
+services/research/runs/
+
 # Conductor local state (created in Phase 3)
 services/conductor/data/
 services/conductor/*.db
