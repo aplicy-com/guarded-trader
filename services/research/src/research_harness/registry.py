@@ -170,7 +170,7 @@ class Registry:
         cur = self._db.execute(
             "SELECT t.trial_id, t.created_at, t.strategy, t.family, t.strategy_hash, t.hypothesis,"
             " t.params_json, t.canonical_timerange, t.fee, t.data_snapshot_id,"
-            " t.freqtrade_version, r.sharpe_daily, r.n_trades"
+            " t.freqtrade_version, r.sharpe_daily, r.n_trades, r.daily_returns_json"
             " FROM trials t LEFT JOIN results r USING (trial_id) ORDER BY t.created_at"
         )
         names = [d[0] for d in cur.description]

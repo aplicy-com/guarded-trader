@@ -1,9 +1,11 @@
 """Daily mark-to-market equity and the Gate 1 metrics computed from it. Pure; no I/O.
 
-Gate 1 pins Sharpe to the daily-equity basis (docs/08-paper-exit-criteria.md). Freqtrade's own
-"Sharpe (daily wallet balance)" books P&L on the close day only, so a 40-day trade shows as one
-jump. This module instead rebuilds the account from the filled orders and marks every open
-position to the day's close, which is what the equity curve actually did.
+Gate 1 pins Sharpe to the daily-equity basis (docs/08-paper-exit-criteria.md). This module
+rebuilds the account from the filled orders and marks every open position to the day's close:
+the same idea as Freqtrade's "Sharpe (daily wallet balance)", but computed here so the harness
+can exclude force-exit trades (which Freqtrade's figure includes), score walk-forward windows
+and null seeds identically, and be unit-tested. The rebuild is checked against Freqtrade's own
+final balance on every run (``equity_rebuild_minus_freqtrade`` in the report).
 
 Conventions:
 - A day is a UTC calendar day; equity is measured at the day's last close.

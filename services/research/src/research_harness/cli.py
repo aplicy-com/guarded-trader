@@ -303,6 +303,20 @@ def _json_default(o):
     return str(o)
 
 
+def registry_report(args: argparse.Namespace) -> int:
+    """Every trial in the registry, with DSR recomputed against the registry's current N."""
+    reg = Registry(args.registry)
+    n, sigma = reg.n_trials(), reg.sigma_trials()
+    out = {"n_trials": n, "sigma_trials_period": sigma, "trials": []}
+    for row in reg.rows():
+        returns = row.pop("daily_returns_json")
+        if returns is not None:
+            row["dsr"] = dsr.deflated_sharpe(np.array(json.loads(returns)), n, sigma).as_dict()
+        out["trials"].append(row)
+    print(json.dumps(out, indent=1, default=_json_default))
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -312,8 +326,10 @@ def main() -> int:
     r.add_argument("--registry", type=Path, default=STATE / "registry.sqlite")
     r.add_argument("--out", type=Path, default=OUT)
     r.add_argument("--no-register", action="store_true", help="dry harness check; writes no trial")
+    rr = sub.add_parser("registry", help="list trials; DSR against the current N")
+    rr.add_argument("--registry", type=Path, default=STATE / "registry.sqlite")
     args = p.parse_args()
-    return run(args)
+    return run(args) if args.cmd == "run" else registry_report(args)
 
 
 if __name__ == "__main__":

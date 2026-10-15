@@ -8,6 +8,8 @@
 # including the candle data, is mounted read-only. The only writable mounts are the trial
 # registry directory (services/research/state) and the run output directory
 # (services/research/runs), plus an in-memory /tmp. It is removed when the run ends.
+# Resource caps (phase-3-plan 3B-1): HARNESS_CPUS, HARNESS_MEMORY, and a wall-clock limit of
+# HARNESS_TIMEOUT_S seconds after which the container is killed (default 1 hour).
 set -euo pipefail
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
@@ -21,8 +23,19 @@ test -f "$repo/services/freqtrade/user_data/data/kraken/kraken-archive-report.js
 	exit 2
 }
 
-exec docker run --rm \
+cpus="${HARNESS_CPUS:-2}"
+memory="${HARNESS_MEMORY:-4g}"
+timeout_s="${HARNESS_TIMEOUT_S:-3600}"
+name="research-harness-$$"
+
+# Wall-clock limit: kill the container if it outlives timeout_s.
+( sleep "$timeout_s" && docker kill "$name" >/dev/null 2>&1 && echo "harness killed after ${timeout_s}s" >&2 ) &
+watchdog=$!
+trap 'pkill -P "$watchdog" 2>/dev/null; kill "$watchdog" 2>/dev/null || true' EXIT
+
+docker run --rm --name "$name" \
 	--network none \
+	--cpus "$cpus" --memory "$memory" --pids-limit 256 \
 	--read-only --tmpfs /tmp:rw,size=2g \
 	--cap-drop ALL --security-opt no-new-privileges \
 	-v "$repo:/repo:ro" \
