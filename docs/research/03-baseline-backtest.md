@@ -352,6 +352,55 @@ run's numbers were wrong; it demonstrates why a short backtest window is
 not sufficient evidence on its own, independent of any question about
 this specific strategy's merit.
 
+## Re-run at the verified Kraken Tier-1 fee (2026-10-14)
+
+The evidence review (`docs/research/evidence-review-2026-10/01-evidence-review.md` §0) found the
+0.26 % taker assumption above was wrong: Kraken's official fee schedule, re-checked on
+2026-10-14, puts an account under $2,500 of 30-day volume at **Tier 1: 0.40 % maker / 0.80 %
+taker**. Backtests now take their fee from one file,
+`services/freqtrade/user_data/config.backtest-costs.json`: **0.009 per side** (0.80 % taker +
+0.10 % slippage, every fill priced as taker; ADR-0021). Strategy code and parameters are
+unchanged; nothing was tuned.
+
+**A second change had to be controlled for.** Since the run above, `config.dry_run.json` went
+from `max_open_trades: 3` to `2` (commit 47bd5d7, risk settings for the live pilot). Running
+today's config at the new fee therefore changes two things at once. The table separates them:
+row A reproduces the original run exactly (same data, 3 slots, `--fee 0.0036`) and lands on the
+original numbers to the cent, so rows B–E differ from it only in what they say.
+
+Command shape (one-off; the API-server JWT is a throwaway random value because the run has no
+`.env`; the server is disabled):
+
+```
+docker run --rm -v "$PWD/services/freqtrade/user_data:/freqtrade/user_data" \
+  -e FREQTRADE__API_SERVER__ENABLED=false -e FREQTRADE__API_SERVER__JWT_SECRET_KEY=<random> \
+  freqtradeorg/freqtrade:2026.8 backtesting --config user_data/config.dry_run.json \
+  [--config user_data/config.backtest-binance.json --datadir user_data/data/binance \
+   --pairs BTC/USDT XRP/USDT ETH/USDT SOL/USDT LINK/USDT LTC/USDT] \
+  --config user_data/config.backtest-costs.json [--max-open-trades 3] \
+  --strategy Baseline4h --enable-protections --export none --cache none
+```
+
+| Run | Data | Slots | Fee/side | Trades | Win % | Net profit | Sharpe (closed / daily wallet) | Max underwater | Market change |
+|---|---|---|---|---|---|---|---|---|---|
+| A. Original (reproduced) | Binance USDT, 2024-09-19 → 2026-09-09 | 3 | 0.36 % | 168 | 21.4 % | **−2.81 %** | −0.01 / 0.19 | 65.73 % | +21.96 % |
+| B. **Fee only** | same | 3 | **0.90 %** | 168 | 16.7 % | **−45.94 %** | −0.14 / −0.45 | 79.87 % | +21.96 % |
+| C. Today's config | same | 2 | 0.90 % | 117 | 16.2 % | −36.38 % | −0.06 / −0.16 | 81.85 % | +21.96 % |
+| D. Kraken archive | Kraken USD (ADR-0020), 2024-09-09 → 2026-09-10 | 3 | 0.90 % | 176 | 15.9 % | −48.86 % | −0.17 / −0.50 | 79.28 % | +32.04 % |
+| E. Kraken archive, today's config | same | 2 | 0.90 % | 121 | 16.5 % | −35.17 % | −0.06 / −0.14 | 80.70 % | +32.04 % |
+
+**Reading it.** The fee alone (A → B) turns a roughly break-even two years into a loss of 46 % of
+the account: the same 168 trades now pay ~$104 in fees instead of ~$52, and eight trades that
+were small winners become losers (win rate 21.4 % → 16.7 %). The trade list is identical
+(same entries, same exits); only the cost per trade moved. Two slots instead of three (B → C)
+trades less and loses less, but is still deeply negative. Kraken's own candles (D, E) tell the
+same story as Binance's within a few percentage points; the per-pair picture is the same too,
+XRP the only pair with a large positive total, LTC/ETH/LINK the largest losers.
+
+**Gate 1:** fails more clearly than before on every Sharpe basis. This is the expected outcome
+and is reported plainly. The same strategy on the full canonical timerange (2022-01-01 →
+2026-10-01) is the Baseline4h reference trial in `docs/research/05-first-candidates.md`.
+
 ## TBD
 
 - Exact Gate 1 Sharpe calculation method (trade-based vs. daily-equity-
