@@ -1,8 +1,10 @@
-# ADR-0006: Apache License 2.0, copyright the original author
+# ADR-0006: Apache License 2.0, copyright held by the original author
 
 ## Status
 
-Accepted — 2026-09-09
+Accepted — 2026-09-09. Copyright holder superseded by
+[ADR-0023](0023-copyright-to-aplicy-and-public-release.md) (Aplicy Inc., 2026-10-31); the
+licence is unchanged.
 
 ## Context and problem statement
 
@@ -36,7 +38,7 @@ carry, and whose copyright?
 
 ## Decision outcome
 
-Chosen option: **Apache License 2.0**, copyright 2026 the original author.
+Chosen option: **Apache License 2.0**, copyright 2026 the original author (the operator).
 See [`../../LICENSE`](../../LICENSE).
 
 ### Rationale

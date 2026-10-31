@@ -1,0 +1,68 @@
+Guarded Trader
+Copyright 2026 Aplicy Inc.
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Not financial advice. This software has no proven trading edge; see README.md.
+
+-------------------------------------------------------------------------------
+Third-party software included in this repository
+-------------------------------------------------------------------------------
+
+Chart.js 4.4.7 — MIT License, (c) 2024 Chart.js Contributors
+  services/conductor/src/conductor/infrastructure/dashboard/static/chart.umd.min.js
+  Licence text: .../dashboard/static/chart.js.LICENSE.md
+
+htmx 2.0.4 — Zero-Clause BSD (0BSD)
+  services/conductor/src/conductor/infrastructure/dashboard/static/htmx.min.js
+  Licence text: .../dashboard/static/htmx.LICENSE
+
+Versions, sources and checksums: .../dashboard/static/VENDORED.md
+
+-------------------------------------------------------------------------------
+Freqtrade (GPL-3.0) and how this project relates to it
+-------------------------------------------------------------------------------
+
+Freqtrade (https://github.com/freqtrade/freqtrade) is licensed under the GNU
+General Public License v3.0. This repository does not contain or redistribute
+Freqtrade's code. It is used as the unmodified upstream Docker image
+(freqtradeorg/freqtrade), pinned in infra/docker-compose.yml.
+
+- Conductor (services/conductor) talks to Freqtrade only over its REST API,
+  as a separate program in a separate container.
+- These files import Freqtrade's Python modules and run inside the Freqtrade
+  container:
+    services/freqtrade/user_data/strategies/*.py
+    services/research/strategies/*.py
+    services/research/src/research_harness/ft_runner.py
+  They are this project's own code and are licensed under Apache-2.0. The
+  Apache License 2.0 is compatible with GPLv3 (in that direction), so they may
+  be combined with Freqtrade. If you distribute a combined work (for example
+  a container image that bundles Freqtrade with these files), that
+  distribution must comply with the GPL-3.0.
+
+This summary is not legal advice.
+
+-------------------------------------------------------------------------------
+Runtime dependencies (installed by package managers, not included here)
+-------------------------------------------------------------------------------
+
+Locked in services/*/uv.lock. As of 2026-10-31 all are under permissive
+licences (MIT, BSD-2/3-Clause, Apache-2.0, PSF-2.0, 0BSD, Zlib, CC0-1.0), except:
+
+- python-telegram-bot — LGPL-3.0-only. Used unmodified as a library.
+- certifi, pathspec, hypothesis (dev only) — MPL-2.0. Used unmodified.
+
+-------------------------------------------------------------------------------
+Data in this repository
+-------------------------------------------------------------------------------
+
+- services/conductor/tests/fixtures/boc/: USD/CAD exchange rates from the Bank
+  of Canada Valet API (https://www.bankofcanada.ca/valet/), used as a test
+  fixture. Source: Bank of Canada.
+- services/research/fixtures/kraken-markets.json and
+  services/conductor/tests/fixtures/freqtrade/: public market metadata from
+  Kraken's public API and recorded responses of a dry-run Freqtrade instance.
+- No historical price data is included. Backtest data is downloaded by each
+  user from the exchange (docs/05-adr/0020-kraken-archive-for-backtest-history.md)
+  under that exchange's terms.
