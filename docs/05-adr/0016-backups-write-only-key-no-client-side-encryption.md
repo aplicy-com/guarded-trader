@@ -51,7 +51,7 @@ can do to the backups matters as much as having them.
      and a Backblaze account takeover.
    - A key we must remember is a way to lose the backups. The restore runbook is
      written for a half-asleep reader (`CLAUDE.md` §1); a second secret to fetch
-     from LastPass at 2am, and a way for a typo to make every backup unreadable,
+     from the password manager at 2am, and a way for a typo to make every backup unreadable,
      is a real cost for a $100, paper-trading system.
    - The files contain trade history, principal and fence figures and operator
      Telegram chat IDs. They contain **no API keys, tokens or seed phrases**

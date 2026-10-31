@@ -14,7 +14,7 @@ Freqtrade dry-run stack.
 
 **Rules while you do this:**
 - Never paste a token or key into a file, a commit, or a chat. They go
-  only into shell environment variables (step 4) and LastPass.
+  only into shell environment variables (step 4) and the password manager.
 - Run every command from the repo root on your Mac unless a step says
   "on the VPS".
 - If any "Expected" line does not match what you see, **stop** and go to
@@ -29,7 +29,7 @@ Freqtrade dry-run stack.
    - [ ] `terraform` and `nmap` installed (`brew install terraform nmap`).
    - [ ] The SSH key pair `~/.ssh/ai_trader_vps` and
          `~/.ssh/ai_trader_vps.pub`, with a passphrase on the private key.
-   - [ ] LastPass open, to store the Hetzner token.
+   - [ ] the password manager open, to store the Hetzner token.
 2. Confirm the infra code is on `main` (`make deploy` ships `main`, not
    your working tree):
    ```
@@ -66,7 +66,7 @@ Freqtrade dry-run stack.
 5. Get the two secrets.
    - **Hetzner token:** Hetzner Console → your project → Security → API
      tokens → Generate API token → permission **Read & Write**. Copy it
-     once and save it in LastPass now. Hetzner never shows it again.
+     once and save it in the password manager now. Hetzner never shows it again.
    - **Tailscale auth key:** Tailscale admin console → Settings → Keys →
      Generate auth key. Set **Reusable: off**, **Ephemeral: off**,
      **Expiry: 1 day**. Copy it (starts with `tskey-auth-`). Do not save
@@ -156,7 +156,7 @@ Freqtrade dry-run stack.
 12a. The Hetzner firewall alone is not trusted (incident S8 in
     [`03-risk-register.md`](../03-risk-register.md)). Add the host-level
     layer **over Tailscale** (the script refuses otherwise). Use the VPS's
-    `100.x` address from `tailscale status` (here `TS=100.101.102.103`):
+    `100.x` address from `tailscale status` (for example `TS=100.101.102.103`):
     ```
     TS=100.101.102.103
     scp -i ~/.ssh/ai_trader_vps -o IdentitiesOnly=yes scripts/harden-host.sh deploy@$TS:/tmp/

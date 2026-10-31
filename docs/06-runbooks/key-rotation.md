@@ -53,9 +53,9 @@ creation screen, permission list and IP are written out in
 8. Once confirmed working, go back to Kraken and revoke the **old** key.
 9. Re-enable trading: `/resume kill_switch` (see
    [`kill-switch.md`](kill-switch.md)).
-10. Update the last-rotated date in that credential's LastPass entry
+10. Update the last-rotated date in that credential's the password manager entry
     notes field (resolved, work package 2F — no separate tracking tool
-    needed; LastPass is already the system of record for the credential
+    needed; the password manager is already the system of record for the credential
     itself).
 
 ## Telegram bot token rotation
@@ -99,6 +99,6 @@ creation screen, permission list and IP are written out in
 ## TBD
 
 - ~~Formal rotation-cadence tracking mechanism~~ — resolved: 90-day
-  cadence, tracked in each credential's LastPass entry notes.
+  cadence, tracked in each credential's the password manager entry notes.
 - Manual research-loop trigger for step 4 of the Anthropic rotation — TBD
   (Phase 3).

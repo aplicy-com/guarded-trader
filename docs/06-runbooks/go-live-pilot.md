@@ -75,12 +75,13 @@ key can read balances and do nothing else.
    - Funds permissions: **Query** (nothing else in that group: not Deposit, not Withdraw)
    - Orders and trades: **nothing**
    - Data: Query ledger entries (optional)
-3. Under key restrictions, set the **IP address whitelist** to `203.0.113.10` (the VPS's static
+3. Under key restrictions, set the **IP address whitelist** to `<VPS_STATIC_IP>` (the VPS's static
    IPv4: `terraform -chdir=infra/terraform output -raw ipv4` prints it).
 4. Click Generate. Kraken shows the **API key** and the **private key (secret)** once. Copy both
-   into LastPass now (entry: `ai-trader kraken query-only key`).
+   into the password manager now (entry: `ai-trader kraken query-only key`).
 5. On the Mac, put them in `.env` (never commit it): set `KRAKEN_API_KEY=` and
-   `KRAKEN_API_SECRET=` to those values. Then:
+   `KRAKEN_API_SECRET=` to those values, and `KRAKEN_EXPECTED_IP=` to the static IPv4 from
+   step 3 (the access check refuses to run without it). Then:
    ```
    make push-env
    ```
@@ -91,8 +92,8 @@ key can read balances and do nothing else.
    ```
    scripts/kraken-access-check.sh --scope query-only
    ```
-   Expected, in order: `outbound IP of this host: 203.0.113.10 (key must be whitelisted to
-   203.0.113.10)`, a `key fingerprint:` line, then
+   Expected, in order: `outbound IP of this host: <VPS_STATIC_IP> (key must be whitelisted to
+   <VPS_STATIC_IP>)`, a `key fingerprint:` line, then
    ```
    ok   Query funds (Balance)            got allowed  expected allowed
    ok   Query open orders                got allowed  expected allowed
@@ -102,7 +103,7 @@ key can read balances and do nothing else.
    KRAKEN ACCESS CHECK PASS (query-only)
    ```
    - `FAIL: cannot read the balance ...` → wrong key/secret, or the IP is not whitelisted. Check
-     the `outbound IP` line: if it is not `203.0.113.10`, the whitelist must be that IP instead.
+     the `outbound IP` line: if it is not `<VPS_STATIC_IP>`, the whitelist must be that IP instead.
    - A `FAIL ... Funding` line → the key has permissions it must not have. Delete it on Kraken,
      create it again exactly as above.
 
@@ -147,7 +148,7 @@ whatever it takes.**
 
 1. Kraken → **Funding → Deposit → Canadian dollar (CAD) → Interac e-Transfer**. Read the fee and
    limit lines on that screen. Send the amount. Write down: the CAD amount, the date and time,
-   the Interac reference. **This is your R1 deposit record**; store it in LastPass notes with
+   the Interac reference. **This is your R1 deposit record**; store it in password-manager notes with
    the conversion record below (the ledger records the principal automatically at first start,
    but the deposit evidence is on Kraken's side and yours).
 2. When the CAD shows as available, convert it: **Trade → Buy USD with CAD** (the USD/CAD
@@ -170,11 +171,11 @@ Follow the "create new, verify, then revoke the old one" rule of
    - Orders and trades: **Query open orders & trades**, **Query closed orders & trades**,
      **Create & modify orders**, **Cancel & close orders**
    - Data: Query ledger entries (optional)
-2. **IP address whitelist: `203.0.113.10`.** No other IP.
+2. **IP address whitelist: `<VPS_STATIC_IP>`.** No other IP.
 3. Before you click Generate, read the permission list back on Kraken's confirmation screen and
    check, in words: *withdraw is off; deposit is off*. This is the step that is easiest to get
    wrong when tired.
-4. Generate. Copy the API key and private key into LastPass now (`ai-trader kraken LIVE key`).
+4. Generate. Copy the API key and private key into the password manager now (`ai-trader kraken LIVE key`).
 5. On the Mac replace `KRAKEN_API_KEY` / `KRAKEN_API_SECRET` in `.env` with the new pair and
    `make push-env`. Expected: `pushed .env -> ...`.
 6. On the VPS:

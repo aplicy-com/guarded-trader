@@ -15,7 +15,6 @@
 # Exit 0 = PASS. Also prints this host's outbound IP: it must be the IP the key is whitelisted to.
 set -uo pipefail
 
-EXPECTED_IP=${KRAKEN_EXPECTED_IP:-203.0.113.10}
 SCOPE=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -35,6 +34,10 @@ command -v docker >/dev/null || { echo "ERROR: docker not found (run this on the
 # The key must be set, but is never read into this shell: compose interpolates it.
 grep -q '^KRAKEN_API_KEY=.\+' .env && grep -q '^KRAKEN_API_SECRET=.\+' .env \
   || { echo "ERROR: KRAKEN_API_KEY / KRAKEN_API_SECRET are not set in .env" >&2; exit 2; }
+
+# The VPS's static IPv4 the key is whitelisted to: from the environment, else from .env.
+EXPECTED_IP=${KRAKEN_EXPECTED_IP:-$(sed -n 's/^KRAKEN_EXPECTED_IP=//p' .env | tail -1)}
+[ -n "$EXPECTED_IP" ] || { echo "ERROR: KRAKEN_EXPECTED_IP is not set in .env (the VPS's static IPv4: terraform output ipv4)" >&2; exit 2; }
 
 IP=$(curl -fsS --max-time 10 https://api.ipify.org 2>/dev/null || echo unknown)
 echo "outbound IP of this host: $IP (key must be whitelisted to $EXPECTED_IP)"

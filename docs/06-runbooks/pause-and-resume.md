@@ -124,10 +124,10 @@ pages you every day that the heartbeat is missing.
 - **NDAX** (ADR-0022, not used): delete the read-only key on ndax.io, and remove the
   `NDAX_*` lines from the Mac's `.env`.
 - **Kraken:** if you released the IP, or the pause is open-ended, delete the API key on
-  Kraken's website and note it in LastPass. A new key is made on resume (`go-live-pilot.md`
+  Kraken's website and note it in the password manager. A new key is made on resume (`go-live-pilot.md`
   Part C). If you kept the IP and expect to resume soon, keeping the key is acceptable: it is
   IP-whitelisted, has no withdraw or funding permission, and its secret is only in `.env` and
-  LastPass.
+  the password manager.
 
 **A10. Record the pause.** In `docs/07-roadmap.md` "Current status", note the date, the option
 chosen in A7, whether the IP was kept, which keys were deleted, and the path of `$P`.
@@ -182,7 +182,7 @@ changes:
 | Ledger + Freqtrade DB, verified copies | `~/Backups/ai-trading-agent/vps-pause-<date>/restored/` |
 | Insurance tarballs, Terraform state | `~/Backups/ai-trading-agent/vps-pause-<date>/` |
 | Research trial registry (the `N` for DSR) | `services/research/state/registry.sqlite`; dated copy in `~/Backups/ai-trading-agent/research-registry/` (see `services/research/README.md`) |
-| Secrets (`.env` values, Hetzner token, keys) | LastPass |
+| Secrets (`.env` values, Hetzner token, keys) | Password manager |
 | B2 backups | Backblaze bucket, **gone 30 days after the last one** |
 
 `~/Backups/` is on the Mac only. A second copy on another device (encrypted external drive) is

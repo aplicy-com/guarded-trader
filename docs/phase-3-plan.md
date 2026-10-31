@@ -33,7 +33,7 @@ flowchart LR
 | D2 | OS | Ubuntu 24.04 LTS | Long support, Docker-native |
 | D3 | Provisioning | Terraform (`hcloud` provider) + cloud-init | Reproducible, rebuildable from zero, fits your stack |
 | D4 | Access | Tailscale only. Public firewall: **zero inbound ports** after bootstrap (SSH closed publicly once Tailscale is up) | Nothing to attack from the internet |
-| D5 | Secrets | `.env` on VPS, `0640 root:deploy` (so the deploy user's `docker compose` can read it), never in git; mirrored in LastPass | Simple; Vault is overkill at this scale |
+| D5 | Secrets | `.env` on VPS, `0640 root:deploy` (so the deploy user's `docker compose` can read it), never in git; mirrored in the password manager | Simple; Vault is overkill at this scale |
 | D6 | Backups | Nightly SQLite backup (ledger + Freqtrade DBs) → Backblaze B2 (or Hetzner Storage Box), 30-day retention; weekly Hetzner snapshot | Ledger is the system of record |
 | D7 | Deploy | `make deploy` from Mac over Tailscale: rsync/git pull + `docker compose up -d`. No CI/CD yet | One operator, low change rate |
 | D8 | Conductor stack | Python 3.12, FastAPI, SQLAlchemy 2 + Alembic, SQLite (WAL), pydantic-settings, structlog, httpx, pytest | Matches ADR-0009 and existing Python toolchain |
@@ -166,7 +166,7 @@ Each package = one branch, plan mode first, one PR-equivalent merge to `main`.
 - Up to 3 candidates in parallel paper on the VPS, evaluated against Gate 2 (window until ≥ 3 weeks and a 20-trade fill-rate sample, capped at 8 weeks; backtest-consistency primary; ADR-0021).
 - `08-paper-exit-criteria.md` numbers frozen before the first candidate starts.
 - Weekly review by you (dashboard + Telegram summary); no parameter changes mid-window.
-- In parallel: API key creation (2E) — Query + Trade, no Withdraw, IP-whitelisted to the VPS static IP; stored only on VPS `.env` + LastPass. Still dry-run.
+- In parallel: API key creation (2E) — Query + Trade, no Withdraw, IP-whitelisted to the VPS static IP; stored only on VPS `.env` + the password manager. Still dry-run.
 
 **Phase 3 exit gate = Phase 4 entry gate**
 - [ ] ≥ 1 strategy passes Gate 2 in full

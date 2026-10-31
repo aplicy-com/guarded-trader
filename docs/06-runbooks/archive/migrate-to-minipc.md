@@ -49,7 +49,7 @@ noticed."
 2. Back up everything that needs to move:
    - Ledger DB — export/dump per the mechanism decided in Phase 3 (TBD).
    - `.env` file — copy via a secure channel (not email, not Slack; use
-     something like an encrypted LastPass note or `scp` over Tailscale),
+     something like an encrypted the password manager note or `scp` over Tailscale),
      never committed to git.
    - Any Freqtrade `user_data/` state not already in git (git-ignored
      runtime state like the local SQLite DB, if used — check
