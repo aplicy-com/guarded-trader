@@ -13,6 +13,58 @@ flowchart LR
     P4 --> P5["Phase 5<br/>Ongoing operation<br/>+ re-validation"]
 ```
 
+## Current status — 2026-10-30: platform complete, no strategy, live trading paused
+
+This section overrides any older "in progress" line below. The phase sections are kept as
+written, as history.
+
+**Done: the platform is built and drilled.**
+- Freqtrade dry-run on a Hetzner VPS (ADR-0011) with Conductor: ledger, independent risk
+  layer, halts, kill switch and nuclear via Telegram, fail-closed boot (ADR-0018), heartbeat
+  watchdog, nightly B2 backups, read-only dashboard over Tailscale.
+- All six 3A-6 safety drills **passed** on the VPS on 2026-10-05: kill switch, nuclear, restart
+  persistence, heartbeat silence, backup + restore, full VPS rebuild
+  ([`drills/results-2026-10-04.md`](drills/results-2026-10-04.md)). The records are the
+  operator's summaries, not verbatim output.
+- The $20 live-pilot package (ADR-0019) is built and gated (`scripts/trading-mode.sh live`).
+- A sandboxed research harness: walk-forward, random-entry null, append-only trial registry,
+  Deflated Sharpe (ADR-0021).
+
+**Not done: no strategy has passed Gate 1 at real costs.**
+- At Kraken Tier-1 cost (0.80 % taker + 0.10 % slippage per side), all four candidates lose money
+  over 2022-01 → 2026-10. None beats its random-entry null, and BTC buy-and-hold beats all of
+  them ([`research/05-first-candidates.md`](research/05-first-candidates.md)).
+- At NDAX's 0.20 % fee, C05 beats its null's Sharpe 95th percentile. It still fails Gate 1
+  (IS Sharpe, trade concentration, force-exit share), and at 2× fee, close to NDAX's measured
+  spread cost, it loses money again
+  ([`research/06-ndax-feasibility.md`](research/06-ndax-feasibility.md)).
+- Trial registry: N = 6 registered trials. Every one counts against future DSR.
+
+**Paused: live trading.**
+- The $20 pilot has not run. Funding the Kraken account by deposit has not worked (details:
+  TBD, operator to record).
+- NDAX was checked as a replacement venue and **rejected for live**
+  ([ADR-0022](05-adr/0022-ndax-rejected-for-live.md)): the key's withdraw scope can't be
+  verified through its API, and Freqtrade can't hold stops on the exchange for it.
+- The VPS is being stopped per [`06-runbooks/pause-and-resume.md`](06-runbooks/pause-and-resume.md).
+  No capital is on any exchange through this system. The research loop costs nothing while
+  paused (R6).
+
+**Revisit triggers.** Either one reopens the project; neither by itself resumes trading:
+1. **Kraken deposits work for this account.** Then the $20 *plumbing* pilot (ADR-0019) can run
+   as designed. It proves the real-exchange path, not an edge: it trades a known no-edge
+   strategy and is expected to lose a little.
+2. **A candidate passes Gate 1 at real costs**: Kraken Tier-1 taker + slippage, or another
+   venue's verified fee **plus its measured spread**, on a venue that passes the same checks
+   ADR-0022 applied (verified no-withdraw key, exchange-held stops).
+
+Resuming means: write down which trigger fired, then follow `pause-and-resume.md` Part B, then
+the normal written-plan rule (`CLAUDE.md` §1) before anything touches the live path.
+
+**Pause record** (fill in at `pause-and-resume.md` step A10): date stopped: TBD; option
+(power off / server deleted): TBD; static IP kept: TBD; exchange keys deleted: TBD; local
+backup folder: TBD.
+
 ## Phase 1 — Docs scaffold (this phase)
 
 **Entry gate:** research review complete
