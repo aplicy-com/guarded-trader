@@ -305,6 +305,15 @@ def test_templates_contain_no_forms_or_write_triggers() -> None:
     assert "POST" not in js and "method:" not in js
 
 
+def test_equity_chart_x_values_are_epoch_numbers() -> None:
+    """With `parsing: false`, Chart.js needs numeric x; Date objects collapse the axis to 0..1."""
+    js = (Path(dash_routes.HERE) / "static" / "dashboard.js").read_text()
+    assert "parsing: false" in js
+    assert "x: Date.parse(p.t)" in js
+    assert "x: new Date(" not in js
+    assert "min: Date.now() - 30 * 864e5" in js  # the "last 30 days" window, even for one point
+
+
 def test_no_external_resources_are_referenced() -> None:
     """No CDN at runtime: every script/style/link is same-origin."""
     ext = re.compile(r"""(src|href)=["']https?://""", re.I)

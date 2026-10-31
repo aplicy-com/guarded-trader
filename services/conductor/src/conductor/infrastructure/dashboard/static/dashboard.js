@@ -1,4 +1,5 @@
 // Equity curve. Loaded from /static (CSP: script-src 'self'); Chart.js is vendored.
+// parsing: false means every x must already be a number (epoch ms); a Date object breaks the axis.
 (function () {
   "use strict";
   var canvas = document.getElementById("equity");
@@ -16,15 +17,15 @@
         data: {
           datasets: [{
             label: "Equity (USD)",
-            data: body.points.map(function (p) { return { x: new Date(p.t), y: Number(p.v) }; }),
-            borderColor: line, backgroundColor: line, borderWidth: 2, pointRadius: 0, tension: 0.15
+            data: body.points.map(function (p) { return { x: Date.parse(p.t), y: Number(p.v) }; }),
+            borderColor: line, backgroundColor: line, borderWidth: 2, pointRadius: body.points.length === 1 ? 3 : 0, tension: 0.15
           }]
         },
         options: {
           responsive: true, maintainAspectRatio: false, animation: false,
           parsing: false, interaction: { mode: "nearest", intersect: false },
           scales: {
-            x: { type: "linear", ticks: { color: text, maxTicksLimit: 6, callback: function (v) { return new Date(v).toISOString().slice(5, 16).replace("T", " "); } }, grid: { color: grid } },
+            x: { type: "linear", min: Date.now() - 30 * 864e5, max: Date.now(), ticks: { color: text, maxTicksLimit: 6, callback: function (v) { return new Date(v).toISOString().slice(5, 16).replace("T", " "); } }, grid: { color: grid } },
             y: { ticks: { color: text, callback: function (v) { return "$" + v; } }, grid: { color: grid } }
           },
           plugins: { legend: { display: false } }
