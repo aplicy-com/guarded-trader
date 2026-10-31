@@ -1,4 +1,4 @@
-# ADR-0023: Copyright to Aplicy Inc. and public release as `aplicy/guarded-trader`
+# ADR-0023: Copyright to Aplicy Inc. and public release as `aplicy-com/guarded-trader`
 
 ## Status
 
@@ -37,7 +37,7 @@ repository is public?
 - `LICENSE` and `NOTICE`: **Copyright 2026 Aplicy Inc.** The licence is still Apache-2.0.
   The legal assignment from the original author to Aplicy Inc. is a separate written document,
   outside this repository.
-- **Name:** Guarded Trader, repository `aplicy/guarded-trader`.
+- **Name:** Guarded Trader, repository `aplicy-com/guarded-trader`.
 - **History** is rewritten once with `git filter-repo`, before the first push:
   - the VPS IPv4 and the Tailscale addresses become documentation placeholders;
   - personal names in file contents become "the operator" / "the original author";

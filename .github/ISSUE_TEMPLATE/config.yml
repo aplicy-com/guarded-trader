@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security or trading-safety issue (private)
-    url: https://github.com/aplicy/guarded-trader/security/advisories/new
+    url: https://github.com/aplicy-com/guarded-trader/security/advisories/new
     about: Vulnerabilities, or anything that could move money against the system's rules. Never in a public issue. Or e-mail security@aplicy.com.

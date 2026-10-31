@@ -105,7 +105,7 @@ Needs Docker with Compose v2 and GNU Make. No exchange key and no money; Freqtra
 paper-trades against public market data.
 
 ```bash
-git clone https://github.com/aplicy/guarded-trader.git
+git clone https://github.com/aplicy-com/guarded-trader.git
 cd guarded-trader
 cp .env.example .env
 # Fill in only these three (any local values; they guard the loopback-only REST API):

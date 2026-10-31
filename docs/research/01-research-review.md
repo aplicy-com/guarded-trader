@@ -1,6 +1,6 @@
 # Research Review — Frameworks, LLM-Agent Results, Risk Controls
 
-**Project:** AI Trader (working name) · **Date:** 2026-09-09 · **Status:** Input to Phase 1 (docs scaffold)
+**Project:** Guarded Trader · **Date:** 2026-09-09 · **Status:** Input to Phase 1 (docs scaffold)
 **Scope:** What to build on, what the evidence says about LLMs trading, and which risk controls are non-negotiable. Sources at the end.
 
 ---

@@ -14,7 +14,7 @@ flowchart TB
     Telegram["Telegram"]
     SweepAcct["Sweep destination<br/>account/wallet<br/>(no API key held by system)"]
 
-    subgraph System["AI Trader system"]
+    subgraph System["Guarded Trader system"]
         Conductor["Conductor<br/>(research loop, ledger, gates, kill switch)"]
         Freqtrade["Freqtrade<br/>(execution + risk engine)"]
     end
