@@ -176,6 +176,41 @@ entered in the window, so the order-simulation path itself was not exercised.
   documented**. The probe tries the undocumented `GetUserPermissions` for information only. A
   wrong key gets HTTP 500, not 401. **Whether dummy credentials work: TBD**, until the script
   runs on the VPS with the real read-only key.
+- **Update 2026-10-30, first VPS run (read-only key): FAIL, and the outcome is NO for live
+  use.** What the run showed, and what each finding turned out to mean:
+  1. `GetAccountPositions` / `GetOpenOrders` answered `OMSId and AccountId must be Integers`,
+     and the old classifier counted that as "allowed". That was a bug: any error that wasn't a
+     refusal counted as allowed. Fixed. Now only a clean success is "allowed", only an explicit
+     `Not Authorized` (errorcode 20) or HTTP 401/403 is "denied", and everything else is
+     "unknown", which fails. The probe also sent both `omsId` and `OMSId`. The doc says key
+     case doesn't matter, so that was probably a duplicate key. It now sends `OMSId` +
+     `AccountId` once each, in the doc's casing. The signed request got past authentication
+     to the handler, so key-only signing seems to work for reads. Not yet confirmed.
+  2. `GetOrderFee` / `GetWithdrawFee` returned `404 NOT FOUND`. **The names are right**: both
+     are in `apidoc.ndax.io` with those exact names. Checked without a key: NDAX's HTTP gateway
+     gives `404 NOT FOUND` to every private call (`GetAccountPositions` included) and to a
+     made-up name, on GET and POST. Public calls get 200. So a 404 means nothing about
+     permissions. `GetDepositInfo` is not in the doc and was dropped. No documented read call
+     is gated by the Deposit permission alone, so deposit isn't probed.
+  3. `GetUserPermissions` returned `Deposit, Trading, Withdraw`. That call is not in
+     `apidoc.ndax.io` and takes a `UserId`. The doc describes permissions only per user ("an
+     administrator … sets up a user's permissions"). Outside `AuthenticateUser`'s request
+     fields, the doc never mentions API keys: no call lists keys or their scopes. So this is
+     the **user's (account-level) permission set**. It can't show the key's scope, and the
+     API has no call that does.
+  - No login needed: ccxt runs with `requiredCredentials` login/password switched off and
+    the numeric account id preset (`accounts` + `options.accountId`, from `NDAX_ACCOUNT_ID`
+    or a key-signed `GetUserAccounts` with `UserId` only). That way `fetch_accounts`, the only
+    call that uses the login, never runs. Freqtrade can pass the same settings through
+    `ccxt_config`. Untested in Freqtrade: TBD (Phase 2), moot unless the verdict changes.
+  - **Verdict.** The key-only signing gap looks closable. Key-scoped permissions **cannot be
+    verified** through NDAX's documented API. The one permission report available says this
+    login holds Withdraw, and the only behavioural test (a Trading/Withdraw fee quote) came
+    back 404, which proves nothing. CLAUDE.md §0 rule 2 needs proof that the key cannot
+    withdraw. NDAX can't give that proof, so **NDAX will not be used live.** Only one result
+    could reopen this: a re-run of the fixed check (`scripts/ndax-access-check.sh --scope
+    read-only`) where `GetWithdrawFee` returns an explicit `Not Authorized` (errorcode 20). A
+    404 or any other answer keeps the verdict.
 - Security note: searching for NDAX API docs returns several lookalike domains
   (`*.pages.dev`, `daftpage.com`) styled as NDAX pages. Only `ndax.io` and `apidoc.ndax.io` were
   used here. Any key-creation runbook must pin the real domain.
