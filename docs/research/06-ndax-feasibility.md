@@ -163,6 +163,19 @@ entered in the window, so the order-simulation path itself was not exercised.
   per-API-key scopes. A third-party import guide (CoinLedger) describes an "Allow Read Only"
   option when generating a key. **Whether NDAX can issue a trade-only key without withdrawal
   permission is unverified.** It's a hard gate under CLAUDE.md §0 rule 2.
+- **Update 2026-10-30.** The NDAX UI now offers per-key permissions (read, deposits,
+  withdraws, trading), and a read-only key exists. `scripts/ndax-access-check.sh --scope
+  read-only` (VPS, key from `.env`, ccxt given fixed dummy login/password, never `signIn`)
+  tests it. Its probes use only reads and quotes. The doc lists each call's permission:
+  `GetAccountPositions` / `GetOpenOrders` / `GetUserAccounts` accept `AccountReadOnly`;
+  `GetOrderFee` and `SendOrder` need `Trading`; `GetWithdrawFee` needs `Trading` or `Withdraw`.
+  ccxt's private calls are HMAC-signed with uid + key + secret and never send the password.
+  `login` is sent only as `UserName` on `GetUserAccounts`, which is the step the dummy value
+  might break. The script also tries that call without `UserName`. Two API facts from
+  `apidoc.ndax.io` (2026-10-30): **no IP-whitelist call and no API-key/permission query is
+  documented**. The probe tries the undocumented `GetUserPermissions` for information only. A
+  wrong key gets HTTP 500, not 401. **Whether dummy credentials work: TBD**, until the script
+  runs on the VPS with the real read-only key.
 - Security note: searching for NDAX API docs returns several lookalike domains
   (`*.pages.dev`, `daftpage.com`) styled as NDAX pages. Only `ndax.io` and `apidoc.ndax.io` were
   used here. Any key-creation runbook must pin the real domain.
