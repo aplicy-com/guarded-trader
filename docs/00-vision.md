@@ -101,6 +101,28 @@ the bar, is the entire point of this experiment — this is what that looks
 like in practice, on the very first strategy, before any money was ever
 on the line.
 
+## Where it stands (2026-10-30): the safety half works, the edge half has not been found
+
+Measured against the success criteria above:
+
+- **Docs-first bar: met.** Every capital rule, risk, decision and emergency procedure was written
+  and reviewed before exchange-connected code existed.
+- **The safety machinery: built and proven.** The engine, the independent risk layer, halts that
+  need a human to clear, the kill switch, the nuclear protocol, backups and a full server rebuild
+  all passed their drills on the real VPS (`docs/drills/`).
+- **Paper bar: not met, because nothing qualified to be tested.** Every strategy tried so far
+  loses money at the fees this account would actually pay (Kraken Tier-1, 0.80 % taker). None of
+  them beats random entries with the same exits, and buying and holding BTC beat all of them. The
+  one cheaper venue checked, NDAX, was rejected: the system can't prove an NDAX key is unable
+  to withdraw (ADR-0022).
+- **Live bar: not reached.** No real money has been traded. Live trading is paused, and the
+  VPS is being stopped (`docs/07-roadmap.md`, "Current status").
+
+The gates did what they were built to do. They kept every no-edge strategy away from real money,
+and nothing was lowered to get one through. Per the paragraph above on failure, that is a
+legitimate outcome. The project comes back when Kraken deposits work for this account (for the
+$20 plumbing pilot), or when a candidate passes Gate 1 at real costs.
+
 ## TBD
 
 - Exact quantitative long-run "success" threshold beyond Phase 4 (e.g.
