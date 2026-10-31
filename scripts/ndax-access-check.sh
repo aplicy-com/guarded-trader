@@ -5,10 +5,10 @@
 #   scripts/ndax-access-check.sh --scope read-only   read-only key: can read, can do nothing else
 #
 # What it does: starts a throw-away Freqtrade container (the same image the bot uses) that gets
-# NDAX_API_KEY / NDAX_API_SECRET / NDAX_UID from .env, and runs scripts/ndax_access_probe.py in
-# it. ccxt gets DUMMY login/password values; the probe reports whether ccxt's private calls work
-# with them. Every call is a read or a fee quote: no order, no deposit or withdraw ticket. The
-# key never appears in this shell or in the output, and the real NDAX password is never used.
+# NDAX_API_KEY / NDAX_API_SECRET / NDAX_UID (and optional NDAX_ACCOUNT_ID) from .env, and runs
+# scripts/ndax_access_probe.py in it. No login or password is used: ccxt gets the numeric account
+# id instead. Every call is a read or a fee quote: no order, no deposit or withdraw ticket. The
+# key never appears in this shell or in the output, and the NDAX password is never used.
 #
 # Exit 0 = PASS. Also prints this host's outbound IP, for comparison with any IP restriction.
 set -uo pipefail

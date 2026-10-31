@@ -1,10 +1,12 @@
 # Used only by scripts/ndax-access-check.sh (spike/ndax): hands the NDAX key to a throw-away
 # Freqtrade container (the same image the bot uses, for its ccxt) so the key can be tested from
 # the VPS without ever putting it in a shell. Nothing here starts a bot. No login or password is
-# passed: the probe gives ccxt fixed dummy values.
+# passed: the probe switches ccxt's login/password requirement off and
+# pre-sets the numeric account id (NDAX_ACCOUNT_ID, optional; else resolved with a signed call).
 services:
   freqtrade:
     environment:
       NDAX_API_KEY: ${NDAX_API_KEY:?set NDAX_API_KEY in .env}
       NDAX_API_SECRET: ${NDAX_API_SECRET:?set NDAX_API_SECRET in .env}
       NDAX_UID: ${NDAX_UID:?set NDAX_UID in .env}
+      NDAX_ACCOUNT_ID: ${NDAX_ACCOUNT_ID:-}
