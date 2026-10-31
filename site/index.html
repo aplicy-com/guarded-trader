@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <title>Guarded Trader: an AI trading bot that refused to trade</title>
+  <meta name="description" content="An open-source crypto trading framework where an LLM may research strategies but never place an order. Every strategy lost money at real fees, and the gates kept all of them away from real money. Negative results published.">
+  <link rel="canonical" href="https://guarded-trader.aplicy.com/">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="#top" aria-label="Guarded Trader, top of page">
+      <svg class="mark" viewBox="0 0 72 86" aria-hidden="true"><path d="M36 0 72 12v28c0 22-16 38-36 46C16 78 0 62 0 40V12Z"/><path class="tick" d="M18 46 31 58 55 30"/></svg>
+      Guarded Trader
+    </a>
+    <nav aria-label="Sections">
+      <a href="#safety">Safety</a>
+      <a href="#results">Results</a>
+      <a href="#start">Quick start</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow">Open source · Apache-2.0 · negative results published</p>
+    <h1>An AI trading bot that refused to trade</h1>
+    <p class="lede">Guarded Trader lets an LLM research crypto strategies but never place an order.
+      Every strategy it tested lost money at real fees, so its gates kept every one of them away
+      from real money.</p>
+    <div class="actions">
+      <a class="btn primary" href="https://github.com/aplicy-com/guarded-trader">View on GitHub</a>
+      <a class="btn coffee" href="https://buymeacoffee.com/aplicy">Buy me a coffee</a>
+    </div>
+  </div>
+</section>
+
+<section id="what">
+  <div class="wrap">
+    <h2>What it is</h2>
+    <div class="cards">
+      <article class="card">
+        <h3>An execution and safety platform</h3>
+        <p><a href="https://www.freqtrade.io/">Freqtrade</a> does the trading. A second service,
+          <strong>Conductor</strong>, keeps the ledger, enforces the capital rules and owns every
+          halt, the kill switch and the alerts.</p>
+      </article>
+      <article class="card">
+        <h3>A research harness</h3>
+        <p>Backtests run in a sandbox with no network: walk-forward validation, a random-entry
+          null, Deflated Sharpe, and a registry that counts every trial, including the failures.</p>
+      </article>
+      <article class="card">
+        <h3>A public record</h3>
+        <p>23 architecture decisions, a risk register, runbooks written to be followed at 2 am,
+          drill results from the real server, and every research result.</p>
+      </article>
+    </div>
+    <p class="note">Built around a one-time $100 principal that is never topped up, run by one
+      operator in Canada. Not a signal service, not a product, not managed money.</p>
+  </div>
+</section>
+
+<section id="safety">
+  <div class="wrap">
+    <h2>The safety model</h2>
+    <ol class="rules">
+      <li><h3>The AI never places an order</h3>
+        <p>The LLM proposes and reviews strategy code. Only the deterministic engine talks to the
+          exchange's order endpoints, and no LLM output has a path there.</p></li>
+      <li><h3>Two independent risk layers</h3>
+        <p>Freqtrade's own protections, plus Conductor's checks of daily loss, drawdown, loss
+          streaks, deployed capital and correlated positions. Either one can stop trading.</p></li>
+      <li><h3>Only a human can resume</h3>
+        <p>A halt stays until a person clears it, with a confirmation code that expires in 60 s.
+          Freqtrade always boots paused and starts only if no halt is active.</p></li>
+      <li><h3>The keys can't withdraw</h3>
+        <p>Exchange keys may query and trade, never withdraw or move funds. That is tested from the
+          server, not assumed, and a venue whose key couldn't be proven unable to withdraw was
+          rejected.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="drills">
+  <div class="wrap">
+    <h2>The drills</h2>
+    <p>Each safety mechanism was exercised on the real server, in dry-run, on 2026-10-05.</p>
+    <div class="table-scroll" role="region" aria-label="Drill results" tabindex="0">
+      <table>
+        <thead><tr><th scope="col">Drill</th><th scope="col">What was proven</th><th scope="col">Result</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Kill switch via Telegram</th><td>New entries blocked within about 10 s; resumed only after a confirmed <code>/resume</code></td><td><span class="pass">Pass</span></td></tr>
+          <tr><th scope="row">Nuclear flatten via Telegram</th><td>Orders cancelled, positions closed, bot stopped</td><td><span class="pass">Pass</span></td></tr>
+          <tr><th scope="row">Restart under a halt</th><td>Never ran while a halt was active; started on its own only with no halt</td><td><span class="pass">Pass</span></td></tr>
+          <tr><th scope="row">Heartbeat silence</th><td>An outage raised an alert by Telegram and e-mail</td><td><span class="pass">Pass</span></td></tr>
+          <tr><th scope="row">Backup and restore</th><td>The nightly off-site backup restored to a working ledger</td><td><span class="pass">Pass</span></td></tr>
+          <tr><th scope="row">Full server rebuild</th><td>Rebuilt from nothing in about 85 minutes, same address, ledger and halts restored</td><td><span class="pass">Pass</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">The records are the operator's summaries, not verbatim output, and include
+      the findings each drill raised.
+      <a href="https://github.com/aplicy-com/guarded-trader/blob/main/docs/drills/results-2026-10-04.md">Drill results</a>.</p>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <h2>The honest results</h2>
+    <p>Every registered strategy, 2022-01-01 → 2026-10-01, starting with $100, at the fee a small
+      Kraken account actually pays (0.80 % taker + 0.10 % slippage per side). The parameters were
+      committed before the first run, and nothing was tuned afterwards.</p>
+    <div class="table-scroll" role="region" aria-label="Backtest results" tabindex="0">
+      <table class="num">
+        <thead><tr><th scope="col">Strategy</th><th scope="col">Net profit</th><th scope="col">Max drawdown</th><th scope="col">Beats random-entry null?</th><th scope="col">Gate 1</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Baseline4h <span class="desc">EMA cross, ATR stop</span></th><td class="neg">−$65.47</td><td>83.7 %</td><td>No</td><td><span class="fail">Fail</span></td></tr>
+          <tr><th scope="row">C05 <span class="desc">EMA flip, 4h</span></th><td class="neg">−$61.48</td><td>83.2 %</td><td>No</td><td><span class="fail">Fail</span></td></tr>
+          <tr><th scope="row">C01 <span class="desc">weekly time-series momentum</span></th><td class="neg">−$88.63</td><td>91.8 %</td><td>No</td><td><span class="fail">Fail</span></td></tr>
+          <tr><th scope="row">C04 <span class="desc">C01 + volatility sizing</span></th><td class="neg">−$29.84</td><td>38.0 %</td><td>No</td><td><span class="fail">Fail</span></td></tr>
+          <tr class="bench"><th scope="row">BTC buy-and-hold <span class="desc">no fees, for comparison</span></th><td class="pos">+$75.00</td><td>67.0 %</td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Before fees, Baseline4h, C05 and C04 were profitable. Fees took all of it and more. At a
+      cheaper venue's 0.20 % fee, C05 beat its random-entry null but still failed Gate 1, and it
+      lost money again at twice that fee.</p>
+    <p class="callout">No real money has been traded, and live trading is paused. The gates were
+      never lowered to let a strategy through. That is the result the project was built to be able
+      to report.</p>
+    <p class="small"><a href="https://github.com/aplicy-com/guarded-trader/blob/main/docs/research/05-first-candidates.md">Full report</a>
+      · <a href="https://github.com/aplicy-com/guarded-trader/blob/main/docs/research/06-ndax-feasibility.md">0.20 % fee study</a>
+      · <a href="https://github.com/aplicy-com/guarded-trader/blob/main/docs/07-roadmap.md">Status and revisit triggers</a></p>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <h2>Quick start (dry-run)</h2>
+    <p>Needs Docker with Compose v2 and GNU Make. No exchange key and no money: Freqtrade
+      paper-trades against public market data.</p>
+<pre class="code" tabindex="0"><code>git clone https://github.com/aplicy-com/guarded-trader.git
+cd guarded-trader
+cp .env.example .env
+# Fill in only FREQTRADE__API_SERVER__USERNAME, __PASSWORD and
+# __JWT_SECRET_KEY (any local values). Leave TRADING_MODE=dry_run
+# and every exchange key empty.
+make up      # Freqtrade + Conductor, bound to 127.0.0.1 only
+make logs    # expect "Dry run is enabled"</code></pre>
+    <p>The dashboard is at <code>http://127.0.0.1:8000</code>. Stop with <code>make down</code>.
+      Going live is deliberately hard and gated; see the
+      <a href="https://github.com/aplicy-com/guarded-trader#readme">README</a>.</p>
+  </div>
+</section>
+
+<section id="disclaimer">
+  <div class="wrap">
+    <div class="disclaimer">
+      <h2>Not financial advice</h2>
+      <p>This is a research and engineering project. It has <strong>no proven trading edge</strong>,
+        and its own published results show strategies losing money. Don't trade real money because
+        of anything here. Crypto trading can lose all the money you put in.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <p>© 2026 Aplicy Inc. · Apache License 2.0 ·
+      <a href="https://github.com/aplicy-com/guarded-trader">Source</a> ·
+      <a href="https://github.com/aplicy-com/guarded-trader/blob/main/SECURITY.md">Security</a> ·
+      <a href="https://buymeacoffee.com/aplicy">Buy me a coffee</a></p>
+    <p class="small">No cookies, no trackers, no third-party requests.</p>
+  </div>
+</footer>
+</body>
+</html>
