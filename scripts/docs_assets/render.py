@@ -47,13 +47,17 @@ def telegram_html() -> str:
             f'<div class="msg {side}"><pre>{body}</pre><span class="t">{m["at"]}</span></div>'
         )
     return f"""<!doctype html><meta charset="utf-8"><style>
-body{{margin:0;background:#0e1621;font:15px -apple-system,'Segoe UI',Arial,sans-serif;color:#e9eef3}}
+body{{margin:0;background:#0e1621;color:#e9eef3;
+  font:15px -apple-system,'Segoe UI',Arial,sans-serif}}
 .wrap{{width:560px;margin:0 auto;padding-bottom:16px}}
 header{{background:#17212b;padding:14px 18px;display:flex;gap:12px;align-items:center}}
-.av{{width:40px;height:40px;border-radius:50%;background:#2dd4bf;color:#0b1220;font-weight:800;display:grid;place-items:center}}
+.av{{width:40px;height:40px;border-radius:50%;background:#2dd4bf;color:#0b1220;
+  font-weight:800;display:grid;place-items:center}}
 header b{{display:block}} header small{{color:#7f91a4}}
-.note{{margin:12px 18px;padding:8px 12px;border-radius:8px;background:#2b2412;color:#fbbf24;font-size:12.5px}}
-.msg{{max-width:78%;margin:6px 14px;padding:8px 12px 18px;border-radius:12px;position:relative;clear:both}}
+.note{{margin:12px 18px;padding:8px 12px;border-radius:8px;background:#2b2412;
+  color:#fbbf24;font-size:12.5px}}
+.msg{{max-width:78%;margin:6px 14px;padding:8px 12px 18px;border-radius:12px;
+  position:relative;clear:both}}
 .bot{{background:#182533;float:left;border-bottom-left-radius:4px}}
 .me{{background:#2b5278;float:right;border-bottom-right-radius:4px}}
 pre{{margin:0;white-space:pre-wrap;font:14px/1.4 ui-monospace,'SF Mono',Menlo,monospace}}
@@ -63,14 +67,13 @@ code{{background:#0e1621;padding:1px 4px;border-radius:4px;color:#5eead4}}
 </style><div class="wrap"><header><div class="av">C</div><div><b>Conductor</b>
 <small>bot · dry-run</small></div></header>
 <div class="note">Mock. Replies are produced by the real CommandProcessor against test fakes;
-the chat ID is replaced by &lt;chat-id&gt;. Writes need <code>yes &lt;code&gt;</code> within 60 s.</div>
+the chat ID is replaced by &lt;chat-id&gt;.
+Writes need <code>yes &lt;code&gt;</code> within 60 s.</div>
 {"".join(rows)}<div class="end"></div></div>"""
 
 
 def mermaid_html() -> str:
-    src = re.search(
-        r"```mermaid\n(.*?)```", (REPO / "README.md").read_text(), re.DOTALL
-    ).group(1)
+    src = re.search(r"```mermaid\n(.*?)```", (REPO / "README.md").read_text(), re.DOTALL).group(1)
     return f"""<!doctype html><meta charset="utf-8"><style>
 body{{margin:0;background:#fff}} #d{{display:inline-block;padding:24px}}</style>
 <div id="d"><pre class="mermaid">{html.escape(src)}</pre></div>

@@ -1,7 +1,8 @@
 """Run the real CommandProcessor against in-memory fakes and dump a chat transcript as JSON.
 
 Feeds docs/assets/telegram-halt-flow.png (see docs/assets/README.md). Usage:
-    cd services/conductor && uv run python ../../scripts/docs_assets/telegram_transcript.py <out.json>
+    cd services/conductor
+    uv run python ../../scripts/docs_assets/telegram_transcript.py <out.json>
 No network and no Telegram. CHAT is a made-up number, and it is replaced by <chat-id> in
 the output anyway.
 """
@@ -36,9 +37,7 @@ subprocess.run(
 ledger = SqliteLedger(create_session_factory(create_db_engine(f"sqlite:///{db}")))
 clock = Clock(datetime(2026, 10, 30, 14, 2, tzinfo=UTC))
 ft = FakeFreqtrade()
-ft.open_trades = [
-    open_view(1, "ETH/USD", stake_amount=Decimal(25), profit_abs=Decimal("0.42"))
-]
+ft.open_trades = [open_view(1, "ETH/USD", stake_amount=Decimal(25), profit_abs=Decimal("0.42"))]
 instances = [FreqtradeInstance("primary", ft, ft)]
 notifier = RecordingNotifier()
 ensure_principal(ledger, Decimal(100), notifier=notifier, now=clock)
@@ -66,6 +65,7 @@ for text in ["/kill", "yes K7Q2", "/status", "/resume 1", "yes M3XP"]:
         chat.append({"from": "bot", "text": alert, "at": f"{clock.at:%H:%M}"})
 
 out = json.dumps(chat, indent=1).replace(f"telegram:{CHAT}", "telegram:<chat-id>")
-assert str(CHAT) not in out
+if str(CHAT) in out:
+    sys.exit("chat ID left in the transcript")
 Path(sys.argv[1]).write_text(out)
 print(out)

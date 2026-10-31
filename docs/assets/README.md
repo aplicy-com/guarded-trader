@@ -18,7 +18,7 @@ Needs Docker, `uv`, and Python with Playwright (`pip install playwright && playw
 2. Produce the chat transcript (no network, no Telegram):
    ```
    mkdir -p /tmp/gt-assets
-   cd services/conductor && uv run python ../../scripts/docs_assets/telegram_transcript.py /tmp/gt-assets/telegram.json && cd ../..
+   (cd services/conductor && uv run python ../../scripts/docs_assets/telegram_transcript.py /tmp/gt-assets/telegram.json)
    ```
    Expected: a JSON list of messages; `grep -c '<chat-id>' /tmp/gt-assets/telegram.json` prints a number above 0.
 3. Render all PNGs: `python scripts/docs_assets/render.py /tmp/gt-assets`.
