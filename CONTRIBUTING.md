@@ -19,6 +19,8 @@ From [`CLAUDE.md`](CLAUDE.md) §0. They apply to people and AI assistants alike:
 
 ## How changes are made
 
+- **New here?** Start with a [good first issue](https://github.com/aplicy-com/guarded-trader/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22): each one is small, needs no
+  exchange account or money, and stays away from the trading path.
 - **Discuss first** for anything beyond a small fix: open an issue describing the problem.
 - **Architecture changes need an ADR** in `docs/05-adr/` (MADR format, one decision per file,
   numbered). Supersede old ADRs; don't edit their decisions.
