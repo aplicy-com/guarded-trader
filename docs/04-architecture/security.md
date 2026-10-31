@@ -20,7 +20,7 @@ as non-negotiable regardless of principal size (see `CLAUDE.md` §0).
 | IP whitelist | Enabled, restricted to the trading host's static/known egress IP |
 
 For the live pilot (ADR-0019) the same table applies, with Query Ledger Entries optional, and
-the IP is the VPS's primary IPv4 (203.0.113.10). The key is handed to the `freqtrade` container
+the IP is the VPS's primary IPv4 (`<VPS_STATIC_IP>`, `KRAKEN_EXPECTED_IP` in `.env`). The key is handed to the `freqtrade` container
 only (`infra/docker-compose.live.yml`; never `conductor`, and blank in the dry-run stack), and
 `scripts/kraken-access-check.sh` verifies the scopes behaviourally from the VPS: it expects
 "permission denied" on deposit and withdraw lookups and fails otherwise.
@@ -34,7 +34,7 @@ initiating one.
 
 ## Secrets management
 
-- **LastPass is the system of record** for every secret (exchange key,
+- **the password manager is the system of record** for every secret (exchange key,
   Telegram tokens, Anthropic key, Hetzner API token, Tailscale keys).
 - Local development: `.env` file (git-ignored) on the Mac.
 - VPS runtime: `/opt/ai-trading-agent/.env`, mode `0640`, owner
@@ -153,7 +153,7 @@ revoked.
 | Backup key stolen from the VPS | The B2 application key is write-only (and should be limited to the one bucket): it can add files, not read, list or delete them; 30-day lifecycle; uploads use fresh unique keys | An attacker can fill the bucket with junk (cost, and noise in the 30-day window). Backups contain trade history, not secrets ([`ADR-0016`](../05-adr/0016-backups-write-only-key-no-client-side-encryption.md)). |
 | Backblaze account takeover | MFA on the Backblaze account (operator action); SSE-B2 on the bucket; bucket private | Backups are not client-side encrypted (ADR-0016): an attacker with account access reads trade history and fence figures. No API keys or seed phrases are in them. |
 | Dashboard misused as a write path | GET-only routes, no forms, tests that fail if a write route or form appears; strict CSP; all writes remain on Telegram with confirmation | None known; re-check when 3B adds pages. |
-| Hetzner account or API token compromise | Token held in LastPass, in env only during a run; Hetzner account MFA (operator action, verify) | Attacker can rebuild/delete the server, or read its disk. Revoke the token; rotate every secret on the box. |
+| Hetzner account or API token compromise | Token held in the password manager, in env only during a run; Hetzner account MFA (operator action, verify) | Attacker can rebuild/delete the server, or read its disk. Revoke the token; rotate every secret on the box. |
 | Provider (Hetzner) staff or hypervisor access | Key is trade-only, no withdrawal, IP-whitelisted; $100 principal | Accepted (ADR-0011). Disk not encrypted at rest. |
 | Terraform state leak | State is local and git-ignored; the Tailscale key in it is single-use and expired; no remote backend | State also reveals the server layout; treat as secret anyway (risk register S8). |
 | Tailscale auth key exposure via user-data / metadata service | Single-use, 1-day expiry, revoked after join; cloud-init deletes local copies | The metadata endpoint is reachable from containers. Harmless once the key is consumed. Blocking `169.254.169.254` from containers is a possible later hardening, not done in 3A-0. |
@@ -199,10 +199,10 @@ containment, not merely a quality question resolved by backtesting.
 
 | Data | Sensitivity | Where it lives |
 |---|---|---|
-| Exchange API key/secret | Critical | LastPass; `.env` on Mac and VPS only |
-| Telegram bot token | Critical | LastPass; `.env` on Mac and VPS only |
-| Anthropic API key | High | LastPass; `.env` on Mac and VPS only |
-| Hetzner API token | Critical (full control of the project: can delete or rebuild the server) | LastPass; shell env during a Terraform run only |
+| Exchange API key/secret | Critical | Password manager; `.env` on Mac and VPS only |
+| Telegram bot token | Critical | Password manager; `.env` on Mac and VPS only |
+| Anthropic API key | High | Password manager; `.env` on Mac and VPS only |
+| Hetzner API token | Critical (full control of the project: can delete or rebuild the server) | Password manager; shell env during a Terraform run only |
 | SSH private key (`~/.ssh/ai_trader_vps`) | Critical (root-equivalent on the VPS, given tailnet access) | Mac only, passphrase-protected |
 | Terraform state | High (contains the rendered cloud-init) | Mac only, git-ignored, never pushed |
 | Ledger (fills, balances, P&L) | High (financial, tax-relevant) | Ledger DB, host-local (VPS disk is not encrypted at rest, see ADR-0011); off-host nightly backup to B2 ([`ADR-0016`](../05-adr/0016-backups-write-only-key-no-client-side-encryption.md)) |

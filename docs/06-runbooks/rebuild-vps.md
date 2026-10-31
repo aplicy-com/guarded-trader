@@ -16,7 +16,7 @@ runbook's "replace a running system" flow).
 
 **What survives a rebuild:** the static IPv4 (it is a separate Terraform
 resource), the Hetzner firewall, your SSH key resource, everything in git,
-everything in LastPass, and the nightly backups in Backblaze B2.
+everything in the password manager, and the nightly backups in Backblaze B2.
 **What does not:** everything on the server's disk (the ledger, Freqtrade's
 dry-run database, logs, `/opt/ai-trading-agent/.env`) **and the Tailscale
 device**. The rebuilt server is a brand-new tailnet device: new `100.x`
@@ -67,7 +67,7 @@ Kraken that keep working while the server is gone, and anything else is unmanage
 open orders**. After a rebuild the new server comes up **dry-run** (the mode file is not
 copied); step 7 below restores the live ledger and step 8 brings it back to live through
 `scripts/trading-mode.sh live`, which re-runs its key, ledger, R5 and mode gates.
-The Kraken key goes back in via `make push-env` (it is in your `.env` and LastPass); if the
+The Kraken key goes back in via `make push-env` (it is in your `.env` and the password manager); if the
 rebuild was a compromise response, create a **new** key first (go-live-pilot.md Part C) and
 revoke the old one on Kraken before anything else.
 
@@ -102,7 +102,7 @@ revoke the old one on Kraken before anything else.
    `conductor` the line `halts still active in this copy: #<n> kill_switch`.
    If it does not show the halt you just made, stop: the backup is not the
    current state.
-3. You need: `TF_VAR_hcloud_token` (from LastPass) and a **new** Tailscale
+3. You need: `TF_VAR_hcloud_token` (from the password manager) and a **new** Tailscale
    auth key. Create the key exactly as in `provision-vps.md` step 5
    (Reusable off, Ephemeral off, Expiry 1 day). **Copy the secret key
    (`tskey-auth-...`, shown once), not the key ID.** With the ID the server

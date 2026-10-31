@@ -72,7 +72,7 @@ Drawn from the FIA automated-trading risk-controls whitepaper, retail practition
 | Kill switch | Blocks all *new* orders, persists across restarts; separate **flatten** command; both reachable via Telegram | Conductor |
 | "Nuclear" protocol | On data loss/exchange outage/anomaly: cancel open orders, flatten if possible, halt, log state, alert | Conductor runbook |
 | Profit sweep | Nightly: profit above daily cap → separate Kraken sub-account / wallet the bot has no key for | Ledger job |
-| Key hygiene | API key: query + trade only, **no withdrawal**, IP-whitelisted; secrets in env/LastPass, never in repo | Ops |
+| Key hygiene | API key: query + trade only, **no withdrawal**, IP-whitelisted; secrets in env or a password manager, never in repo | Ops |
 | Overfitting defence | ≤6 tunable params per strategy; walk-forward (anchored + rolling); conservative fees/slippage in backtests; re-validate every 4–6 weeks; reject if OOS Sharpe < 50% of IS | Research loop |
 | Observability | Equity curve, exposure, fee ratio, turnover, halt state; alert on silence (heartbeat) | Grafana/Telegram |
 

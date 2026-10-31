@@ -69,7 +69,7 @@ pilot is therefore *not* an attempt to make money and must not be judged or scal
    `start-stop.md`, "R5 abort".
 8. **Key containment and scope.** The Kraken key reaches the `freqtrade` container only (never
    `conductor`, never the dry-run container, not even under its raw name), via
-   `infra/docker-compose.live.yml`. It is IP-whitelisted to the VPS (203.0.113.10) and has Query
+   `infra/docker-compose.live.yml`. It is IP-whitelisted to the VPS (`<VPS_STATIC_IP>`) and has Query
    funds, Query open/closed orders, Create/modify orders and Cancel/close orders **only**: no
    withdraw, no deposit, no funding. A **query-only** key is created and tested first from the VPS;
    `scripts/kraken-access-check.sh` verifies scopes behaviourally (read, validate-only order,
@@ -107,7 +107,7 @@ pilot is therefore *not* an attempt to make money and must not be judged or scal
     `backups/<source>/...` keys, which are dry-run backups. The restore and rebuild runbooks use the
     mode, the matching volume (`infra_conductor-data-live`) and trade DB (`tradesv3.live.sqlite`).
 
-## Explicit overrides (the operator, 2026-10-05)
+## Explicit overrides (operator, 2026-10-05)
 
 - **`CLAUDE.md` §4 promotion ladder** (backtest → walk-forward → 3-week paper → 25% → 100%) is
   not applied to this pilot: it is a plumbing test of a no-edge strategy at 20% of the planned

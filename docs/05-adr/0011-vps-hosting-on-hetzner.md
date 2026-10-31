@@ -72,7 +72,7 @@ Chosen option: **Hetzner Cloud, EU, provisioned with Terraform
   `TF_VAR_tailscale_authkey`) exist only as shell environment variables.
   Application secrets live in `/opt/ai-trading-agent/.env`, mode `0640`,
   owner `root:deploy`, copied by `make push-env` from the operator's local
-  `.env`. LastPass is the system of record for every secret.
+  `.env`. The password manager is the system of record for every secret.
 - **Deploy:** `make deploy` ships the committed state of `main`
   (`git archive`) by rsync over Tailscale, then `docker compose up -d`.
   No CI/CD yet.

@@ -3,7 +3,7 @@
 <!-- Copy this file to `results-YYYY-MM-DD.md` for a new run and fill it in. One file per
      session day; if a drill is re-run after a fix, add a new dated file and link it here. -->
 
-**Operator:** the operator  
+**Operator:** <operator>  
 **VPS:** `ai-trader-vps`, dry-run, `TRADING_MODE=dry_run` confirmed: yes / no  
 **Commit deployed** (`git rev-parse --short main` at deploy time): `        `  
 **Procedures:** [`README.md`](README.md)

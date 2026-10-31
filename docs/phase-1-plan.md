@@ -1,6 +1,6 @@
 # Phase 1 — Repo & Docs Scaffold
 
-**Repo:** `~/workspace/ai-trading-agent` · **Owner:** the original author (personal; transfer to Aplicy GitHub on success)
+**Repo:** `~/workspace/ai-trading-agent` · **Owner:** the operator (personal; transfer to Aplicy GitHub on success)
 **Goal:** Every decision, risk and rule written down before a line of trading code exists. Docs-first, open-source-ready from day one.
 **Out of scope:** any code that talks to Kraken.
 
