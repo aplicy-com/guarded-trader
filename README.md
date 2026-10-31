@@ -164,6 +164,7 @@ repository; they never operate the trading system.
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): the safety rules are review criteria, and strategy
   ideas must be pre-registered.
+- [Good first issues](https://github.com/aplicy-com/guarded-trader/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22): small tasks off the trading path, a good place to start.
 - [`SECURITY.md`](SECURITY.md): report vulnerabilities privately (security@aplicy.com).
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 - Apache License 2.0, © 2026 Aplicy Inc. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE)
