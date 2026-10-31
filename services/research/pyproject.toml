@@ -1,0 +1,36 @@
+[project]
+name = "research-harness"
+version = "0.1.0"
+description = "Sandboxed backtest, walk-forward, random-entry null and Deflated Sharpe for ai-trading-agent research (ADR-0021)."
+requires-python = ">=3.12"
+# Runtime dependencies are whatever the pinned Freqtrade image ships (numpy, pandas, scipy);
+# these pins are only for running the pure-module tests on the host.
+dependencies = [
+    "numpy>=2.3",
+    "pandas>=2.3",
+    "scipy>=1.16",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "ruff==0.16.10",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["strategies"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4", "RUF"]
+ignore = ["C408", "RUF007"]

@@ -1,0 +1,16 @@
+{
+  "$comment": "Pinned SHA-256 for Kraken's official OHLCVT bulk archive (ADR-0020). full_parts and full_zip_sha256 are the values Kraken publishes (OHLCVT_Full_PARTS_SHA256SUMS.txt and the support article) and were reproduced locally on 2026-10-14. Kraken publishes no checksum for the quarterly incrementals: their hashes below are trust-on-first-download, pinned so a silently replaced file is detected. When Kraken ships a new release, update this file in its own commit after re-running `kraken_archive.py verify`.",
+  "base_url": "https://assets.kraken.com/marketing/institutions",
+  "verified_utc": "2026-10-14",
+  "full_parts": {
+    "Kraken_OHLCVT_Full.zip.part00": "12ce809a0cc12c421f9bb871434f71eca8b3c258cb194efae258318a683b9491",
+    "Kraken_OHLCVT_Full.zip.part01": "7086e1915e79b5157fae05978ca9603da7f918a091652b5fdedda7d7a53d03ee",
+    "Kraken_OHLCVT_Full.zip.part02": "880fcf84e177e50ca946f3f5cb6d57c721a4950853ca1bf6bdde526896013cc1",
+    "Kraken_OHLCVT_Full.zip.part03": "3fa1fdfbb94c5a3cc861068a11b5c309502a8ac8da0f4c6f091c5a2968451157",
+    "Kraken_OHLCVT_Full.zip.part04": "db2c8b80c92a2e09b3f71f464b0b55574bd56c645d2560169dbbe4887b9c00eb"
+  },
+  "full_zip_sha256": "bc273e9027470b07d790a7fa4df9bb43f0dfc527c20c6ecae48402e123e7b1c7",
+  "incrementals": {
+    "Kraken_OHLCVT_2026Q3.zip": "96daae63c7b3acb522892e1f602f9c564d1a3fb659089d9b0699282f30d41226"
+  }
+}

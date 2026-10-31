@@ -1,0 +1,35 @@
+{
+  "$comment": "Pre-registered candidates (docs/research/evidence-review-2026-10/02-strategy-candidates.md). Committed before any of them is run; the harness copies hypothesis and params into the trial registry before backtesting. Parameters are the documented defaults and are not tuned. Editing a hypothesis or parameter after a result exists is a new trial, never an edit of an old one.",
+  "canonical_timerange": "20220101-20261001",
+  "canonical_rationale": "Contains the 2022 bear and the Nov 2025 - Sep 2026 drawdown and chop (01-evidence-review.md Q1 market context); ends at the last complete day of the Kraken archive (2026-09-30).",
+  "candidates": {
+    "Baseline4h": {
+      "family": "ema-cross",
+      "timeframe": "4h",
+      "files": ["services/freqtrade/user_data/strategies/Baseline4h.py"],
+      "params": {"ema_fast_period": 20, "ema_slow_period": 50, "atr_period": 14, "atr_multiplier": 2.0},
+      "hypothesis": "Reference trial, not a candidate: the existing EMA(20/50) cross with a fixed 2x ATR stop, re-scored on Kraken-native data at the verified Tier-1 taker fee so C05 has a same-data, same-fee control. Expected to fail Gate 1 as it did on Binance data at 0.36% (docs/research/03-baseline-backtest.md)."
+    },
+    "C05EmaFlip4h": {
+      "family": "ema-cross",
+      "timeframe": "4h",
+      "files": ["services/research/strategies/C05EmaFlip4h.py"],
+      "params": {"ema_fast_period": 20, "ema_slow_period": 50, "catastrophe_stop": -0.20},
+      "hypothesis": "Removing Baseline4h's fixed 2x ATR stop (keeping only a -20% catastrophe stop) improves its daily-equity Sharpe and reduces losing-trade count on the same data and fee, because short-horizon stops on trend rules have a negative stopping premium. If the result is unchanged, the EMA cross has no edge. Predicted to be indistinguishable from its random-entry null and to fail the fee-ratio gate on 4h bars at Tier-1 fees."
+    },
+    "C01Tsmom1d": {
+      "family": "tsmom",
+      "timeframe": "1d",
+      "files": ["services/research/strategies/C01Tsmom1d.py"],
+      "params": {"lookback_days": 21, "eval_tf": "1d", "catastrophe_stop": -0.20, "slot_fraction": 0.5},
+      "hypothesis": "Weekly-scale (21-day) time-series momentum, long-flat with a signal-flip exit on daily bars, earns a positive after-cost daily-equity Sharpe on BTC and large caps and beats a random-entry null with the same exit, because 1-4 week returns continue for 1-3 weeks. Expected smaller than published, concentrated in bull legs, weaker after 2021; expected trade count roughly 60-120 per 3 years."
+    },
+    "C04TsmomVolScaled1d": {
+      "family": "tsmom",
+      "timeframe": "1d",
+      "files": ["services/research/strategies/C04TsmomVolScaled1d.py", "services/research/strategies/C01Tsmom1d.py"],
+      "params": {"lookback_days": 21, "catastrophe_stop": -0.20, "sigma_target": 0.20, "vol_window_days": 30, "band": 0.25, "max_fraction": 0.5},
+      "hypothesis": "Scaling C01's position size by min(1, 20% / realised 30-day vol), with scale-downs only, cuts C01's maximum drawdown and the volatility of its equity curve materially while lowering its return. Judged on drawdown and vol-of-vol, not on return; expected to fail the IS Sharpe >= 1.0 floor."
+    }
+  }
+}

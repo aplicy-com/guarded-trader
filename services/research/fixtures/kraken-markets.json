@@ -1,0 +1,1123 @@
+{
+ "captured_utc": "2026-10-15T01:49:58.569Z",
+ "ccxt_version": "4.5.76",
+ "exchange": "kraken",
+ "markets": {
+  "BTC/USD": {
+   "active": true,
+   "altname": "XBTUSD",
+   "base": "BTC",
+   "baseId": "BTC",
+   "contract": false,
+   "contractSize": null,
+   "created": null,
+   "expiry": null,
+   "expiryDatetime": null,
+   "future": false,
+   "id": "XXBTZUSD",
+   "index": null,
+   "info": {
+    "aclass_base": "currency",
+    "aclass_quote": "currency",
+    "altname": "XBTUSD",
+    "base": "XXBT",
+    "cost_decimals": 5,
+    "costmin": "0.5",
+    "execution_venue": "international",
+    "fee_volume_currency": "ZUSD",
+    "fees": [],
+    "fees_maker": [],
+    "leverage_buy": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "leverage_sell": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "long_position_limit": 350,
+    "lot": "unit",
+    "lot_decimals": 8,
+    "lot_multiplier": 1,
+    "margin_call": 80,
+    "margin_stop": 40,
+    "ordermin": "0.00006",
+    "pair_decimals": 1,
+    "quote": "ZUSD",
+    "short_position_limit": 250,
+    "status": "online",
+    "tick_size": "0.1",
+    "wsname": "XBT/USD"
+   },
+   "inverse": null,
+   "limits": {
+    "amount": {
+     "max": null,
+     "min": 6e-05
+    },
+    "cost": {
+     "max": null,
+     "min": 0.5
+    },
+    "leverage": {
+     "max": 10.0,
+     "min": 1.0
+    },
+    "price": {
+     "max": null,
+     "min": null
+    }
+   },
+   "linear": null,
+   "lowercaseId": null,
+   "maker": 0.0016,
+   "margin": true,
+   "marginModes": {
+    "cross": null,
+    "isolated": null
+   },
+   "option": false,
+   "optionType": null,
+   "percentage": true,
+   "precision": {
+    "amount": 1e-08,
+    "price": 0.1
+   },
+   "quote": "USD",
+   "quoteId": "USD",
+   "settle": null,
+   "settleId": null,
+   "spot": true,
+   "strike": null,
+   "subType": null,
+   "swap": false,
+   "symbol": "BTC/USD",
+   "taker": 0.0026,
+   "tierBased": true,
+   "tiers": {
+    "maker": [
+     [
+      0.0,
+      0.0016
+     ],
+     [
+      50000.0,
+      0.0014
+     ],
+     [
+      100000.0,
+      0.0012
+     ],
+     [
+      250000.0,
+      0.001
+     ],
+     [
+      500000.0,
+      0.0008
+     ],
+     [
+      1000000.0,
+      0.0006
+     ],
+     [
+      2500000.0,
+      0.0004
+     ],
+     [
+      5000000.0,
+      0.0002
+     ],
+     [
+      10000000.0,
+      0.0
+     ]
+    ],
+    "taker": [
+     [
+      0.0,
+      0.0026
+     ],
+     [
+      50000.0,
+      0.0024
+     ],
+     [
+      100000.0,
+      0.0022
+     ],
+     [
+      250000.0,
+      0.002
+     ],
+     [
+      500000.0,
+      0.0018
+     ],
+     [
+      1000000.0,
+      0.0016
+     ],
+     [
+      2500000.0,
+      0.0014
+     ],
+     [
+      5000000.0,
+      0.0012
+     ],
+     [
+      10000000.0,
+      0.0001
+     ]
+    ]
+   },
+   "type": "spot",
+   "wsId": "XBT/USD"
+  },
+  "ETH/USD": {
+   "active": true,
+   "altname": "ETHUSD",
+   "base": "ETH",
+   "baseId": "ETH",
+   "contract": false,
+   "contractSize": null,
+   "created": null,
+   "expiry": null,
+   "expiryDatetime": null,
+   "future": false,
+   "id": "XETHZUSD",
+   "index": null,
+   "info": {
+    "aclass_base": "currency",
+    "aclass_quote": "currency",
+    "altname": "ETHUSD",
+    "base": "XETH",
+    "cost_decimals": 5,
+    "costmin": "0.5",
+    "execution_venue": "international",
+    "fee_volume_currency": "ZUSD",
+    "fees": [],
+    "fees_maker": [],
+    "leverage_buy": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "leverage_sell": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "long_position_limit": 6000,
+    "lot": "unit",
+    "lot_decimals": 8,
+    "lot_multiplier": 1,
+    "margin_call": 80,
+    "margin_stop": 40,
+    "ordermin": "0.002",
+    "pair_decimals": 2,
+    "quote": "ZUSD",
+    "short_position_limit": 6000,
+    "status": "online",
+    "tick_size": "0.01",
+    "wsname": "ETH/USD"
+   },
+   "inverse": null,
+   "limits": {
+    "amount": {
+     "max": null,
+     "min": 0.002
+    },
+    "cost": {
+     "max": null,
+     "min": 0.5
+    },
+    "leverage": {
+     "max": 10.0,
+     "min": 1.0
+    },
+    "price": {
+     "max": null,
+     "min": null
+    }
+   },
+   "linear": null,
+   "lowercaseId": null,
+   "maker": 0.0016,
+   "margin": true,
+   "marginModes": {
+    "cross": null,
+    "isolated": null
+   },
+   "option": false,
+   "optionType": null,
+   "percentage": true,
+   "precision": {
+    "amount": 1e-08,
+    "price": 0.01
+   },
+   "quote": "USD",
+   "quoteId": "USD",
+   "settle": null,
+   "settleId": null,
+   "spot": true,
+   "strike": null,
+   "subType": null,
+   "swap": false,
+   "symbol": "ETH/USD",
+   "taker": 0.0026,
+   "tierBased": true,
+   "tiers": {
+    "maker": [
+     [
+      0.0,
+      0.0016
+     ],
+     [
+      50000.0,
+      0.0014
+     ],
+     [
+      100000.0,
+      0.0012
+     ],
+     [
+      250000.0,
+      0.001
+     ],
+     [
+      500000.0,
+      0.0008
+     ],
+     [
+      1000000.0,
+      0.0006
+     ],
+     [
+      2500000.0,
+      0.0004
+     ],
+     [
+      5000000.0,
+      0.0002
+     ],
+     [
+      10000000.0,
+      0.0
+     ]
+    ],
+    "taker": [
+     [
+      0.0,
+      0.0026
+     ],
+     [
+      50000.0,
+      0.0024
+     ],
+     [
+      100000.0,
+      0.0022
+     ],
+     [
+      250000.0,
+      0.002
+     ],
+     [
+      500000.0,
+      0.0018
+     ],
+     [
+      1000000.0,
+      0.0016
+     ],
+     [
+      2500000.0,
+      0.0014
+     ],
+     [
+      5000000.0,
+      0.0012
+     ],
+     [
+      10000000.0,
+      0.0001
+     ]
+    ]
+   },
+   "type": "spot",
+   "wsId": "ETH/USD"
+  },
+  "LINK/USD": {
+   "active": true,
+   "altname": "LINKUSD",
+   "base": "LINK",
+   "baseId": "LINK",
+   "contract": false,
+   "contractSize": null,
+   "created": null,
+   "expiry": null,
+   "expiryDatetime": null,
+   "future": false,
+   "id": "LINKUSD",
+   "index": null,
+   "info": {
+    "aclass_base": "currency",
+    "aclass_quote": "currency",
+    "altname": "LINKUSD",
+    "base": "LINK",
+    "cost_decimals": 6,
+    "costmin": "0.5",
+    "execution_venue": "international",
+    "fee_volume_currency": "ZUSD",
+    "fees": [],
+    "fees_maker": [],
+    "leverage_buy": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "leverage_sell": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "long_position_limit": 110000,
+    "lot": "unit",
+    "lot_decimals": 8,
+    "lot_multiplier": 1,
+    "margin_call": 80,
+    "margin_stop": 40,
+    "ordermin": "0.35",
+    "pair_decimals": 5,
+    "quote": "ZUSD",
+    "short_position_limit": 79000,
+    "status": "online",
+    "tick_size": "0.00001",
+    "wsname": "LINK/USD"
+   },
+   "inverse": null,
+   "limits": {
+    "amount": {
+     "max": null,
+     "min": 0.35
+    },
+    "cost": {
+     "max": null,
+     "min": 0.5
+    },
+    "leverage": {
+     "max": 10.0,
+     "min": 1.0
+    },
+    "price": {
+     "max": null,
+     "min": null
+    }
+   },
+   "linear": null,
+   "lowercaseId": null,
+   "maker": 0.0016,
+   "margin": true,
+   "marginModes": {
+    "cross": null,
+    "isolated": null
+   },
+   "option": false,
+   "optionType": null,
+   "percentage": true,
+   "precision": {
+    "amount": 1e-08,
+    "price": 1e-05
+   },
+   "quote": "USD",
+   "quoteId": "USD",
+   "settle": null,
+   "settleId": null,
+   "spot": true,
+   "strike": null,
+   "subType": null,
+   "swap": false,
+   "symbol": "LINK/USD",
+   "taker": 0.0026,
+   "tierBased": true,
+   "tiers": {
+    "maker": [
+     [
+      0.0,
+      0.0016
+     ],
+     [
+      50000.0,
+      0.0014
+     ],
+     [
+      100000.0,
+      0.0012
+     ],
+     [
+      250000.0,
+      0.001
+     ],
+     [
+      500000.0,
+      0.0008
+     ],
+     [
+      1000000.0,
+      0.0006
+     ],
+     [
+      2500000.0,
+      0.0004
+     ],
+     [
+      5000000.0,
+      0.0002
+     ],
+     [
+      10000000.0,
+      0.0
+     ]
+    ],
+    "taker": [
+     [
+      0.0,
+      0.0026
+     ],
+     [
+      50000.0,
+      0.0024
+     ],
+     [
+      100000.0,
+      0.0022
+     ],
+     [
+      250000.0,
+      0.002
+     ],
+     [
+      500000.0,
+      0.0018
+     ],
+     [
+      1000000.0,
+      0.0016
+     ],
+     [
+      2500000.0,
+      0.0014
+     ],
+     [
+      5000000.0,
+      0.0012
+     ],
+     [
+      10000000.0,
+      0.0001
+     ]
+    ]
+   },
+   "type": "spot",
+   "wsId": "LINK/USD"
+  },
+  "LTC/USD": {
+   "active": true,
+   "altname": "LTCUSD",
+   "base": "LTC",
+   "baseId": "LTC",
+   "contract": false,
+   "contractSize": null,
+   "created": null,
+   "expiry": null,
+   "expiryDatetime": null,
+   "future": false,
+   "id": "XLTCZUSD",
+   "index": null,
+   "info": {
+    "aclass_base": "currency",
+    "aclass_quote": "currency",
+    "altname": "LTCUSD",
+    "base": "XLTC",
+    "cost_decimals": 5,
+    "costmin": "0.5",
+    "execution_venue": "international",
+    "fee_volume_currency": "ZUSD",
+    "fees": [],
+    "fees_maker": [],
+    "leverage_buy": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "leverage_sell": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "long_position_limit": 31000,
+    "lot": "unit",
+    "lot_decimals": 8,
+    "lot_multiplier": 1,
+    "margin_call": 80,
+    "margin_stop": 40,
+    "ordermin": "0.08",
+    "pair_decimals": 2,
+    "quote": "ZUSD",
+    "short_position_limit": 21000,
+    "status": "online",
+    "tick_size": "0.01",
+    "wsname": "LTC/USD"
+   },
+   "inverse": null,
+   "limits": {
+    "amount": {
+     "max": null,
+     "min": 0.08
+    },
+    "cost": {
+     "max": null,
+     "min": 0.5
+    },
+    "leverage": {
+     "max": 10.0,
+     "min": 1.0
+    },
+    "price": {
+     "max": null,
+     "min": null
+    }
+   },
+   "linear": null,
+   "lowercaseId": null,
+   "maker": 0.0016,
+   "margin": true,
+   "marginModes": {
+    "cross": null,
+    "isolated": null
+   },
+   "option": false,
+   "optionType": null,
+   "percentage": true,
+   "precision": {
+    "amount": 1e-08,
+    "price": 0.01
+   },
+   "quote": "USD",
+   "quoteId": "USD",
+   "settle": null,
+   "settleId": null,
+   "spot": true,
+   "strike": null,
+   "subType": null,
+   "swap": false,
+   "symbol": "LTC/USD",
+   "taker": 0.0026,
+   "tierBased": true,
+   "tiers": {
+    "maker": [
+     [
+      0.0,
+      0.0016
+     ],
+     [
+      50000.0,
+      0.0014
+     ],
+     [
+      100000.0,
+      0.0012
+     ],
+     [
+      250000.0,
+      0.001
+     ],
+     [
+      500000.0,
+      0.0008
+     ],
+     [
+      1000000.0,
+      0.0006
+     ],
+     [
+      2500000.0,
+      0.0004
+     ],
+     [
+      5000000.0,
+      0.0002
+     ],
+     [
+      10000000.0,
+      0.0
+     ]
+    ],
+    "taker": [
+     [
+      0.0,
+      0.0026
+     ],
+     [
+      50000.0,
+      0.0024
+     ],
+     [
+      100000.0,
+      0.0022
+     ],
+     [
+      250000.0,
+      0.002
+     ],
+     [
+      500000.0,
+      0.0018
+     ],
+     [
+      1000000.0,
+      0.0016
+     ],
+     [
+      2500000.0,
+      0.0014
+     ],
+     [
+      5000000.0,
+      0.0012
+     ],
+     [
+      10000000.0,
+      0.0001
+     ]
+    ]
+   },
+   "type": "spot",
+   "wsId": "LTC/USD"
+  },
+  "SOL/USD": {
+   "active": true,
+   "altname": "SOLUSD",
+   "base": "SOL",
+   "baseId": "SOL",
+   "contract": false,
+   "contractSize": null,
+   "created": null,
+   "expiry": null,
+   "expiryDatetime": null,
+   "future": false,
+   "id": "SOLUSD",
+   "index": null,
+   "info": {
+    "aclass_base": "currency",
+    "aclass_quote": "currency",
+    "altname": "SOLUSD",
+    "base": "SOL",
+    "cost_decimals": 5,
+    "costmin": "0.5",
+    "execution_venue": "international",
+    "fee_volume_currency": "ZUSD",
+    "fees": [],
+    "fees_maker": [],
+    "leverage_buy": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "leverage_sell": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "long_position_limit": 37000,
+    "lot": "unit",
+    "lot_decimals": 8,
+    "lot_multiplier": 1,
+    "margin_call": 80,
+    "margin_stop": 40,
+    "ordermin": "0.05",
+    "pair_decimals": 2,
+    "quote": "ZUSD",
+    "short_position_limit": 24000,
+    "status": "online",
+    "tick_size": "0.01",
+    "wsname": "SOL/USD"
+   },
+   "inverse": null,
+   "limits": {
+    "amount": {
+     "max": null,
+     "min": 0.05
+    },
+    "cost": {
+     "max": null,
+     "min": 0.5
+    },
+    "leverage": {
+     "max": 10.0,
+     "min": 1.0
+    },
+    "price": {
+     "max": null,
+     "min": null
+    }
+   },
+   "linear": null,
+   "lowercaseId": null,
+   "maker": 0.0016,
+   "margin": true,
+   "marginModes": {
+    "cross": null,
+    "isolated": null
+   },
+   "option": false,
+   "optionType": null,
+   "percentage": true,
+   "precision": {
+    "amount": 1e-08,
+    "price": 0.01
+   },
+   "quote": "USD",
+   "quoteId": "USD",
+   "settle": null,
+   "settleId": null,
+   "spot": true,
+   "strike": null,
+   "subType": null,
+   "swap": false,
+   "symbol": "SOL/USD",
+   "taker": 0.0026,
+   "tierBased": true,
+   "tiers": {
+    "maker": [
+     [
+      0.0,
+      0.0016
+     ],
+     [
+      50000.0,
+      0.0014
+     ],
+     [
+      100000.0,
+      0.0012
+     ],
+     [
+      250000.0,
+      0.001
+     ],
+     [
+      500000.0,
+      0.0008
+     ],
+     [
+      1000000.0,
+      0.0006
+     ],
+     [
+      2500000.0,
+      0.0004
+     ],
+     [
+      5000000.0,
+      0.0002
+     ],
+     [
+      10000000.0,
+      0.0
+     ]
+    ],
+    "taker": [
+     [
+      0.0,
+      0.0026
+     ],
+     [
+      50000.0,
+      0.0024
+     ],
+     [
+      100000.0,
+      0.0022
+     ],
+     [
+      250000.0,
+      0.002
+     ],
+     [
+      500000.0,
+      0.0018
+     ],
+     [
+      1000000.0,
+      0.0016
+     ],
+     [
+      2500000.0,
+      0.0014
+     ],
+     [
+      5000000.0,
+      0.0012
+     ],
+     [
+      10000000.0,
+      0.0001
+     ]
+    ]
+   },
+   "type": "spot",
+   "wsId": "SOL/USD"
+  },
+  "XRP/USD": {
+   "active": true,
+   "altname": "XRPUSD",
+   "base": "XRP",
+   "baseId": "XRP",
+   "contract": false,
+   "contractSize": null,
+   "created": null,
+   "expiry": null,
+   "expiryDatetime": null,
+   "future": false,
+   "id": "XXRPZUSD",
+   "index": null,
+   "info": {
+    "aclass_base": "currency",
+    "aclass_quote": "currency",
+    "altname": "XRPUSD",
+    "base": "XXRP",
+    "cost_decimals": 8,
+    "costmin": "0.5",
+    "execution_venue": "international",
+    "fee_volume_currency": "ZUSD",
+    "fees": [],
+    "fees_maker": [],
+    "leverage_buy": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "leverage_sell": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "long_position_limit": 3200000,
+    "lot": "unit",
+    "lot_decimals": 8,
+    "lot_multiplier": 1,
+    "margin_call": 80,
+    "margin_stop": 40,
+    "ordermin": "4",
+    "pair_decimals": 5,
+    "quote": "ZUSD",
+    "short_position_limit": 1800000,
+    "status": "online",
+    "tick_size": "0.00001",
+    "wsname": "XRP/USD"
+   },
+   "inverse": null,
+   "limits": {
+    "amount": {
+     "max": null,
+     "min": 4.0
+    },
+    "cost": {
+     "max": null,
+     "min": 0.5
+    },
+    "leverage": {
+     "max": 10.0,
+     "min": 1.0
+    },
+    "price": {
+     "max": null,
+     "min": null
+    }
+   },
+   "linear": null,
+   "lowercaseId": null,
+   "maker": 0.0016,
+   "margin": true,
+   "marginModes": {
+    "cross": null,
+    "isolated": null
+   },
+   "option": false,
+   "optionType": null,
+   "percentage": true,
+   "precision": {
+    "amount": 1e-08,
+    "price": 1e-05
+   },
+   "quote": "USD",
+   "quoteId": "USD",
+   "settle": null,
+   "settleId": null,
+   "spot": true,
+   "strike": null,
+   "subType": null,
+   "swap": false,
+   "symbol": "XRP/USD",
+   "taker": 0.0026,
+   "tierBased": true,
+   "tiers": {
+    "maker": [
+     [
+      0.0,
+      0.0016
+     ],
+     [
+      50000.0,
+      0.0014
+     ],
+     [
+      100000.0,
+      0.0012
+     ],
+     [
+      250000.0,
+      0.001
+     ],
+     [
+      500000.0,
+      0.0008
+     ],
+     [
+      1000000.0,
+      0.0006
+     ],
+     [
+      2500000.0,
+      0.0004
+     ],
+     [
+      5000000.0,
+      0.0002
+     ],
+     [
+      10000000.0,
+      0.0
+     ]
+    ],
+    "taker": [
+     [
+      0.0,
+      0.0026
+     ],
+     [
+      50000.0,
+      0.0024
+     ],
+     [
+      100000.0,
+      0.0022
+     ],
+     [
+      250000.0,
+      0.002
+     ],
+     [
+      500000.0,
+      0.0018
+     ],
+     [
+      1000000.0,
+      0.0016
+     ],
+     [
+      2500000.0,
+      0.0014
+     ],
+     [
+      5000000.0,
+      0.0012
+     ],
+     [
+      10000000.0,
+      0.0001
+     ]
+    ]
+   },
+   "type": "spot",
+   "wsId": "XRP/USD"
+  }
+ }
+}

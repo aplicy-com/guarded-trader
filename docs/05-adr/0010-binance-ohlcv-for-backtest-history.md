@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted — 2026-09-09
+Superseded by [ADR-0020](0020-kraken-archive-for-backtest-history.md) — 2026-10-14.
+Originally accepted 2026-09-09.
 
 ## Context and problem statement
 

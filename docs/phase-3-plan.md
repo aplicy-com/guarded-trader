@@ -134,8 +134,8 @@ Each package = one branch, plan mode first, one PR-equivalent merge to `main`.
 
 **3B-1 Backtest / walk-forward harness** (`feat/wf-harness`) · Opus
 - Runs in an ephemeral container: `network=none`, read-only data mount, CPU/memory/time limits.
-- Anchored + rolling walk-forward on 2y Binance 4h data (ADR-0010).
-- Computes every Gate 1 metric exactly as defined in `08-paper-exit-criteria.md`: daily-equity Sharpe, IS ≥ 1.0, OOS ≥ 50% IS, force-exit exclusion, 30% single-trade dominance, fee ratio, **expected trades per 8 weeks** (new — rejects strategies that can't reach 20 trades).
+- Anchored + rolling walk-forward on Kraken's official archive, canonical timerange 2022-01-01 → 2026-10-01 (ADR-0020, superseding ADR-0010's Binance data).
+- Computes every Gate 1 metric exactly as defined in `08-paper-exit-criteria.md`: daily-equity Sharpe, IS ≥ 1.0, OOS ≥ 50% IS, force-exit exclusion, 30% single-trade dominance, fee ratio, ≥ 100 trades over the canonical timerange, random-entry null, trial registry and Deflated Sharpe (ADR-0021 replaced the earlier "expected trades per 8 weeks ≥ 20" check).
 - Output: machine-readable result JSON + human report.
 
 **3B-2 Candidate code admission** (`feat/admission`) · Opus
@@ -146,7 +146,7 @@ Each package = one branch, plan mode first, one PR-equivalent merge to `main`.
 **3B-3 Research loop** (`feat/research-loop`) · Opus
 - Nightly job: assemble context (recent ledger performance, regime summary, prior candidates + why they failed — a rejection memory, per FinMem), prompt Claude, receive strategy file + rationale.
 - Prompt templates versioned in git; every prompt/response stored with SHA-256 hash (NFR1).
-- Research brief hard constraints: 4h/1d, maker-preferred, profit protection required, target ≥ 20 trades/8 weeks across the whitelist, fee-aware.
+- Research brief hard constraints: 4h/1d, maker-preferred, profit protection required, fee-aware at Kraken Tier-1 taker cost (0.80% + 0.10% slippage per side); no trades-per-8-weeks target (ADR-0021).
 - R6 budget: per-run token estimate, 80% alert, 100% pause (trading unaffected).
 - Weekly Opus review run: critique of the week's candidates and live/paper behaviour.
 
@@ -163,7 +163,7 @@ Each package = one branch, plan mode first, one PR-equivalent merge to `main`.
 
 ### 3C — Validation
 
-- Up to 3 candidates in parallel paper on the VPS, evaluated against Gate 2 (window until ≥ 3 weeks and ≥ 20 trades, capped at 8 weeks; backtest-consistency primary).
+- Up to 3 candidates in parallel paper on the VPS, evaluated against Gate 2 (window until ≥ 3 weeks and a 20-trade fill-rate sample, capped at 8 weeks; backtest-consistency primary; ADR-0021).
 - `08-paper-exit-criteria.md` numbers frozen before the first candidate starts.
 - Weekly review by you (dashboard + Telegram summary); no parameter changes mid-window.
 - In parallel: API key creation (2E) — Query + Trade, no Withdraw, IP-whitelisted to the VPS static IP; stored only on VPS `.env` + LastPass. Still dry-run.

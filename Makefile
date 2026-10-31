@@ -1,6 +1,7 @@
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
 .PHONY: up down logs download-data backtest shell market-facts \
+	kraken-data kraken-crossval research-test research-lint research-run \
 	vps-plan vps-apply vps-lockdown verify-lockdown ssh \
 	conductor-test conductor-lint conductor-shell push-env deploy-files deploy logs-remote \
 	go-live go-dry-run trading-mode-status pilot-sizing
@@ -15,20 +16,47 @@ logs:
 	$(COMPOSE) logs -f --tail 200 freqtrade
 
 download-data:
-	# Freqtrade's own `download-data` refuses to run for Kraken (its public
-	# OHLC endpoint doesn't serve historic klines — see
-	# docs/research/03-baseline-backtest.md "Data" section). This pulls the
-	# maximum real history Kraken's API actually serves via ccxt directly,
-	# through Freqtrade's own data handler.
+	# Kraken's REST OHLC endpoint serves only the latest ~720 candles. Backtest history
+	# comes from Kraken's official bulk archive instead (`make kraken-data`, ADR-0020); this
+	# target is kept for topping up the weeks after the archive's last quarter.
 	$(COMPOSE) run --rm -v $(CURDIR):/repo --entrypoint python freqtrade \
 		/repo/scripts/fetch_ohlcv.py --venue kraken
 
+# Fee: config.backtest-costs.json is the single cost assumption for every backtest (ADR-0021).
+# Never add --fee here.
 backtest:
 	$(COMPOSE) run --rm freqtrade backtesting \
 		--config user_data/config.dry_run.json \
+		--config user_data/config.backtest-costs.json \
 		--strategy Baseline4h \
-		--fee 0.0036 \
 		--enable-protections
+
+# --- Backtest data and research harness (ADR-0020, ADR-0021) ------------------------------------
+FT_IMAGE := freqtradeorg/freqtrade:2026.8
+SANDBOX  := docker run --rm --network none --read-only --tmpfs /tmp --cap-drop ALL \
+	--security-opt no-new-privileges -v $(CURDIR):/repo:ro
+
+# Download (~10 GB, resumable) and checksum Kraken's archive, then convert the whitelisted
+# pairs' 4h/1d candles to feather in a network-less container. Only kraken/ is writable.
+kraken-data:
+	python3 -I scripts/kraken_archive.py download
+	python3 -I scripts/kraken_archive.py verify
+	$(SANDBOX) -v $(CURDIR)/services/freqtrade/user_data/data/kraken:/repo/services/freqtrade/user_data/data/kraken \
+		--entrypoint python $(FT_IMAGE) /repo/scripts/kraken_archive.py convert
+
+# Kraken vs Binance closes, where Binance data is already on disk (private cross-check only).
+kraken-crossval:
+	$(SANDBOX) --entrypoint python $(FT_IMAGE) /repo/scripts/kraken_archive.py crossval
+
+research-test:
+	cd services/research && uv run pytest
+
+research-lint:
+	cd services/research && uv run ruff check src tests && uv run ruff format --check src tests
+
+# make research-run STRATEGY=C01Tsmom1d   (registers a trial; see services/research/README.md)
+research-run:
+	scripts/research-harness.sh run $(STRATEGY)
 
 shell:
 	$(COMPOSE) run --rm --entrypoint bash freqtrade
