@@ -275,8 +275,8 @@ estimate of NDAX's real cost (~0.0050).
 
 These are **registered trials** (fee is part of trial identity), so the registry's N went from
 4 to 6. Changing venue after seeing the Kraken results is itself a selection step; the trial
-count is there to charge for it. The 0.0030 overlay was committed (574ab4c) and reverted
-(3038b97) on this branch only; `main`'s cost file is unchanged at 0.009.
+count is there to charge for it. The 0.0030 overlay was committed (fa8294e) and reverted
+(044f09b) on this branch only; `main`'s cost file is unchanged at 0.009.
 
 | | C05 Kraken | **C05 NDAX fee** | C04 Kraken | **C04 NDAX fee** |
 |---|---|---|---|---|
@@ -374,7 +374,7 @@ attacks the same cost problem by trading less, without any of the venue risk.
 docker run --rm -v "$PWD/scripts/spike_ndax:/probe:ro" --entrypoint python \
   freqtradeorg/freqtrade:2026.8 /probe/03_4h_depth_and_labels.py
 
-# Harness at NDAX's fee: check out 574ab4c (the 0.003 overlay), then
+# Harness at NDAX's fee: check out fa8294e (the 0.003 overlay), then
 scripts/research-harness.sh run C05EmaFlip4h --out /out/ndax   # refused now: already registered
 scripts/research-harness.sh registry                            # all 6 trials, DSR at N = 6
 ```

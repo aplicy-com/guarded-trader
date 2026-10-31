@@ -363,7 +363,7 @@ taker**. Backtests now take their fee from one file,
 unchanged; nothing was tuned.
 
 **A second change had to be controlled for.** Since the run above, `config.dry_run.json` went
-from `max_open_trades: 3` to `2` (commit 47bd5d7, risk settings for the live pilot). Running
+from `max_open_trades: 3` to `2` (commit 89d82cc, risk settings for the live pilot). Running
 today's config at the new fee therefore changes two things at once. The table separates them:
 row A reproduces the original run exactly (same data, 3 slots, `--fee 0.0036`) and lands on the
 original numbers to the cent, so rows B–E differ from it only in what they say.

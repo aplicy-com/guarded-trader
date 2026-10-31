@@ -4,7 +4,7 @@ Date: 2026-10-14 (runs finished 2026-10-15 02:41 UTC).
 Gates: [`08-paper-exit-criteria.md`](../08-paper-exit-criteria.md) Gate 1 as amended by
 [ADR-0021](../05-adr/0021-cost-consistent-gate-1-and-random-entry-null.md). Data:
 [ADR-0020](../05-adr/0020-kraken-archive-for-backtest-history.md).
-Pre-registration: `services/research/candidates.json`, committed (beaece1) before any registered
+Pre-registration: `services/research/candidates.json`, committed (622c904) before any registered
 run. **No parameter was tuned.** Every number below is the first and only registered run of each
 candidate.
 
