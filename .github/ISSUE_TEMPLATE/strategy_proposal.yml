@@ -1,0 +1,41 @@
+name: Strategy proposal
+description: Propose a candidate for pre-registration. Hypothesis and every parameter first, no backtest results.
+labels: [strategy-proposal]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Candidates are **pre-registered**: the hypothesis and all parameters are committed to `services/research/candidates.json` before any backtest, and every run counts as a trial (see CONTRIBUTING.md). Please don't include backtest results you tuned yourself.
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Hypothesis
+      description: What market behaviour does it exploit, and why should that survive 0.80 % taker + 0.10 % slippage per side?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Studies or data, with links, ideally after-cost and on similar assets and timeframes.
+    validations:
+      required: true
+  - type: textarea
+    id: rules
+    attributes:
+      label: Entry, exit, stop and sizing rules
+      description: Precise enough to implement without guessing. 4h or 1d bars only (ADR-0005), long-only spot.
+    validations:
+      required: true
+  - type: textarea
+    id: params
+    attributes:
+      label: Parameters (at most 6 tunable), each with its fixed value
+    validations:
+      required: true
+  - type: textarea
+    id: failure
+    attributes:
+      label: What result would show it doesn't work?
+    validations:
+      required: true
