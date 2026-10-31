@@ -1,5 +1,9 @@
 # Guarded Trader
 
+[![ci](https://github.com/aplicy-com/guarded-trader/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aplicy-com/guarded-trader/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue)](services/conductor/.python-version)
+
 A safety-first framework for running a small crypto trading system in which an LLM may
 **research** strategies but can never **trade**. A deterministic engine
 ([Freqtrade](https://www.freqtrade.io/)) places every order, inside hard risk limits enforced by
@@ -75,6 +79,13 @@ Conductor as a proposal. More: [`docs/04-architecture/`](docs/04-architecture/).
 - **Drilled**: kill switch, nuclear flatten, restart under a halt, heartbeat silence, backup
   restore and a full server rebuild all passed on the real VPS
   ([`docs/drills/`](docs/drills/)).
+
+## What it looks like
+
+| Conductor dashboard (read-only) | Halting and resuming from Telegram |
+|---|---|
+| <a href="docs/assets/dashboard.png"><img src="docs/assets/dashboard.png" width="520" alt="Conductor dashboard, dry-run"></a> | <a href="docs/assets/telegram-halt-flow.png"><img src="docs/assets/telegram-halt-flow.png" width="300" alt="Telegram kill-switch and resume flow"></a> |
+| A fresh local dry-run: $100 principal, no trades yet. Nothing on the dashboard can change state. | Every write needs `yes <code>` from the same chat within 60 s. The chat is a mock; its text comes from the real command handler ([how](docs/assets/README.md)). |
 
 ## Results so far
 
