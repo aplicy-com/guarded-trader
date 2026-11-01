@@ -33,7 +33,7 @@ with a consistent SQLite snapshot (safe while nothing is writing), never a plain
 file in use:
 
 ```bash
-D=~/Backups/ai-trading-agent/research-registry; mkdir -p "$D"
+D="${BACKUP_DIR:?set BACKUP_DIR, e.g. ~/Backups/guarded-trader}/research-registry"; mkdir -p "$D"
 F="$D/registry-$(date -u +%Y-%m-%d).sqlite"
 sqlite3 -readonly services/research/state/registry.sqlite ".backup '$F'"
 sqlite3 -readonly "$F" "PRAGMA integrity_check; SELECT count(*) FROM trials;"
@@ -41,14 +41,11 @@ chmod 444 "$F" && shasum -a 256 "$F" > "$F.sha256"
 ```
 
 Expected: `ok`, then the trial count. Restore = copy the dated file back to
-`state/registry.sqlite` (check `shasum -a 256 -c` first). Copies so far:
+`state/registry.sqlite` (check `shasum -a 256 -c` first). Record each copy like this:
 
 | Date | File | Trials (N) | SHA-256 |
 |---|---|---|---|
-| 2026-10-30 | `~/Backups/ai-trading-agent/research-registry/registry-2026-10-30.sqlite` | 6 | `d206c18aed3b760f41e58542da435191c82dce829df45aea5a1915b2603fd905` |
-| 2026-11-01 | `~/Backups/ai-trading-agent/research-registry/registry-2026-11-01-pre-round2.sqlite` | 6 | `d206c18aed3b760f41e58542da435191c82dce829df45aea5a1915b2603fd905` |
-| 2026-11-01 | `~/Backups/ai-trading-agent/research-registry/registry-2026-11-01-round2-preregistered.sqlite` | 26 (20 round-2, unscored) | `e7bc765eb7f2e7e2914fff01594dec1e7ed9d7f8487603f345a69c5b2bc5136b` |
-| 2026-11-01 | `~/Backups/ai-trading-agent/research-registry/registry-2026-11-01-round2-scored.sqlite` | 26 (all scored) | `20ec2514d1dd85661d9b7bea53d558e9a7e360fde3b70cf1dd9a9c25ee337aaa` |
+| YYYY-MM-DD | `$BACKUP_DIR/research-registry/registry-YYYY-MM-DD.sqlite` | N | `<sha256>` |
 
 ## Running
 
