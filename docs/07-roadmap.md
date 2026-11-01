@@ -13,7 +13,7 @@ flowchart LR
     P4 --> P5["Phase 5<br/>Ongoing operation<br/>+ re-validation"]
 ```
 
-## Current status — 2026-10-30: platform complete, no strategy, live trading paused
+## Current status — 2026-11-01: platform complete, no strategy, live trading paused
 
 This section overrides any older "in progress" line below. The phase sections are kept as
 written, as history.
@@ -38,7 +38,20 @@ written, as history.
   (IS Sharpe, trade concentration, force-exit share), and at 2× fee, close to NDAX's measured
   spread cost, it loses money again
   ([`research/06-ndax-feasibility.md`](research/06-ndax-feasibility.md)).
-- Trial registry: N = 6 registered trials. Every one counts against future DSR.
+- **Research round 2 (2026-11-01): four very-low-turnover candidates (≤ 4 round trips a year),
+  pre-registered and frozen first; none passes Gate 1 or round 2**
+  ([`research/07-round2-preregistration.md`](research/07-round2-preregistration.md),
+  [`research/08-round2-results.md`](research/08-round2-results.md)).
+  - At Tier-1 cost the fee ratio falls to 6–8 %. The 200-day trend filter beats BTC
+    buy-and-hold on 2022–2026: +200 % vs +78 %, max drawdown 27 % vs 67 %.
+  - Every candidate fails Gate 1 on the ≥ 100-trade minimum (impossible at this turnover; known
+    and accepted before the run, gate unchanged), on IS Sharpe ≥ 1.0 (best 0.85), on
+    walk-forward OOS/IS and on the 30 % single-trade rule.
+  - None beats its matched switching null: 72nd–94th percentile against a required 95th.
+  - The two rebalancing candidates cannot meet Kraken's minimum order at CA$35.
+  - Erratum: the random-entry null's per-candle draws were collapsed by a datetime-resolution
+    bug, in round 1 as well. It is fixed, and no verdict changed (08, "Erratum").
+- Trial registry: N = 26 registered trials (6 in round 1, 20 in round 2). Every one counts against future DSR.
 
 **Paused: live trading.**
 - The $20 pilot has not run. Funding the Kraken account by deposit did not work at first:
@@ -57,7 +70,7 @@ written, as history.
 1. **Kraken deposits work for this account.** **MET on 2026-10-31.** Then the $20 *plumbing*
    pilot (ADR-0019) can run as designed. It proves the real-exchange path, not an edge: it
    trades a known no-edge strategy and is expected to lose a little.
-2. **A candidate passes Gate 1 at real costs.** **Still unmet.** The test is Kraken Tier-1
+2. **A candidate passes Gate 1 at real costs.** **Still unmet** (round 2 done 2026-11-01: no pass). The test is Kraken Tier-1
    taker + slippage, or another venue's verified fee **plus its measured spread**, on a venue
    that passes the same checks ADR-0022 applied (verified no-withdraw key, exchange-held stops).
 
@@ -77,6 +90,11 @@ exchange keys deleted: none existed (no API key was created); off-site backups: 
   remains paused. No API key created, no VPS running. Funds stay parked on Kraken; no live
   trading. Trigger 1 reopened the decision. Decision: remain paused. No plumbing pilot until
   trigger 2 is met.
+- 2026-11-01: research round 2 done (four low-turnover candidates, 20 trials, registry N = 26).
+  No candidate passes Gate 1 at real costs, so trigger 2 is still unmet and the project remains
+  paused. No API key created, no VPS running, no live trading. The CA$35 stays parked on Kraken.
+  Any next round starts with a written plan; a gate designed for low-turnover strategies would
+  need a new ADR superseding ADR-0021, decided by the operator.
 
 ## Phase 1 — Docs scaffold (this phase)
 

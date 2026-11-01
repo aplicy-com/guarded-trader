@@ -77,6 +77,23 @@ class Registry:
         self._db = sqlite3.connect(path)
         self._db.executescript(SCHEMA)
 
+    @classmethod
+    def open_readonly(cls, path: Path) -> Registry:
+        """For report rebuilds: SQLite read-only mode, no schema statement, nothing can be written."""
+        self = cls.__new__(cls)
+        self._db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        return self
+
+    def recorded(self, digest: str) -> dict | None:
+        """The registered trial with this hash and its recorded result (None fields if unscored)."""
+        cur = self._db.execute(
+            "SELECT t.trial_id, r.sharpe_daily, r.n_trades, r.daily_returns_json"
+            " FROM trials t LEFT JOIN results r USING (trial_id) WHERE t.strategy_hash = ?",
+            (digest,),
+        )
+        row = cur.fetchone()
+        return dict(zip([d[0] for d in cur.description], row, strict=True)) if row else None
+
     def close(self) -> None:
         self._db.close()
 

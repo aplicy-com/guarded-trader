@@ -1,0 +1,3855 @@
+{
+ "n_trials": 26,
+ "sigma_trials_period": 0.026696803489495328,
+ "verdicts": {
+  "R2-01": {
+   "checks": {
+    "gate1_canonical_base": false,
+    "turnover_cap_canonical_base": true,
+    "turnover_cap_full_history_base": true,
+    "beats_matched_null_canonical_base": false,
+    "min_order_cad35_canonical_base": true
+   },
+   "passes_round2": false
+  },
+  "R2-02": {
+   "checks": {
+    "gate1_canonical_base": false,
+    "turnover_cap_canonical_base": true,
+    "turnover_cap_full_history_base": true,
+    "beats_matched_null_canonical_base": false,
+    "min_order_cad35_canonical_base": true
+   },
+   "passes_round2": false
+  },
+  "R2-03": {
+   "checks": {
+    "gate1_canonical_base": false,
+    "turnover_cap_canonical_base": true,
+    "turnover_cap_full_history_base": true,
+    "beats_matched_null_canonical_base": false,
+    "min_order_cad35_canonical_base": false
+   },
+   "passes_round2": false
+  },
+  "R2-04": {
+   "checks": {
+    "gate1_canonical_base": false,
+    "turnover_cap_canonical_base": true,
+    "turnover_cap_full_history_base": true,
+    "beats_matched_null_canonical_base": false,
+    "min_order_cad35_canonical_base": false
+   },
+   "passes_round2": false
+  }
+ },
+ "recomputed_without_recording": true,
+ "elapsed_s": 57.0,
+ "seeds": 200,
+ "trials": {
+  "R2-01/base/canonical": {
+   "trial_id": "5f5412be679a",
+   "account": {
+    "net_return": 2.0012812232085957,
+    "cagr": 0.26029186120092684,
+    "sharpe_daily": 0.8477507014487337,
+    "max_drawdown": 0.27201000610077364,
+    "final_equity": 75.06204339244698
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.778417164264845,
+    "cagr": 0.12883657432963713,
+    "sharpe_daily": 0.4822965451704842,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.47821327826377
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": true
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.3245954493812117,
+     "cost_stress_2x_sharpe": 0.7762065915543657,
+     "avg_net_profit_per_trade_pct": 0.33708552517043777
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.0,
+     "2023": 1.4910802775024776,
+     "2024": 0.9955401387512389,
+     "2025": 1.4955401387512388,
+     "2026": 0.49554013875123887
+    },
+    "max_round_trips_in_a_year": 1.4955401387512388,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.8477507014487337,
+    "null_sharpe_p95": 1.0883158036604912,
+    "null_sharpe_quantiles": [
+     -0.1259278495887671,
+     0.18894562191435615,
+     0.4016106241420632,
+     0.6895126044754651,
+     1.0883158036604912
+    ],
+    "null_mdd_median": 0.5308684622875531,
+    "null_net_return_median": 0.4593070383273362,
+    "candidate_sharpe_percentile": 84.0,
+    "in_out_switches": 9,
+    "check_periods_in_market": 132,
+    "check_periods_total": 248,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.8212874436208563,
+    "null_sharpe_p95": 0.7261077965156875,
+    "null_sharpe_median": 0.33588687399366357,
+    "candidate_mdd": 0.27201000610077364,
+    "null_mdd_median": 0.34496667463951136,
+    "candidate_top_share": 0.5549083668128673,
+    "null_top_share_median": 0.7097709414303944,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": true,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": true,
+    "candidate_sharpe_percentile": 98.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 9,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.786917740336968,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 9,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 99.10802775024776,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.3245954493812117,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.8212874436208563,
+    "max_drawdown": 0.27201000610077364,
+    "fee_ratio": 0.07306447808682537
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.6286599815478503,
+     "oos_sharpe_pooled": -1.2450930634544495,
+     "oos_over_is": -1.9805508541976113,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.1565841369179222,
+     "oos_sharpe_pooled": -1.2450930634544495,
+     "oos_over_is": -7.95159131673152,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.7429178381855857,
+    "cagr": 0.23663639847911222,
+    "sharpe_daily": 0.7920961192536593,
+    "max_drawdown": 0.2849990290065189,
+    "final_equity": 68.6003751330215
+   }
+  },
+  "R2-01/maker/canonical": {
+   "trial_id": "28f4b5bd8a19",
+   "account": {
+    "net_return": 2.123772123034435,
+    "cagr": 0.2709486528305387,
+    "sharpe_daily": 0.8722369654408374,
+    "max_drawdown": 0.2661624327152353,
+    "final_equity": 78.12554079709122
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7927022848919008,
+    "cagr": 0.1307391959575661,
+    "sharpe_daily": 0.48396642266454637,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.83548414514644
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": true
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.3404412406857278,
+     "cost_stress_2x_sharpe": 0.8163080799041872,
+     "avg_net_profit_per_trade_pct": 0.3465187664425686
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.0,
+     "2023": 1.4950248756218907,
+     "2024": 0.9975124378109453,
+     "2025": 1.4975124378109452,
+     "2026": 0.49751243781094534
+    },
+    "max_round_trips_in_a_year": 1.4975124378109452,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.8722369654408374,
+    "null_sharpe_p95": 1.113882669317184,
+    "null_sharpe_quantiles": [
+     -0.10376779554027583,
+     0.20985263779571317,
+     0.42582988492092705,
+     0.7133732270883436,
+     1.113882669317184
+    ],
+    "null_mdd_median": 0.5308684622875531,
+    "null_net_return_median": 0.518865546495323,
+    "candidate_sharpe_percentile": 84.0,
+    "in_out_switches": 9,
+    "check_periods_in_market": 132,
+    "check_periods_total": 248,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.8411201603950693,
+    "null_sharpe_p95": 0.7442437922114639,
+    "null_sharpe_median": 0.35819404900617857,
+    "candidate_mdd": 0.2661624327152353,
+    "null_mdd_median": 0.3348596588643233,
+    "candidate_top_share": 0.5605406634979897,
+    "null_top_share_median": 0.7259190056701454,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": true,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": true,
+    "candidate_sharpe_percentile": 98.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 9,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.885572139303484,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 9,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 99.50248756218906,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.3404412406857278,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.8411201603950693,
+    "max_drawdown": 0.2661624327152353,
+    "fee_ratio": 0.04075602791231042
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.6423183332174278,
+     "oos_sharpe_pooled": -1.189850450827218,
+     "oos_over_is": -1.852431091087117,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.1818977652231811,
+     "oos_sharpe_pooled": -1.189850450827218,
+     "oos_over_is": -6.541314289196023,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.971415291649088,
+    "cagr": 0.2576415486774082,
+    "sharpe_daily": 0.8416027562952183,
+    "max_drawdown": 0.2734646623513841,
+    "final_equity": 74.31509644414369
+   }
+  },
+  "R2-01/slip30/canonical": {
+   "trial_id": "322c76d3c7f6",
+   "account": {
+    "net_return": 1.9418459692991608,
+    "cagr": 0.25499675674526845,
+    "sharpe_daily": 0.8354449859167821,
+    "max_drawdown": 0.27491644094373424,
+    "final_equity": 73.57556769217202
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7713169930332968,
+    "cagr": 0.12788641689425173,
+    "sharpe_daily": 0.4814592891385139,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.300637995762756
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": true
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.3167538316165799,
+     "cost_stress_2x_sharpe": 0.7560038620826504,
+     "avg_net_profit_per_trade_pct": 0.3323689045343722
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.0,
+     "2023": 1.4891196834817013,
+     "2024": 0.9945598417408507,
+     "2025": 1.4945598417408505,
+     "2026": 0.49455984174085066
+    },
+    "max_round_trips_in_a_year": 1.4945598417408505,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.8354449859167821,
+    "null_sharpe_p95": 1.0754434102050117,
+    "null_sharpe_quantiles": [
+     -0.13695519456321611,
+     0.17851774523703975,
+     0.3895074927527345,
+     0.6774215519810303,
+     1.0754434102050117
+    ],
+    "null_mdd_median": 0.5308684622875532,
+    "null_net_return_median": 0.4304079522689882,
+    "candidate_sharpe_percentile": 84.0,
+    "in_out_switches": 9,
+    "check_periods_in_market": 132,
+    "check_periods_total": 248,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.8113207346213466,
+    "null_sharpe_p95": 0.7170053842131014,
+    "null_sharpe_median": 0.32393678140874654,
+    "candidate_mdd": 0.27491644094373424,
+    "null_mdd_median": 0.34888443257237167,
+    "candidate_top_share": 0.55206905604479,
+    "null_top_share_median": 0.6992680222629027,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": true,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": true,
+    "candidate_sharpe_percentile": 98.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 9,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.737883283877352,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 9,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 98.91196834817013,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.3167538316165799,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.8113207346213466,
+    "max_drawdown": 0.27491644094373424,
+    "fee_ratio": 0.0891211265476355
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.6217950622295113,
+     "oos_sharpe_pooled": -1.2716001443813534,
+     "oos_over_is": -2.045047028552941,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.14401129918238098,
+     "oos_sharpe_pooled": -1.2716001443813534,
+     "oos_over_is": -8.829863709311825,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.6353241681032453,
+    "cagr": 0.22626368633931015,
+    "sharpe_daily": 0.7671653739795813,
+    "max_drawdown": 0.29069849589579777,
+    "final_equity": 65.90945744426217
+   }
+  },
+  "R2-01/maker_slip30/canonical": {
+   "trial_id": "64dd0962f166",
+   "account": {
+    "net_return": 2.061915065634767,
+    "cagr": 0.26560911501081796,
+    "sharpe_daily": 0.8600156618737648,
+    "max_drawdown": 0.26909202633291573,
+    "final_equity": 76.57849579152553
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7855455387584849,
+    "cagr": 0.129787497948332,
+    "sharpe_daily": 0.4831322591158201,
+    "max_drawdown": 0.6698667526912354,
+    "final_equity": 44.65649392434971
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": true
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.3324930505337211,
+     "cost_stress_2x_sharpe": 0.7963132784793474,
+     "avg_net_profit_per_trade_pct": 0.3418021458065032
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.0,
+     "2023": 1.4930486593843098,
+     "2024": 0.9965243296921549,
+     "2025": 1.4965243296921549,
+     "2026": 0.496524329692155
+    },
+    "max_round_trips_in_a_year": 1.4965243296921549,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.8600156618737648,
+    "null_sharpe_p95": 1.10113001134745,
+    "null_sharpe_quantiles": [
+     -0.11486481616273908,
+     0.19939108593441077,
+     0.41371891522655424,
+     0.7015830652082252,
+     1.10113001134745
+    ],
+    "null_mdd_median": 0.5308684622875531,
+    "null_net_return_median": 0.4887889117116455,
+    "candidate_sharpe_percentile": 84.0,
+    "in_out_switches": 9,
+    "check_periods_in_market": 132,
+    "check_periods_total": 248,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.831221241011882,
+    "null_sharpe_p95": 0.7351878911550659,
+    "null_sharpe_median": 0.34704187397628616,
+    "candidate_mdd": 0.26909202633291573,
+    "null_mdd_median": 0.34015974554861683,
+    "candidate_top_share": 0.5577322713132783,
+    "null_top_share_median": 0.7157710625619079,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": true,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": true,
+    "candidate_sharpe_percentile": 98.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 9,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.83614697120159,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 9,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 99.30486593843098,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.3324930505337211,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.831221241011882,
+    "max_drawdown": 0.26909202633291573,
+    "fee_ratio": 0.05694292576371707
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.635501492359129,
+     "oos_sharpe_pooled": -1.2178323027559697,
+     "oos_over_is": -1.9163327189604127,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.16921480843139328,
+     "oos_sharpe_pooled": -1.2178323027559697,
+     "oos_over_is": -7.196960561815898,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.8548878325890432,
+    "cagr": 0.24709533820145757,
+    "sharpe_daily": 0.816916367458406,
+    "max_drawdown": 0.2792545959090406,
+    "final_equity": 71.40074469305198
+   }
+  },
+  "R2-01/base/full_history": {
+   "trial_id": "32c9e0d6d37a",
+   "account": {
+    "net_return": 196.79748274526742,
+    "cagr": 0.5679079879923892,
+    "sharpe_daily": 1.1204659973045847,
+    "max_drawdown": 0.6464464867824911,
+    "final_equity": 4946.915043459138
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 260.35814133544295,
+    "cagr": 0.6055149149839532,
+    "sharpe_daily": 1.0384775321623176,
+    "max_drawdown": 0.8357123299701915,
+    "final_equity": 6536.567114799429
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": true,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.6166747375953374,
+     "cost_stress_2x_sharpe": 1.0774709262446736,
+     "avg_net_profit_per_trade_pct": 2.614645302106594
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2015": 1.4910802775024778,
+     "2016": 0.0,
+     "2017": 0.0,
+     "2018": 0.5,
+     "2019": 1.9910802775024778,
+     "2020": 1.4910802775024776,
+     "2021": 1.9910802775024778,
+     "2022": 0.5,
+     "2023": 1.4910802775024778,
+     "2024": 0.9955401387512388,
+     "2025": 1.495540138751239,
+     "2026": 0.4955401387512389
+    },
+    "max_round_trips_in_a_year": 1.9910802775024778,
+    "closed_trades_per_year": {
+     "2015": 1,
+     "2016": 0,
+     "2017": 0,
+     "2018": 1,
+     "2019": 2,
+     "2020": 1,
+     "2021": 2,
+     "2022": 1,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 1.1204659973045847,
+    "null_sharpe_p95": 1.1798191733187362,
+    "null_sharpe_quantiles": [
+     0.5265805442398442,
+     0.6728138471272815,
+     0.832394125734453,
+     0.983405258887974,
+     1.1798191733187362
+    ],
+    "null_mdd_median": 0.7717217626332993,
+    "null_net_return_median": 31.842769264402122,
+    "candidate_sharpe_percentile": 90.0,
+    "in_out_switches": 25,
+    "check_periods_in_market": 371,
+    "check_periods_total": 613,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 1.1130988682757577,
+    "null_sharpe_p95": 1.1708875789224669,
+    "null_sharpe_median": 1.0281315088573684,
+    "candidate_mdd": 0.6464464867824911,
+    "null_mdd_median": 0.7001062558563307,
+    "candidate_top_share": 0.3121701184201141,
+    "null_top_share_median": 0.3921786874185972,
+    "candidate_trades": 12,
+    "null_trades_median": 11.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": false,
+    "candidate_sharpe_percentile": 84.0
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 25,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.78691774033697,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 25,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 99.10802775024777,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.6166747375953374,
+   "full": {
+    "n_trades": 12,
+    "n_force_exit": 1,
+    "sharpe_daily": 1.1130988682757577,
+    "max_drawdown": 0.6464464867824911,
+    "fee_ratio": 0.06531333705103139
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 43,
+     "is_sharpe_mean": 0.8937701107630717,
+     "oos_sharpe_pooled": -0.8485001015309388,
+     "oos_over_is": -0.9493493811361818,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 43,
+     "is_sharpe_mean": 0.05358841563098945,
+     "oos_sharpe_pooled": -0.8485001015309388,
+     "oos_over_is": -15.833647842356863,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 155.5224511195611,
+    "cagr": 0.5370023986358119,
+    "sharpe_daily": 1.0819686436797527,
+    "max_drawdown": 0.646446486782491,
+    "final_equity": 3914.626502500224
+   }
+  },
+  "R2-02/base/canonical": {
+   "trial_id": "f6d1ab43032e",
+   "account": {
+    "net_return": 1.6692113082896447,
+    "cagr": 0.22956612869876003,
+    "sharpe_daily": 0.7335923650081052,
+    "max_drawdown": 0.38308980171858825,
+    "final_equity": 66.75697482032402
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.778417164264845,
+    "cagr": 0.12883657432963713,
+    "sharpe_daily": 0.4822965451704842,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.47821327826377
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.25886673964665335,
+     "cost_stress_2x_sharpe": 0.6933171516962457,
+     "avg_net_profit_per_trade_pct": 0.4822340278809857
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.9955401387512389,
+     "2023": 1.4866204162537167,
+     "2024": 0.0,
+     "2025": 0.5,
+     "2026": 0.9955401387512388
+    },
+    "max_round_trips_in_a_year": 1.4866204162537167,
+    "closed_trades_per_year": {
+     "2022": 1,
+     "2023": 1,
+     "2024": 0,
+     "2025": 1,
+     "2026": 1
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.7335923650081052,
+    "null_sharpe_p95": 0.7834998193048895,
+    "null_sharpe_quantiles": [
+     -0.13498803454366878,
+     0.0756135115638563,
+     0.283988327078338,
+     0.5014881842100785,
+     0.7834998193048895
+    ],
+    "null_mdd_median": 0.667792294298928,
+    "null_net_return_median": 0.09484862215540246,
+    "candidate_sharpe_percentile": 93.5,
+    "in_out_switches": 6,
+    "check_periods_in_market": 34,
+    "check_periods_total": 56,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.7335923650081052,
+    "null_sharpe_p95": 0.831809663633056,
+    "null_sharpe_median": 0.729826227320439,
+    "candidate_mdd": 0.38308980171858825,
+    "null_mdd_median": 0.32822604187972626,
+    "candidate_top_share": 0.9751638664373108,
+    "null_top_share_median": 0.9753900669306448,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": false,
+    "top_share_not_worse": true,
+    "passes": false,
+    "candidate_sharpe_percentile": 50.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 8,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.563835480673937,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 8,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 98.21605550049554,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.25886673964665335,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 0,
+    "sharpe_daily": 0.7335923650081052,
+    "max_drawdown": 0.38308980171858825,
+    "fee_ratio": 0.06083831628177464
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.1952712980770381,
+     "oos_sharpe_pooled": -1.121645275657387,
+     "oos_over_is": -5.7440355377515715,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": -0.18970305942403243,
+     "oos_sharpe_pooled": -1.121645275657387,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.4837497834388356,
+    "cagr": 0.21106821428395306,
+    "sharpe_daily": 0.6933171516962457,
+    "max_drawdown": 0.4049076151711235,
+    "final_equity": 62.11858208380528
+   }
+  },
+  "R2-02/maker/canonical": {
+   "trial_id": "0da61ba0962f",
+   "account": {
+    "net_return": 1.7560118404268827,
+    "cagr": 0.23787670366199332,
+    "sharpe_daily": 0.751370499393445,
+    "max_drawdown": 0.3731393463470724,
+    "final_equity": 68.92785612907635
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7927022848919008,
+    "cagr": 0.1307391959575661,
+    "sharpe_daily": 0.48396642266454637,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.83548414514644
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.2716629195918171,
+     "cost_stress_2x_sharpe": 0.729134611564838,
+     "avg_net_profit_per_trade_pct": 0.49225313596526815
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.9975124378109453,
+     "2023": 1.492537313432836,
+     "2024": 0.0,
+     "2025": 0.5,
+     "2026": 0.9975124378109455
+    },
+    "max_round_trips_in_a_year": 1.492537313432836,
+    "closed_trades_per_year": {
+     "2022": 1,
+     "2023": 1,
+     "2024": 0,
+     "2025": 1,
+     "2026": 1
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.751370499393445,
+    "null_sharpe_p95": 0.7988329984859661,
+    "null_sharpe_quantiles": [
+     -0.1234355179063061,
+     0.09054150170333991,
+     0.29694112522102023,
+     0.5153406399802067,
+     0.7988329984859661
+    ],
+    "null_mdd_median": 0.6677922942989278,
+    "null_net_return_median": 0.13045218891599197,
+    "candidate_sharpe_percentile": 93.5,
+    "in_out_switches": 6,
+    "check_periods_in_market": 34,
+    "check_periods_total": 56,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.751370499393445,
+    "null_sharpe_p95": 0.8455793585096798,
+    "null_sharpe_median": 0.7391878387090839,
+    "candidate_mdd": 0.3731393463470724,
+    "null_mdd_median": 0.3212929752778191,
+    "candidate_top_share": 0.9830451009189131,
+    "null_top_share_median": 0.983400883866464,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": false,
+    "top_share_not_worse": true,
+    "passes": false,
+    "candidate_sharpe_percentile": 51.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 8,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.76114427860697,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 8,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 99.00497512437812,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.2716629195918171,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 0,
+    "sharpe_daily": 0.751370499393445,
+    "max_drawdown": 0.3731393463470724,
+    "fee_ratio": 0.03379594530898278
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.21875943435942435,
+     "oos_sharpe_pooled": -1.0692008370005985,
+     "oos_over_is": -4.887564461534897,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": -0.16550692019963006,
+     "oos_sharpe_pooled": -1.0692008370005985,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.6479408915144886,
+    "cagr": 0.22749713469652888,
+    "sharpe_daily": 0.729134611564838,
+    "max_drawdown": 0.385552735844378,
+    "final_equity": 66.22500169677737
+   }
+  },
+  "R2-02/slip30/canonical": {
+   "trial_id": "a11cd1124259",
+   "account": {
+    "net_return": 1.6268395541031135,
+    "cagr": 0.2254315809156422,
+    "sharpe_daily": 0.7246720197221234,
+    "max_drawdown": 0.38800588599379787,
+    "final_equity": 65.69725724811887
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7713169930332968,
+    "cagr": 0.12788641689425173,
+    "sharpe_daily": 0.4814592891385139,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.300637995762756
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.25256870621508154,
+     "cost_stress_2x_sharpe": 0.6753278336178696,
+     "avg_net_profit_per_trade_pct": 0.4772244738388444
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.9945598417408507,
+     "2023": 1.483679525222552,
+     "2024": 0.0,
+     "2025": 0.5,
+     "2026": 0.9945598417408507
+    },
+    "max_round_trips_in_a_year": 1.483679525222552,
+    "closed_trades_per_year": {
+     "2022": 1,
+     "2023": 1,
+     "2024": 0,
+     "2025": 1,
+     "2026": 1
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.7246720197221234,
+    "null_sharpe_p95": 0.7758191542404252,
+    "null_sharpe_quantiles": [
+     -0.1407342120057349,
+     0.0682834615741602,
+     0.27752558700237434,
+     0.49417406426586297,
+     0.7758191542404252
+    ],
+    "null_mdd_median": 0.6677922942989278,
+    "null_net_return_median": 0.07746871051432813,
+    "candidate_sharpe_percentile": 93.5,
+    "in_out_switches": 6,
+    "check_periods_in_market": 34,
+    "check_periods_total": 56,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.7246720197221234,
+    "null_sharpe_p95": 0.824896181840739,
+    "null_sharpe_median": 0.7246720197221234,
+    "candidate_mdd": 0.38800588599379787,
+    "null_mdd_median": 0.33225837618935106,
+    "candidate_top_share": 0.9712232524032456,
+    "null_top_share_median": 0.9714441176078417,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": false,
+    "top_share_not_worse": true,
+    "passes": false,
+    "candidate_sharpe_percentile": 49.0
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 8,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.465766567754702,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 8,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 97.82393669634027,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.25256870621508154,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 0,
+    "sharpe_daily": 0.7246720197221234,
+    "max_drawdown": 0.38800588599379787,
+    "fee_ratio": 0.07436339660292496
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.18354453368166262,
+     "oos_sharpe_pooled": -1.1466151049682907,
+     "oos_over_is": -6.247067575202026,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": -0.20150251956764975,
+     "oos_sharpe_pooled": -1.1466151049682907,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.4054971077343446,
+    "cagr": 0.2029347746659571,
+    "sharpe_daily": 0.6753278336178696,
+    "max_drawdown": 0.41435708828337464,
+    "final_equity": 60.161482664435965
+   }
+  },
+  "R2-02/maker_slip30/canonical": {
+   "trial_id": "cf6fa729217f",
+   "account": {
+    "net_return": 1.7122649697700716,
+    "cagr": 0.23371447664177047,
+    "sharpe_daily": 0.742492458368604,
+    "max_drawdown": 0.37813440618310723,
+    "final_equity": 67.8337468939495
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7855455387584849,
+    "cagr": 0.129787497948332,
+    "sharpe_daily": 0.4831322591158201,
+    "max_drawdown": 0.6698667526912354,
+    "final_equity": 44.65649392434971
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.26523263686679344,
+     "cost_stress_2x_sharpe": 0.7112574515614483,
+     "avg_net_profit_per_trade_pct": 0.48724358192312706
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.996524329692155,
+     "2023": 1.4895729890764648,
+     "2024": 0.0,
+     "2025": 0.5,
+     "2026": 0.9965243296921549
+    },
+    "max_round_trips_in_a_year": 1.4895729890764648,
+    "closed_trades_per_year": {
+     "2022": 1,
+     "2023": 1,
+     "2024": 0,
+     "2025": 1,
+     "2026": 1
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.742492458368604,
+    "null_sharpe_p95": 0.7911714712967927,
+    "null_sharpe_quantiles": [
+     -0.12922170810504954,
+     0.08306912061775447,
+     0.29046036053260904,
+     0.5085626227210934,
+     0.7911714712967927
+    ],
+    "null_mdd_median": 0.6677922942989278,
+    "null_net_return_median": 0.11250823636586182,
+    "candidate_sharpe_percentile": 93.5,
+    "in_out_switches": 6,
+    "check_periods_in_market": 34,
+    "check_periods_total": 56,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.742492458368604,
+    "null_sharpe_p95": 0.8387043560938277,
+    "null_sharpe_median": 0.734512798633495,
+    "candidate_mdd": 0.37813440618310723,
+    "null_mdd_median": 0.32417220723606816,
+    "candidate_top_share": 0.9791044830753804,
+    "null_top_share_median": 0.979488809367005,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": false,
+    "top_share_not_worse": true,
+    "passes": false,
+    "candidate_sharpe_percentile": 50.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 8,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.66229394240318,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 8,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 98.60973187686197,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.26523263686679344,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 0,
+    "sharpe_daily": 0.742492458368604,
+    "max_drawdown": 0.37813440618310723,
+    "fee_ratio": 0.04731607862158946
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.20701077504671941,
+     "oos_sharpe_pooled": -1.095826265110255,
+     "oos_over_is": -5.293571143158816,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": -0.17769912839089122,
+     "oos_sharpe_pooled": -1.095826265110255,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.564536253760644,
+    "cagr": 0.2192554633536965,
+    "sharpe_daily": 0.7112574515614483,
+    "max_drawdown": 0.39530706693732703,
+    "final_equity": 64.13905170655372
+   }
+  },
+  "R2-02/base/full_history": {
+   "trial_id": "53822c41a49b",
+   "account": {
+    "net_return": 211.88297628812583,
+    "cagr": 0.7013384715956656,
+    "sharpe_daily": 1.0965473790330194,
+    "max_drawdown": 0.8099179353942838,
+    "final_equity": 5324.203236966027
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 141.9336865098528,
+    "cagr": 0.6354619609505447,
+    "sharpe_daily": 1.0719643806244838,
+    "max_drawdown": 0.8357123299701915,
+    "final_equity": 3574.771499611419
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": true,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.5878219760759741,
+     "cost_stress_2x_sharpe": 1.0742210136481811,
+     "avg_net_profit_per_trade_pct": 2.127908163799146
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2016": 0.4955401387512389,
+     "2017": 1.9821605550049552,
+     "2018": 1.4910802775024776,
+     "2019": 0.4955401387512389,
+     "2020": 0.9955401387512389,
+     "2021": 0.0,
+     "2022": 0.5,
+     "2023": 1.4866204162537167,
+     "2024": 0.0,
+     "2025": 0.5,
+     "2026": 0.9955401387512388
+    },
+    "max_round_trips_in_a_year": 1.9821605550049552,
+    "closed_trades_per_year": {
+     "2016": 0,
+     "2017": 2,
+     "2018": 2,
+     "2019": 0,
+     "2020": 1,
+     "2021": 0,
+     "2022": 1,
+     "2023": 1,
+     "2024": 0,
+     "2025": 1,
+     "2026": 1
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 1.0965473790330194,
+    "null_sharpe_p95": 1.2213509705000842,
+    "null_sharpe_quantiles": [
+     0.5946657511003628,
+     0.7751716811355331,
+     0.9101815091544307,
+     1.0514329958274975,
+     1.2213509705000842
+    ],
+    "null_mdd_median": 0.8939586856708878,
+    "null_net_return_median": 53.05390529832974,
+    "candidate_sharpe_percentile": 81.0,
+    "in_out_switches": 13,
+    "check_periods_in_market": 90,
+    "check_periods_total": 120,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 1.0965473790330194,
+    "null_sharpe_p95": 1.17910361763541,
+    "null_sharpe_median": 1.0807343664541555,
+    "candidate_mdd": 0.8099179353942838,
+    "null_mdd_median": 0.8157020789858971,
+    "candidate_top_share": 0.6435418385958244,
+    "null_top_share_median": 0.6545979824294358,
+    "candidate_trades": 9,
+    "null_trades_median": 8.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": false,
+    "candidate_sharpe_percentile": 58.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 18,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 24.563835480673937,
+     "passes": true
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 18,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 98.21605550049554,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.5878219760759741,
+   "full": {
+    "n_trades": 9,
+    "n_force_exit": 0,
+    "sharpe_daily": 1.0965473790330194,
+    "max_drawdown": 0.8099179353942838,
+    "fee_ratio": 0.03978042494868447
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 36,
+     "is_sharpe_mean": 1.067880892573782,
+     "oos_sharpe_pooled": -0.4853549905671098,
+     "oos_over_is": -0.45450292625549127,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 36,
+     "is_sharpe_mean": 0.04239180487940872,
+     "oos_sharpe_pooled": -0.4853549905671098,
+     "oos_over_is": -11.44926459129993,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 180.03891045302177,
+    "cagr": 0.6742294585921056,
+    "sharpe_daily": 1.0742210136481811,
+    "max_drawdown": 0.8166404292642075,
+    "final_equity": 4527.783150430075
+   }
+  },
+  "R2-03/base/canonical": {
+   "trial_id": "bf8cbf1840d2",
+   "account": {
+    "net_return": 1.2372831839420093,
+    "cagr": 0.18471762624721544,
+    "sharpe_daily": 0.6030732741557574,
+    "max_drawdown": 0.598291470834993,
+    "final_equity": 55.95445243038965
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.778417164264845,
+    "cagr": 0.12883657432963713,
+    "sharpe_daily": 0.4822965451704842,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.47821327826377
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": false,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": false,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.012631385635139743,
+     "cost_stress_2x_sharpe": 0.0,
+     "avg_net_profit_per_trade_pct": 0.0
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.8406946797759147,
+     "2023": 0.0,
+     "2024": 0.2050371849234995,
+     "2025": 0.0927499483768798,
+     "2026": 0.32914613372530876
+    },
+    "max_round_trips_in_a_year": 0.8406946797759147,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 0,
+     "2024": 0,
+     "2025": 0,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.6030732741557574,
+    "null_sharpe_p95": 0.6640268553838818,
+    "null_sharpe_quantiles": [
+     0.44004681840098114,
+     0.49614815225197767,
+     0.555839523365819,
+     0.6095808036199944,
+     0.6640268553838818
+    ],
+    "null_mdd_median": 0.5870080584243499,
+    "null_net_return_median": 0.9884546824599753,
+    "candidate_sharpe_percentile": 72.0,
+    "in_out_switches": 0,
+    "check_periods_in_market": 56,
+    "check_periods_total": 56,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.0,
+    "null_sharpe_p95": 0.0,
+    "null_sharpe_median": 0.0,
+    "candidate_mdd": 0.0,
+    "null_mdd_median": 0.0,
+    "candidate_top_share": null,
+    "null_top_share_median": null,
+    "candidate_trades": 0,
+    "null_trades_median": 0.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": false,
+    "top_share_not_worse": false,
+    "passes": false,
+    "candidate_sharpe_percentile": 0.0
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 11,
+     "fills_below_120pct_min": 6,
+     "smallest_fill_usd": 3.6120070036859078,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 11,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 14.44225111429791,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.012631385635139743,
+   "full": {
+    "n_trades": 0,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.0,
+    "max_drawdown": 0.0,
+    "fee_ratio": "inf"
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.159813942686474,
+    "cagr": 0.1759620039672083,
+    "sharpe_daily": 0.5861555759984857,
+    "max_drawdown": 0.6016052741183766,
+    "final_equity": 54.01694670658872
+   }
+  },
+  "R2-03/maker/canonical": {
+   "trial_id": "5d23a5695a1d",
+   "account": {
+    "net_return": 1.3050094755981712,
+    "cagr": 0.19217810755559905,
+    "sharpe_daily": 0.6167212790997142,
+    "max_drawdown": 0.5965753983837517,
+    "final_equity": 57.64828698471026
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7927022848919008,
+    "cagr": 0.1307391959575661,
+    "sharpe_daily": 0.48396642266454637,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.83548414514644
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": false,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": false,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.012631385635139743,
+     "cost_stress_2x_sharpe": 0.0,
+     "avg_net_profit_per_trade_pct": 0.0
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.8762878857807601,
+     "2023": 0.0,
+     "2024": 0.20557993292269483,
+     "2025": 0.09274994837687982,
+     "2026": 0.3307282543227737
+    },
+    "max_round_trips_in_a_year": 0.8762878857807601,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 0,
+     "2024": 0,
+     "2025": 0,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.6167212790997142,
+    "null_sharpe_p95": 0.6763563331647532,
+    "null_sharpe_quantiles": [
+     0.44159199318750103,
+     0.4966750248750256,
+     0.5583551277781742,
+     0.6170629995361436,
+     0.6763563331647532
+    ],
+    "null_mdd_median": 0.5854162238627099,
+    "null_net_return_median": 1.011535444575675,
+    "candidate_sharpe_percentile": 75.0,
+    "in_out_switches": 0,
+    "check_periods_in_market": 56,
+    "check_periods_total": 56,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.0,
+    "null_sharpe_p95": 0.0,
+    "null_sharpe_median": 0.0,
+    "candidate_mdd": 0.0,
+    "null_mdd_median": 0.0,
+    "candidate_top_share": null,
+    "null_top_share_median": null,
+    "candidate_trades": 0,
+    "null_trades_median": 0.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": false,
+    "top_share_not_worse": false,
+    "passes": false,
+    "candidate_sharpe_percentile": 0.0
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 11,
+     "fills_below_120pct_min": 5,
+     "smallest_fill_usd": 4.378347924862277,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 11,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 17.50638914379159,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.012631385635139743,
+   "full": {
+    "n_trades": 0,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.0,
+    "max_drawdown": 0.0,
+    "fee_ratio": "inf"
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.2285535840278063,
+    "cagr": 0.18374308106422932,
+    "sharpe_daily": 0.6011948840007806,
+    "max_drawdown": 0.5986605832827386,
+    "final_equity": 55.73612513653544
+   }
+  },
+  "R2-03/slip30/canonical": {
+   "trial_id": "14436eaac0c3",
+   "account": {
+    "net_return": 1.219854703039787,
+    "cagr": 0.18276896261786035,
+    "sharpe_daily": 0.599316123029326,
+    "max_drawdown": 0.5990294743033042,
+    "final_equity": 55.518566123025074
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7713169930332968,
+    "cagr": 0.12788641689425173,
+    "sharpe_daily": 0.4814592891385139,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.300637995762756
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": false,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": false,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.012631385635139743,
+     "cost_stress_2x_sharpe": 0.0,
+     "avg_net_profit_per_trade_pct": 0.0
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.8413828316219231,
+     "2023": 0.0,
+     "2024": 0.2047671792619478,
+     "2025": 0.09274994837687986,
+     "2026": 0.32835929633891625
+    },
+    "max_round_trips_in_a_year": 0.8413828316219231,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 0,
+     "2024": 0,
+     "2025": 0,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.599316123029326,
+    "null_sharpe_p95": 0.660264317036116,
+    "null_sharpe_quantiles": [
+     0.436929430831624,
+     0.49271997176827,
+     0.5518683343718944,
+     0.6067471628458145,
+     0.660264317036116
+    ],
+    "null_mdd_median": 0.5877562708881378,
+    "null_net_return_median": 0.977433500469182,
+    "candidate_sharpe_percentile": 72.0,
+    "in_out_switches": 0,
+    "check_periods_in_market": 56,
+    "check_periods_total": 56,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.0,
+    "null_sharpe_p95": 0.0,
+    "null_sharpe_median": 0.0,
+    "candidate_mdd": 0.0,
+    "null_mdd_median": 0.0,
+    "candidate_top_share": null,
+    "null_top_share_median": null,
+    "candidate_trades": 0,
+    "null_trades_median": 0.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": false,
+    "top_share_not_worse": false,
+    "passes": false,
+    "candidate_sharpe_percentile": 0.0
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 11,
+     "fills_below_120pct_min": 6,
+     "smallest_fill_usd": 3.6453863817522545,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 11,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 14.57571524091265,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.012631385635139743,
+   "full": {
+    "n_trades": 0,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.0,
+    "max_drawdown": 0.0,
+    "fee_ratio": "inf"
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.1261648958627828,
+    "cagr": 0.17208156199175972,
+    "sharpe_daily": 0.5786292383274264,
+    "max_drawdown": 0.603071850423248,
+    "final_equity": 53.175384045528205
+   }
+  },
+  "R2-03/maker_slip30/canonical": {
+   "trial_id": "40d82676300b",
+   "account": {
+    "net_return": 1.286721272161779,
+    "cagr": 0.1901807869453751,
+    "sharpe_daily": 0.6128968355867689,
+    "max_drawdown": 0.5975374687348038,
+    "final_equity": 57.190899016766096
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7855455387584849,
+    "cagr": 0.129787497948332,
+    "sharpe_daily": 0.4831322591158201,
+    "max_drawdown": 0.6698667526912354,
+    "final_equity": 44.65649392434971
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": false,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": false,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.012631385635139743,
+     "cost_stress_2x_sharpe": 0.0,
+     "avg_net_profit_per_trade_pct": 0.0
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.8769879397515009,
+     "2023": 0.0,
+     "2024": 0.2053080983835556,
+     "2025": 0.09274994837687982,
+     "2026": 0.32993578065169427
+    },
+    "max_round_trips_in_a_year": 0.8769879397515009,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 0,
+     "2024": 0,
+     "2025": 0,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.6128968355867689,
+    "null_sharpe_p95": 0.6722022407769964,
+    "null_sharpe_quantiles": [
+     0.4388046818372611,
+     0.49301139594166404,
+     0.5554499000271219,
+     0.6137193475195247,
+     0.6722022407769964
+    ],
+    "null_mdd_median": 0.5860496803082763,
+    "null_net_return_median": 0.9982397640109516,
+    "candidate_sharpe_percentile": 74.5,
+    "in_out_switches": 0,
+    "check_periods_in_market": 56,
+    "check_periods_total": 56,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.0,
+    "null_sharpe_p95": 0.0,
+    "null_sharpe_median": 0.0,
+    "candidate_mdd": 0.0,
+    "null_mdd_median": 0.0,
+    "candidate_top_share": null,
+    "null_top_share_median": null,
+    "candidate_trades": 0,
+    "null_trades_median": 0.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": false,
+    "top_share_not_worse": false,
+    "passes": false,
+    "candidate_sharpe_percentile": 0.0
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 11,
+     "fills_below_120pct_min": 5,
+     "smallest_fill_usd": 4.410269586324754,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 11,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 17.63402473540485,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.012631385635139743,
+   "full": {
+    "n_trades": 0,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.0,
+    "max_drawdown": 0.0,
+    "fee_ratio": "inf"
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.1939413303472626,
+    "cagr": 0.17984915826344805,
+    "sharpe_daily": 0.5936777535714294,
+    "max_drawdown": 0.6001347906386073,
+    "final_equity": 54.87047267198504
+   }
+  },
+  "R2-03/base/full_history": {
+   "trial_id": "3b9dfb83dfdc",
+   "account": {
+    "net_return": 167.9591412347965,
+    "cagr": 0.5470310323593561,
+    "sharpe_daily": 1.1323575177884744,
+    "max_drawdown": 0.6799477332065637,
+    "final_equity": 4225.668122282261
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 260.35814133544295,
+    "cagr": 0.6055149149839532,
+    "sharpe_daily": 1.0384775321623176,
+    "max_drawdown": 0.8357123299701915,
+    "final_equity": 6536.567114799429
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": false,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": false,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.00021513178535627155,
+     "cost_stress_2x_sharpe": 0.0,
+     "avg_net_profit_per_trade_pct": 0.0
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2015": 0.6946427243889667,
+     "2016": 0.47042070324158763,
+     "2017": 0.4204499456231584,
+     "2018": 0.44210304981230786,
+     "2019": 0.7459446612026408,
+     "2020": 0.5651548385069007,
+     "2021": 0.6874071933766759,
+     "2022": 0.1936284156186196,
+     "2023": 0.0,
+     "2024": 0.2049691569355953,
+     "2025": 0.0927499483768798,
+     "2026": 0.32914613372530876
+    },
+    "max_round_trips_in_a_year": 0.7459446612026408,
+    "closed_trades_per_year": {
+     "2015": 0,
+     "2016": 0,
+     "2017": 0,
+     "2018": 0,
+     "2019": 0,
+     "2020": 0,
+     "2021": 0,
+     "2022": 0,
+     "2023": 0,
+     "2024": 0,
+     "2025": 0,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 1.1323575177884744,
+    "null_sharpe_p95": 1.199238923560098,
+    "null_sharpe_quantiles": [
+     0.91566005806278,
+     0.9864041234992884,
+     1.0566387069870553,
+     1.1045555372891203,
+     1.199238923560098
+    ],
+    "null_mdd_median": 0.7298544359394195,
+    "null_net_return_median": 105.43936121162668,
+    "candidate_sharpe_percentile": 82.5,
+    "in_out_switches": 0,
+    "check_periods_in_market": 140,
+    "check_periods_total": 140,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.0,
+    "null_sharpe_p95": 0.0,
+    "null_sharpe_median": 0.0,
+    "candidate_mdd": 0.0,
+    "null_mdd_median": 0.0,
+    "candidate_top_share": null,
+    "null_top_share_median": null,
+    "candidate_trades": 0,
+    "null_trades_median": 0.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": false,
+    "top_share_not_worse": false,
+    "passes": false,
+    "candidate_sharpe_percentile": 0.0
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 42,
+     "fills_below_120pct_min": 23,
+     "smallest_fill_usd": 1.9975762303185545,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 42,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 7.987110077243321,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.00021513178535627155,
+   "full": {
+    "n_trades": 0,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.0,
+    "max_drawdown": 0.0,
+    "fee_ratio": "inf"
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 43,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 43,
+     "is_sharpe_mean": 0.0,
+     "oos_sharpe_pooled": 0.0,
+     "oos_over_is": null,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 155.54270058057392,
+    "cagr": 0.5370193116113704,
+    "sharpe_daily": 1.118643841829905,
+    "max_drawdown": 0.6832542590093649,
+    "final_equity": 3915.132941520154
+   }
+  },
+  "R2-04/base/canonical": {
+   "trial_id": "628a1e14f258",
+   "account": {
+    "net_return": 1.989560601740758,
+    "cagr": 0.2592542625439953,
+    "sharpe_daily": 0.8753911112057647,
+    "max_drawdown": 0.27137756292428067,
+    "final_equity": 74.76891064953637
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.778417164264845,
+    "cagr": 0.12883657432963713,
+    "sharpe_daily": 0.4822965451704842,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.47821327826377
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": true
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.34618888974796913,
+     "cost_stress_2x_sharpe": 0.8004398422435786,
+     "avg_net_profit_per_trade_pct": 0.27073808755762985
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.0,
+     "2023": 1.4860612175122023,
+     "2024": 1.1962798717573335,
+     "2025": 1.32404963766008,
+     "2026": 0.4955401387512389
+    },
+    "max_round_trips_in_a_year": 1.4860612175122023,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.8753911112057647,
+    "null_sharpe_p95": 1.0677247420505944,
+    "null_sharpe_quantiles": [
+     -0.11287841613196582,
+     0.19444792487903004,
+     0.40372517543077635,
+     0.7081429265082572,
+     1.0677247420505944
+    ],
+    "null_mdd_median": 0.5157585248125942,
+    "null_net_return_median": 0.4561712480550175,
+    "candidate_sharpe_percentile": 84.5,
+    "in_out_switches": 9,
+    "check_periods_in_market": 132,
+    "check_periods_total": 248,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.8485712836173794,
+    "null_sharpe_p95": 0.7478450774413918,
+    "null_sharpe_median": 0.33797826777894385,
+    "candidate_mdd": 0.27137756292428067,
+    "null_mdd_median": 0.3317043741837105,
+    "candidate_top_share": 0.5627974071046927,
+    "null_top_share_median": 0.7074519585507238,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": true,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": true,
+    "candidate_sharpe_percentile": 98.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 12,
+     "fills_below_120pct_min": 3,
+     "smallest_fill_usd": 4.358669685250617,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 12,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 17.427707657939294,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.34618888974796913,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.8485712836173794,
+    "max_drawdown": 0.27137756292428067,
+    "fee_ratio": 0.0747360349975095
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.6646508488135975,
+     "oos_sharpe_pooled": -1.2450930634544495,
+     "oos_over_is": -1.8733039545152796,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.15678775333856232,
+     "oos_sharpe_pooled": -1.2450930634544495,
+     "oos_over_is": -7.941264779563723,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.732119940872666,
+    "cagr": 0.23561006582517985,
+    "sharpe_daily": 0.8161408163571903,
+    "max_drawdown": 0.28329981035003826,
+    "final_equity": 68.33031972122538
+   }
+  },
+  "R2-04/maker/canonical": {
+   "trial_id": "e69457ba2ccc",
+   "account": {
+    "net_return": 2.1114644070795214,
+    "cagr": 0.26989293846280993,
+    "sharpe_daily": 0.9014349693896752,
+    "max_drawdown": 0.26604757281059016,
+    "final_equity": 77.81772482105883
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7927022848919008,
+    "cagr": 0.1307391959575661,
+    "sharpe_daily": 0.48396642266454637,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.83548414514644
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": true
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.363551618400785,
+     "cost_stress_2x_sharpe": 0.8432585073810289,
+     "avg_net_profit_per_trade_pct": 0.2794253689417174
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.0,
+     "2023": 1.489702624230381,
+     "2024": 1.1989727321778374,
+     "2025": 1.322804476123767,
+     "2026": 0.4975124378109453
+    },
+    "max_round_trips_in_a_year": 1.489702624230381,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.9014349693896752,
+    "null_sharpe_p95": 1.092029158790398,
+    "null_sharpe_quantiles": [
+     -0.08339004352707646,
+     0.2194485636332806,
+     0.4371198729877059,
+     0.7359752358762979,
+     1.092029158790398
+    ],
+    "null_mdd_median": 0.5115663974925726,
+    "null_net_return_median": 0.5262463517478313,
+    "candidate_sharpe_percentile": 85.0,
+    "in_out_switches": 9,
+    "check_periods_in_market": 132,
+    "check_periods_total": 248,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.869723195090076,
+    "null_sharpe_p95": 0.7676475049112435,
+    "null_sharpe_median": 0.36401636222588984,
+    "candidate_mdd": 0.26604757281059016,
+    "null_mdd_median": 0.3233048787844277,
+    "candidate_top_share": 0.5708878662415576,
+    "null_top_share_median": 0.7251231961517915,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": true,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": true,
+    "candidate_sharpe_percentile": 98.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 12,
+     "fills_below_120pct_min": 3,
+     "smallest_fill_usd": 4.358669685250617,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 12,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 17.427707657939294,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.363551618400785,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.869723195090076,
+    "max_drawdown": 0.26604757281059016,
+    "fee_ratio": 0.04169283185764743
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.679792915776797,
+     "oos_sharpe_pooled": -1.189850450827218,
+     "oos_over_is": -1.7503131074374025,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.18300419286018876,
+     "oos_sharpe_pooled": -1.189850450827218,
+     "oos_over_is": -6.501766064650978,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.9598233366574869,
+    "cagr": 0.2566072074561814,
+    "sharpe_daily": 0.8688496672035504,
+    "max_drawdown": 0.2727070591565477,
+    "final_equity": 74.02518164980376
+   }
+  },
+  "R2-04/slip30/canonical": {
+   "trial_id": "6de2c6b50009",
+   "account": {
+    "net_return": 1.930375774464121,
+    "cagr": 0.2539651677087189,
+    "sharpe_daily": 0.8622968185665639,
+    "max_drawdown": 0.274035354870352,
+    "final_equity": 73.28869811934767
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7713169930332968,
+    "cagr": 0.12788641689425173,
+    "sharpe_daily": 0.4814592891385139,
+    "max_drawdown": 0.6698667526912353,
+    "final_equity": 44.300637995762756
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": true
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.33758463270174227,
+     "cost_stress_2x_sharpe": 0.785901749342226,
+     "avg_net_profit_per_trade_pct": 0.26639246921581317
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.0,
+     "2023": 1.4842523884258805,
+     "2024": 1.1949412362283067,
+     "2025": 1.32467501643658,
+     "2026": 0.49455984174085066
+    },
+    "max_round_trips_in_a_year": 1.4842523884258805,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.8622968185665639,
+    "null_sharpe_p95": 1.0557141970590316,
+    "null_sharpe_quantiles": [
+     -0.12755188673752407,
+     0.18197859651116624,
+     0.38606811721161793,
+     0.6941899812909756,
+     1.0557141970590316
+    ],
+    "null_mdd_median": 0.515949301775158,
+    "null_net_return_median": 0.4139676605249927,
+    "candidate_sharpe_percentile": 84.5,
+    "in_out_switches": 9,
+    "check_periods_in_market": 132,
+    "check_periods_total": 248,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.8379363308254408,
+    "null_sharpe_p95": 0.7379047934854842,
+    "null_sharpe_median": 0.32497216519510713,
+    "candidate_mdd": 0.274035354870352,
+    "null_mdd_median": 0.337319559651591,
+    "candidate_top_share": 0.5587424226623136,
+    "null_top_share_median": 0.6948639992154914,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": true,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": true,
+    "candidate_sharpe_percentile": 98.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 12,
+     "fills_below_120pct_min": 3,
+     "smallest_fill_usd": 4.358669685250617,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 12,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 17.427707657939294,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.33758463270174227,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.8379363308254408,
+    "max_drawdown": 0.274035354870352,
+    "fee_ratio": 0.09115504492007007
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.6570389368099051,
+     "oos_sharpe_pooled": -1.2716001443813534,
+     "oos_over_is": -1.9353497534793034,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.14376373740157203,
+     "oos_sharpe_pooled": -1.2716001443813534,
+     "oos_over_is": -8.845068773006513,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.6529118810539307,
+    "cagr": 0.22798183938403294,
+    "sharpe_daily": 0.7965143783072417,
+    "max_drawdown": 0.2885673735036878,
+    "final_equity": 66.34932614515881
+   }
+  },
+  "R2-04/maker_slip30/canonical": {
+   "trial_id": "d00ac7ba85c9",
+   "account": {
+    "net_return": 2.04991572509772,
+    "cagr": 0.2645634790556164,
+    "sharpe_daily": 0.8884382089997858,
+    "max_drawdown": 0.26871496890436014,
+    "final_equity": 76.27839228469398
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 0.7855455387584849,
+    "cagr": 0.129787497948332,
+    "sharpe_daily": 0.4831322591158201,
+    "max_drawdown": 0.6698667526912354,
+    "final_equity": 44.65649392434971
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": false,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": true
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.3548467340508735,
+     "cost_stress_2x_sharpe": 0.821916008386668,
+     "avg_net_profit_per_trade_pct": 0.2750823884589406
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2022": 0.0,
+     "2023": 1.4878779473240904,
+     "2024": 1.1976236933664945,
+     "2025": 1.3234261270085361,
+     "2026": 0.496524329692155
+    },
+    "max_round_trips_in_a_year": 1.4878779473240904,
+    "closed_trades_per_year": {
+     "2022": 0,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 0.8884382089997858,
+    "null_sharpe_p95": 1.0796846896891679,
+    "null_sharpe_quantiles": [
+     -0.09815666534561343,
+     0.20693860942732653,
+     0.4168807938742056,
+     0.7220725110310351,
+     1.0796846896891679
+    ],
+    "null_mdd_median": 0.5144947320587724,
+    "null_net_return_median": 0.4876647911921541,
+    "candidate_sharpe_percentile": 84.5,
+    "in_out_switches": 9,
+    "check_periods_in_market": 132,
+    "check_periods_total": 248,
+    "passes": false
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 0.8591675956668838,
+    "null_sharpe_p95": 0.7577599966314978,
+    "null_sharpe_median": 0.3509940807296885,
+    "candidate_mdd": 0.26871496890436014,
+    "null_mdd_median": 0.32750319517397497,
+    "candidate_top_share": 0.566845923286519,
+    "null_top_share_median": 0.7163381324406657,
+    "candidate_trades": 4,
+    "null_trades_median": 4.0,
+    "beats_sharpe_p95": true,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": true,
+    "candidate_sharpe_percentile": 98.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 12,
+     "fills_below_120pct_min": 3,
+     "smallest_fill_usd": 4.358669685250617,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 12,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 17.42770765793929,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.3548467340508735,
+   "full": {
+    "n_trades": 4,
+    "n_force_exit": 1,
+    "sharpe_daily": 0.8591675956668838,
+    "max_drawdown": 0.26871496890436014,
+    "fee_ratio": 0.058248763581882766
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.6722359869429649,
+     "oos_sharpe_pooled": -1.2178323027559697,
+     "oos_over_is": -1.8116142640535178,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 15,
+     "is_sharpe_mean": 0.16986980528712362,
+     "oos_sharpe_pooled": -1.2178323027559697,
+     "oos_over_is": -7.169209976414114,
+     "oos_trades_per_window": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 1.843743097822165,
+    "cagr": 0.24606899074289834,
+    "sharpe_daily": 0.8425737997078655,
+    "max_drawdown": 0.27801303890099166,
+    "final_equity": 71.12201487653235
+   }
+  },
+  "R2-04/base/full_history": {
+   "trial_id": "5d32afa7056c",
+   "account": {
+    "net_return": 92.42791789296544,
+    "cagr": 0.4709984260526452,
+    "sharpe_daily": 1.178719298278559,
+    "max_drawdown": 0.5254314761554283,
+    "final_equity": 2336.632226503066
+   },
+   "benchmark_btc_buy_hold": {
+    "net_return": 260.35814133544295,
+    "cagr": 0.6055149149839532,
+    "sharpe_daily": 1.0384775321623176,
+    "max_drawdown": 0.8357123299701915,
+    "final_equity": 6536.567114799429
+   },
+   "gate1": {
+    "checks": {
+     "params_le_6": true,
+     "is_sharpe_ge_1": true,
+     "wf_both_schemes_ge_8_windows": true,
+     "wf_oos_ge_half_is": false,
+     "min_trades_canonical_ge_100": false,
+     "fee_ratio_lt_40pct": true,
+     "single_trade_le_30pct_net": false,
+     "force_exit_group_le_30pct_net": true,
+     "beats_random_entry_null": false
+    },
+    "passes": false,
+    "reported_not_gated": {
+     "dsr": 0.6888973434682977,
+     "cost_stress_2x_sharpe": 1.119464455194387,
+     "avg_net_profit_per_trade_pct": 0.528582766062098
+    }
+   },
+   "turnover": {
+    "round_trips_per_year": {
+     "2015": 1.6673476095600144,
+     "2016": 0.6287545068527218,
+     "2017": 0.6510275923327812,
+     "2018": 0.20373106017025766,
+     "2019": 1.937682027635305,
+     "2020": 1.4831560003061606,
+     "2021": 1.6921795757069784,
+     "2022": 0.3327701583150439,
+     "2023": 1.4860612175122025,
+     "2024": 1.1962798717573335,
+     "2025": 1.32404963766008,
+     "2026": 0.4955401387512389
+    },
+    "max_round_trips_in_a_year": 1.937682027635305,
+    "closed_trades_per_year": {
+     "2015": 1,
+     "2016": 0,
+     "2017": 0,
+     "2018": 1,
+     "2019": 2,
+     "2020": 1,
+     "2021": 2,
+     "2022": 1,
+     "2023": 1,
+     "2024": 1,
+     "2025": 2,
+     "2026": 0
+    },
+    "cap": 4.0,
+    "passes_cap": true
+   },
+   "matched_null": {
+    "seeds": 200,
+    "basis": "account view",
+    "candidate_sharpe": 1.178719298278559,
+    "null_sharpe_p95": 1.1589717796093542,
+    "null_sharpe_quantiles": [
+     0.4771399449538126,
+     0.6357052666814613,
+     0.7907116054915869,
+     0.9481288174238469,
+     1.1589717796093542
+    ],
+    "null_mdd_median": 0.6612557346767924,
+    "null_net_return_median": 14.473790713106826,
+    "candidate_sharpe_percentile": 96.0,
+    "in_out_switches": 25,
+    "check_periods_in_market": 371,
+    "check_periods_total": 613,
+    "passes": true
+   },
+   "c11": {
+    "seeds": 200,
+    "candidate_sharpe": 1.170378296509359,
+    "null_sharpe_p95": 1.2355277741848456,
+    "null_sharpe_median": 1.074595180424111,
+    "candidate_mdd": 0.5254314761554283,
+    "null_mdd_median": 0.5523956852069016,
+    "candidate_top_share": 0.32908861077552054,
+    "null_top_share_median": 0.38746134694266166,
+    "candidate_trades": 12,
+    "null_trades_median": 11.0,
+    "beats_sharpe_p95": false,
+    "beats_mdd_median": true,
+    "top_share_not_worse": true,
+    "passes": false,
+    "candidate_sharpe_percentile": 80.5
+   },
+   "min_order": {
+    "cad35": {
+     "start_usd": 25.01,
+     "fills_checked": 56,
+     "fills_below_120pct_min": 24,
+     "smallest_fill_usd": 2.429797430908955,
+     "passes": false
+    },
+    "usd100": {
+     "start_usd": 100.0,
+     "fills_checked": 56,
+     "fills_below_120pct_min": 0,
+     "smallest_fill_usd": 9.715303602194941,
+     "passes": true
+    },
+    "thresholds_usd": {
+     "BTC/USD": 5.594396399999999,
+     "ETH/USD": 5.435436
+    }
+   },
+   "dsr": 0.6888973434682977,
+   "full": {
+    "n_trades": 12,
+    "n_force_exit": 1,
+    "sharpe_daily": 1.170378296509359,
+    "max_drawdown": 0.5254314761554283,
+    "fee_ratio": 0.06683926312546326
+   },
+   "walk_forward": {
+    "anchored": {
+     "scheme": "anchored",
+     "n_windows": 43,
+     "is_sharpe_mean": 0.9490606361328174,
+     "oos_sharpe_pooled": -0.9807977511663957,
+     "oos_over_is": -1.0334405556666,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    },
+    "rolling": {
+     "scheme": "rolling",
+     "n_windows": 43,
+     "is_sharpe_mean": 0.08001112063274816,
+     "oos_sharpe_pooled": -0.9807977511663957,
+     "oos_over_is": -12.258267893387808,
+     "oos_trades_per_window": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "cost_stress_2x_account": {
+    "net_return": 72.16845591807763,
+    "cagr": 0.44073022074230384,
+    "sharpe_daily": 1.1240718148731164,
+    "max_drawdown": 0.548721819330928,
+    "final_equity": 1829.9430825111217
+   }
+  }
+ }
+}

@@ -20,6 +20,8 @@ backtester forces dry-run. It is not part of the trading path.
 | `src/research_harness/dsr.py` | PSR, Deflated Sharpe, minimum track record length. |
 | `src/research_harness/registry.py` | Append-only SQLite trial registry (the `N` for DSR). |
 | `src/research_harness/ft_runner.py`, `cli.py` | In-process Freqtrade backtests and the run orchestration (sandbox only). |
+| `candidates-round2.json` | Round 2's frozen spec: candidates, costs, nulls, decision rule ([`07-round2-preregistration.md`](../../docs/research/07-round2-preregistration.md)). Hashed into every round-2 registry row. |
+| `src/research_harness/round2/` | Round 2: a daily long-or-flat portfolio engine that emits Freqtrade-shaped trade rows (so `metrics`, `walkforward`, `null`, `dsr` and `cli.gate1` score it unchanged), the four candidates, the C11 and matched switching nulls, and the runner. Run with `scripts/research-round2.sh coverage|prereg|run`. |
 | `fixtures/kraken-markets.json` | Public Kraken market metadata for the whitelisted pairs, so the sandbox needs no network. |
 | `state/registry.sqlite` | The trial registry. Git-ignored; **do not delete it** — deleting it resets N. |
 | `runs/<Strategy>.json` | Full result of the latest run of each strategy. Git-ignored. |
@@ -44,6 +46,9 @@ Expected: `ok`, then the trial count. Restore = copy the dated file back to
 | Date | File | Trials (N) | SHA-256 |
 |---|---|---|---|
 | 2026-10-30 | `~/Backups/ai-trading-agent/research-registry/registry-2026-10-30.sqlite` | 6 | `d206c18aed3b760f41e58542da435191c82dce829df45aea5a1915b2603fd905` |
+| 2026-11-01 | `~/Backups/ai-trading-agent/research-registry/registry-2026-11-01-pre-round2.sqlite` | 6 | `d206c18aed3b760f41e58542da435191c82dce829df45aea5a1915b2603fd905` |
+| 2026-11-01 | `~/Backups/ai-trading-agent/research-registry/registry-2026-11-01-round2-preregistered.sqlite` | 26 (20 round-2, unscored) | `e7bc765eb7f2e7e2914fff01594dec1e7ed9d7f8487603f345a69c5b2bc5136b` |
+| 2026-11-01 | `~/Backups/ai-trading-agent/research-registry/registry-2026-11-01-round2-scored.sqlite` | 26 (all scored) | `20ec2514d1dd85661d9b7bea53d558e9a7e360fde3b70cf1dd9a9c25ee337aaa` |
 
 ## Running
 
@@ -52,6 +57,7 @@ make kraken-data                      # once per Kraken archive release (~10 GB 
 make research-test                    # unit tests for the pure modules
 make research-run STRATEGY=C01Tsmom1d # registers a trial, writes services/research/runs/C01Tsmom1d.json
 scripts/research-harness.sh run C01Tsmom1d --seeds 5 --no-register   # harness check, no trial
+HARNESS_STATE_RO=1 scripts/research-harness.sh run C01Tsmom1d --recompute --out /out/recompute   # rebuild a scored trial's report; registry read-only, refuses unless the recorded result is reproduced exactly
 ```
 
 A run of an unchanged candidate (same code, parameters, fee, data snapshot and Freqtrade

@@ -1,0 +1,91 @@
+{
+ "data_snapshot_id": "6f4979b22d6aaafe",
+ "series": {
+  "BTC/USD": {
+   "first": "2013-10-06",
+   "last": "2026-09-30",
+   "rows": 4731,
+   "feather_sha256": "6086f530699f6449bd5fc72c20920a05629e3c4e54199be5c4d3e1fa233363df",
+   "ranges": [
+    {
+     "range": "2014-01-01 -> 2026-09-30",
+     "expected_days": 4656,
+     "missing_days": 10,
+     "missing_fraction": 0.00215,
+     "missing_dates": [
+      "2014-05-19",
+      "2014-08-06",
+      "2014-08-26",
+      "2014-09-03",
+      "2014-09-05",
+      "2014-09-12",
+      "2014-09-26",
+      "2014-09-27",
+      "2014-10-19",
+      "2014-12-25"
+     ],
+     "zero_volume_days": 0
+    },
+    {
+     "range": "2015-01-01 -> 2026-09-30",
+     "expected_days": 4291,
+     "missing_days": 0,
+     "missing_fraction": 0.0,
+     "missing_dates": [],
+     "zero_volume_days": 0
+    },
+    {
+     "range": "2021-01-01 -> 2026-09-30",
+     "expected_days": 2099,
+     "missing_days": 0,
+     "missing_fraction": 0.0,
+     "missing_dates": [],
+     "zero_volume_days": 0
+    }
+   ]
+  },
+  "ETH/USD": {
+   "first": "2015-08-07",
+   "last": "2026-09-30",
+   "rows": 4067,
+   "feather_sha256": "00365a2d12352104445745c1c62840ff8ffbbde88ca07ab4d19180e4c1ce0f23",
+   "ranges": [
+    {
+     "range": "2015-08-07 -> 2026-09-30",
+     "expected_days": 4073,
+     "missing_days": 6,
+     "missing_fraction": 0.00147,
+     "missing_dates": [
+      "2015-08-09",
+      "2015-08-10",
+      "2015-09-04",
+      "2015-09-21",
+      "2015-10-10",
+      "2018-01-12"
+     ],
+     "zero_volume_days": 0
+    },
+    {
+     "range": "2016-09-01 -> 2026-09-30",
+     "expected_days": 3682,
+     "missing_days": 1,
+     "missing_fraction": 0.00027,
+     "missing_dates": [
+      "2018-01-12"
+     ],
+     "zero_volume_days": 0
+    },
+    {
+     "range": "2021-01-01 -> 2026-09-30",
+     "expected_days": 2099,
+     "missing_days": 0,
+     "missing_fraction": 0.0,
+     "missing_dates": [],
+     "zero_volume_days": 0
+    }
+   ]
+  }
+ },
+ "worst_missing_fraction": 0.002147766323024055,
+ "stop": false
+}

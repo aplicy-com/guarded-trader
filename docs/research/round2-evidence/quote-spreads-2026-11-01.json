@@ -1,0 +1,58 @@
+{
+ "measured_at_end": "2026-11-01T04:49:41+00:00",
+ "samples": 20,
+ "interval_s": 15.0,
+ "usdcad_mid_last": 1.3996300000000002,
+ "pairs": {
+  "BTC/USD": {
+   "kraken_pair": "XBTUSD",
+   "ordermin_base": 6e-05,
+   "costmin_quote": 0.5,
+   "spread_bp_median": 0.012870021152628896,
+   "spread_bp_max": 0.012870021152628896,
+   "buy_25usd_vs_mid_bp_median": 0.006435010575511768,
+   "buy_100usd_vs_mid_bp_median": 0.006435010575511768,
+   "last_mid": 77699.95
+  },
+  "BTC/CAD": {
+   "kraken_pair": "XBTCAD",
+   "ordermin_base": 6e-05,
+   "costmin_quote": 1.0,
+   "spread_bp_median": 2.9797788893709938,
+   "spread_bp_max": 3.053342444310721,
+   "buy_25usd_vs_mid_bp_median": 1.4898894446857547,
+   "buy_100usd_vs_mid_bp_median": 1.4898894446857547,
+   "last_mid": 108741.95
+  },
+  "ETH/USD": {
+   "kraken_pair": "ETHUSD",
+   "ordermin_base": 0.002,
+   "costmin_quote": 0.5,
+   "spread_bp_median": 0.044168343227772244,
+   "spread_bp_max": 0.7948423562652842,
+   "buy_25usd_vs_mid_bp_median": 0.02208417161364551,
+   "buy_100usd_vs_mid_bp_median": 0.02208417161364551,
+   "last_mid": 2264.7650000000003
+  },
+  "ETH/CAD": {
+   "kraken_pair": "ETHCAD",
+   "ordermin_base": 0.002,
+   "costmin_quote": 1.0,
+   "spread_bp_median": 1.0255129461583974,
+   "spread_bp_max": 14.257505693539272,
+   "buy_25usd_vs_mid_bp_median": 0.5127564730800227,
+   "buy_100usd_vs_mid_bp_median": 0.5127564730800227,
+   "last_mid": 3169.5550000000003
+  },
+  "USD/CAD": {
+   "kraken_pair": "USDCAD",
+   "ordermin_base": 5.0,
+   "costmin_quote": 1.0,
+   "spread_bp_median": 1.9290743658167484,
+   "spread_bp_max": 3.143575674439843,
+   "buy_25usd_vs_mid_bp_median": 0.9824079159803656,
+   "buy_100usd_vs_mid_bp_median": 0.9824079159803656,
+   "last_mid": 1.3996300000000002
+  }
+ }
+}
