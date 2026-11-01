@@ -1,0 +1,121 @@
+{
+  "$comment": "Research round 2, FROZEN before any round-2 strategy code or backtest exists (docs/research/07-round2-preregistration.md). The trial registry hashes this file: editing any byte after pre-registration makes every round-2 trial unverifiable, and the round-2 runner refuses to score it. A changed candidate is a new trial in a new round, never an edit here.",
+  "round": 2,
+  "data": {
+    "source": "Kraken official OHLCVT archive (ADR-0020), 1440-minute candles, converted feather files",
+    "data_snapshot_id": "6f4979b22d6aaafe",
+    "pairs": ["BTC/USD", "ETH/USD"],
+    "missing_day_rule": "A day with no Kraken candle becomes a flat zero-volume candle at the previous close (Freqtrade's load behaviour). Signals and fills on that day see that price."
+  },
+  "timeranges": {
+    "canonical": {"range": "20220101-20261001", "why": "Gate 1 canonical timerange, exactly as in services/research/candidates.json and ADR-0021."},
+    "full_history_btc": {"range": "20150101-20261001", "why": "Supplementary, not Gate 1: BTC/USD from 2015. Warm-up uses 2014 candles."},
+    "full_history_btc_eth": {"range": "20160901-20261001", "why": "Supplementary, not Gate 1: R2-02 needs 365 days of ETH/USD before its first decision; Kraken ETH/USD starts 2015-08-07, so the first month-end with a full 12-month ETH return is 2016-08-31."}
+  },
+  "execution": {
+    "decision": "At the daily close (UTC) of a check day, using only candles up to and including that day.",
+    "fill": "At the open of the next daily candle (Freqtrade's backtest convention). Sells before buys.",
+    "fill_cost": "Cash moves by notional*(1+c) on a buy and notional*(1-c) on a sell, c = fee + slippage per fill (Freqtrade's spot fee model, the same model the Gate 1 cost basis uses).",
+    "weekly_check_day": "Sunday (the last daily candle of the ISO week).",
+    "monthly_check_day": "The last calendar day of the month.",
+    "leverage": "None. Weights are in [0, 1] of account equity; the rest is USD cash earning 0.",
+    "start_state": "Every backtest, including every walk-forward window and every null seed, starts flat in USD cash; indicator warm-up comes from candles before the backtest start.",
+    "end_state": "A position still open at the end of a backtest is closed at the last day's close and tagged force_exit (Gate 1 force-exit rule: excluded from headline Gate 1 figures, reported separately)."
+  },
+  "cost_cases": {
+    "base": {"fee": 0.008, "slippage": 0.001, "per_fill": 0.009, "why": "Kraken Tier-1 taker 0.80% + 0.10% slippage/spread. Equals Gate 1's cost basis (config.backtest-costs.json, 0.009)."},
+    "maker": {"fee": 0.004, "slippage": 0.001, "per_fill": 0.005, "why": "Sensitivity: Tier-1 maker 0.40%. Never used for a gate (ADR-0021)."},
+    "slip30": {"fee": 0.008, "slippage": 0.003, "per_fill": 0.011, "why": "Sensitivity: 0.30% slippage."},
+    "maker_slip30": {"fee": 0.004, "slippage": 0.003, "per_fill": 0.007, "why": "Sensitivity: both."},
+    "stress_2x": {"per_fill": 0.018, "why": "ADR-0021's mandatory 2x-fee report, computed inside every base-case trial; not a separate trial."}
+  },
+  "start_balance": {
+    "base": {"amount": 35.0, "currency": "CAD", "usd": 25.01, "why": "The CA$35 credited to Kraken on 2026-10-31, at USD/CAD mid 1.39963 measured 2026-11-01 (docs/research/round2-evidence/quote-spreads-2026-11-01.json)."},
+    "sensitivity": {"amount": 100.0, "currency": "USD", "usd": 100.0, "why": "The R1 principal."},
+    "note": "The engine is fractional and unlimited-precision, so every return, Sharpe and drawdown is identical at either balance. The balance matters only to the minimum-order check below, which is run at both."
+  },
+  "quote_currency": {
+    "choice": "USD",
+    "why": "Measured 2026-11-01: a US$25-100 market order fills at top of book on BTC/USD, ETH/USD, BTC/CAD, ETH/CAD and USD/CAD alike. BTC/USD half-spread ~0.01 bp vs BTC/CAD ~1.5 bp; ETH/USD ~0.02 bp vs ETH/CAD ~0.5 bp (max 7 bp); CAD books are 10-100x thinner by 24 h volume. Converting CAD to USD once costs 0.20% (Kraken FX fee, Tier 1, maker = taker) + ~1 bp half-spread. At <= 8 fills a year the CAD route saves at most ~0.1-0.3% over a one-to-two-year pilot, less than one fill's 0.10% slippage allowance, while USD keeps ADR-0008 and lets the backtest price exactly the book that would be traded. The one-time conversion (and any conversion back) is a pilot cost, not a strategy cost."
+  },
+  "definitions": {
+    "closed_trade": "One position in one pair from a buy out of zero holdings to the sell that returns holdings to zero. Rebalances in between are position adjustments of that trade (Freqtrade's adjust_trade_position semantics), not trades. A switch from BTC to ETH closes one trade and opens another.",
+    "round_trips_per_calendar_year": "Notional turnover: sum over the year's fills (force exits excluded) of |fill notional| / account equity just before the fill, divided by 2. A full entry plus a full exit = 1.0; a BTC-to-ETH switch = 1.0; a 20% rebalance of a 0.6 weight = 0.06.",
+    "turnover_cap": "Round 2 requirement: more than 4.0 round trips in ANY calendar year (partial first and last years included as they are) is an automatic fail, on the canonical base trial and on the full-history base trial.",
+    "realised_vol": "Sample std (ddof=1) of the last 60 daily log close-to-close returns, including the decision day, times sqrt(365).",
+    "sma": "Simple mean of the last 200 daily closes, including the decision day.",
+    "return_12m": "close(decision day) / close(decision day - 365 calendar days) - 1.",
+    "relative_drift": "|current weight - target weight| / target weight, current weight = position value / equity at the decision day's close.",
+    "account_view": "Round-2 economics (net return, max drawdown, Sharpe, vs buy-and-hold): the whole account marked to each day's close, the final open position included and closed at the last close with costs. Distinct from Gate 1's headline figures, which exclude force exits."
+  },
+  "gate1": {
+    "rule": "ADR-0021 Gate 1 exactly as written, computed by research_harness.cli.gate1 on the canonical base trial: params <= 6; IS Sharpe >= 1.0 (daily equity, force exits excluded); anchored AND rolling walk-forward, 12-month IS / 3-month OOS, >= 8 OOS windows each, pooled OOS Sharpe >= 50% of IS; >= 100 closed trades over the canonical timerange (force exits excluded); fees / gross winning P&L < 40%; no single trade > 30% of net, force-exit group <= 30% of net; beats the C11 random-entry null (Sharpe > null p95 AND MDD < null median AND top-trade share <= null median). DSR reported against the registry's N (rounds 1 and 2) and Sharpe dispersion.",
+    "known_before_running": "The turnover cap allows at most ~19 round trips over the 4.75-year canonical range, so every round-2 candidate is expected to fail the >= 100 closed trades criterion by construction. The operator chose on 2026-11-01 to run Gate 1 exactly as written anyway and to report the economics in full.",
+    "supplementary": "The same checks are computed on every other trial (sensitivities, full history) and reported; only the canonical base trial's verdict is the Gate 1 verdict."
+  },
+  "nulls": {
+    "random_entry_c11": {
+      "rule": "ADR-0021 C11, adapted to a daily portfolio engine: the candidate's exits, sizing, rebalancing, check schedule, costs and slot count are kept; only entries are replaced by seeded Bernoulli draws (research_harness.null.uniforms, keyed by seed, pair and date) on the candidate's check days, per pair, at the candidate's own rate (entries / flat check days); a random entry is never drawn on a check day on which the candidate's own exit for that pair fires, nor while the slot is occupied. Pairs are tried in whitelist order (BTC/USD, ETH/USD). Rate calibration exactly as research_harness.cli: one pooled multiplier, up to 4 rounds of 6 pilot seeds (seeds 0-23) until the null's mean trade count (incl. force exits) is within 10% of the candidate's; then 200 scored seeds 1000000-1000199.",
+      "scored_on": "Gate 1 headline basis (force exits excluded), via research_harness.null.verdict."
+    },
+    "matched_switching": {
+      "rule": "Round 2 requirement: candidate's account-view Sharpe must exceed the 95th percentile of 200 seeded matched-null runs (seeds 2000000-2000199, numpy default_rng). On the candidate's check-day grid, the candidate's position path is a sequence of runs (flat / in a pair). The null keeps the run sequence's states and count (so the same number of in/out switches and the same starting state) and the total number of check periods in the market and out of it, and draws new run lengths as uniform random compositions of those totals. R2-02: each in-market run's pair is drawn uniformly from BTC/USD, ETH/USD; a run directly following another in-market run takes the other pair. While in the market the candidate's own sizing and rebalancing rule applies. R2-03 (never out of the market after entry, so no in/out switches): the null keeps the entry date and the number of rebalance fills, draws the rebalance check days uniformly without replacement from the remaining check days, and assigns the candidate's own sequence of post-entry target weights in a random order.",
+      "scored_on": "account view"
+    }
+  },
+  "min_order_check": {
+    "rule": "Round 2 requirement: every non-force-exit fill in the canonical base trial, sized as (fill notional / pre-fill equity) x start balance, must be >= 120% of the pair's effective Kraken minimum, max(costmin, ordermin x last mid) (the 120% headroom convention of docs/research/02-kraken-market-facts.md). Evaluated at the CA$35 base balance (pass/fail) and at US$100 (reported).",
+    "kraken_minimums_2026_11_01": {"BTC/USD": {"ordermin": 0.00006, "costmin": 0.5, "last_mid": 77699.95}, "ETH/USD": {"ordermin": 0.002, "costmin": 0.5, "last_mid": 2264.765}}
+  },
+  "round2_pass": "A candidate passes round 2 only if: Gate 1 passes on its canonical base trial AND the turnover cap holds on both base trials AND it beats its matched switching null on the canonical base trial AND the minimum-order check passes at CA$35. WP-D's 'passes Gate 1 at base cost' branch requires all of these.",
+  "benchmark": {"name": "BTC buy-and-hold", "rule": "Buy BTC/USD with all equity at the open of the first day, hold, sell at the last close; same cost case as the comparison. Also the harness's fee-free research_harness.metrics.buy_and_hold. Not a trial."},
+  "trials": {
+    "per_candidate": [
+      {"case": "base", "timerange": "canonical"},
+      {"case": "maker", "timerange": "canonical"},
+      {"case": "slip30", "timerange": "canonical"},
+      {"case": "maker_slip30", "timerange": "canonical"},
+      {"case": "base", "timerange": "full_history"}
+    ],
+    "full_history_map": {"R2-01": "full_history_btc", "R2-02": "full_history_btc_eth", "R2-03": "full_history_btc", "R2-04": "full_history_btc"},
+    "note": "4 candidates x 5 = 20 trials, every one registered before any of them runs. Every registered trial counts toward N for the Deflated Sharpe, which also counts all 6 round-1 trials."
+  },
+  "candidates": {
+    "R2-01": {
+      "name": "BTC trend filter",
+      "family": "trend-filter",
+      "schedule": "weekly",
+      "pairs": ["BTC/USD"],
+      "params": {"sma_days": 200, "band": 0.05},
+      "rule": "Flat: enter BTC with 100% of equity if close > SMA200 x 1.05. In: exit to cash if close < SMA200 x 0.95. Otherwise no change.",
+      "hypothesis": "Holding BTC only while it trades above its 200-day average (with a +/-5% buffer, checked weekly) keeps most of BTC's bull-market return while sitting out most of each bear, giving a lower max drawdown than buy-and-hold and a higher account-view Sharpe on 2015-2026, at roughly 1-3 round trips a year. Predicted: fails Gate 1 on the >= 100 trades criterion (by construction) and probably on IS Sharpe >= 1.0 over 2022-2026, a range that starts with a bear; its edge over buy-and-hold, if any, is drawdown, not return."
+    },
+    "R2-02": {
+      "name": "Dual momentum BTC/ETH",
+      "family": "dual-momentum",
+      "schedule": "monthly",
+      "pairs": ["BTC/USD", "ETH/USD"],
+      "params": {"lookback_days": 365},
+      "rule": "Each month-end: pick the pair with the higher 12-month return (tie: BTC/USD). If its 12-month return > 0, hold it with 100% of equity (switching if needed); otherwise hold cash.",
+      "hypothesis": "Monthly relative plus absolute 12-month momentum between BTC and ETH captures the stronger trend and avoids the 2018 and 2022 bears, beating BTC buy-and-hold on drawdown and account-view Sharpe over 2016-2026 at <= 4 round trips a year. Predicted: fails Gate 1 on trade count by construction; a 12-month lookback reacts late, so it may give back much of each bull's top and is the candidate most likely to breach the turnover cap in a choppy year."
+    },
+    "R2-03": {
+      "name": "BTC vol target",
+      "family": "vol-target",
+      "schedule": "monthly",
+      "pairs": ["BTC/USD"],
+      "params": {"vol_target": 0.5, "vol_window_days": 60, "drift_band": 0.2},
+      "rule": "Target weight = min(1, 0.50 / realised 60-day vol). Each month-end: if flat, buy to target; if relative drift > 20%, rebalance to target; otherwise no change. Never exits fully.",
+      "hypothesis": "Scaling BTC exposure to 50% annualised volatility lowers drawdown and raises the Sharpe of a BTC holding relative to buy-and-hold (volatility clustering), with few small rebalances. Predicted: fails Gate 1 because it is always in the market, so its only trade on each backtest is the final force exit: 0 closed trades and zero headline Gate 1 Sharpe. Its account-view Sharpe vs buy-and-hold and its matched null are the informative results."
+    },
+    "R2-04": {
+      "name": "Trend filter x vol target",
+      "family": "trend-filter",
+      "schedule": "weekly",
+      "pairs": ["BTC/USD"],
+      "params": {"sma_days": 200, "band": 0.05, "vol_target": 0.5, "vol_window_days": 60, "drift_band": 0.2},
+      "rule": "R2-01's on/off state (same buffer, evaluated weekly). Off: hold cash (exit if held). On: target weight = min(1, 0.50 / realised 60-day vol); if flat buy to target, else rebalance if relative drift > 20%.",
+      "hypothesis": "Combining R2-01's bear-market exit with R2-03's volatility sizing gives the lowest drawdown of the four and the best account-view Sharpe, at the cost of extra (small) rebalance fills checked weekly. Predicted: fails Gate 1 on trade count by construction; weekly drift checks may produce rebalances small enough to fail the CA$35 minimum-order check."
+    }
+  }
+}
