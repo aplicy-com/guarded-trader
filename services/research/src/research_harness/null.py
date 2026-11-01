@@ -41,7 +41,11 @@ def uniforms(pair: str, dates: pd.Series, seed: int) -> np.ndarray:
     Counter-based (splitmix64 of the key), so the draw for a given candle is identical whatever
     window or startup period happens to be loaded around it.
     """
-    stamps = (pd.to_datetime(dates, utc=True).astype("int64") // 1_000_000_000).to_numpy().astype(np.uint64)
+    # Whole seconds since the epoch whatever the datetime resolution (ns, us, ms, s). The earlier
+    # ``astype("int64") // 1e9`` assumed nanoseconds: on Freqtrade's ms dates it gave one draw per
+    # ~11.6 days, on second-resolution dates one draw for every candle (found in round 2).
+    ts = pd.Series(pd.to_datetime(dates, utc=True))
+    stamps = ((ts - pd.Timestamp(0, tz="UTC")) // pd.Timedelta(seconds=1)).to_numpy().astype(np.uint64)
     with np.errstate(over="ignore"):
         key = np.uint64(seed) * np.uint64(0x100000001B3) ^ np.uint64(zlib.crc32(pair.encode()))
         h = _splitmix64(_splitmix64(stamps ^ _splitmix64(np.array([key], dtype=np.uint64))[0]))
