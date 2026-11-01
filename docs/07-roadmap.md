@@ -54,10 +54,8 @@ written, as history.
 - Trial registry: N = 26 registered trials (6 in round 1, 20 in round 2). Every one counts against future DSR.
 
 **Paused: live trading.**
-- The $20 pilot has not run. Funding the Kraken account by deposit did not work at first:
-  Interac e-Transfer failed, credit card declined, Scotiabank bill payment did not list Kraken.
-  An Interac e-Transfer succeeded on 2026-10-31 (CA$35 credited). The funds stay parked on
-  Kraken and are not traded.
+- The $20 pilot has not run. Funding the Kraken account took several attempts; a deposit
+  succeeded on 2026-10-31 (CA$35). The funds stay parked on Kraken and are not traded.
 - NDAX was checked as a replacement venue and **rejected for live**
   ([ADR-0022](05-adr/0022-ndax-rejected-for-live.md)): the key's withdraw scope can't be
   verified through its API, and Freqtrade can't hold stops on the exchange for it.
@@ -84,8 +82,8 @@ paused. No API key created, no VPS running, no live trading.
 option (power off / server deleted): server deleted; static IP kept: yes, Hetzner Primary IP
 retained for reuse (recorded privately);
 exchange keys deleted: none existed (no API key was created); off-site backups: B2 retained
-(30-day lifecycle); local backup folder: `~/Backups/ai-trading-agent/vps-pause-2026-10-31`.
-- 2026-10-31: Kraken Interac e-Transfer deposit succeeded (CA$35 credited). Revisit trigger 1
+(30-day lifecycle).
+- 2026-10-31: Kraken deposit succeeded (CA$35). Revisit trigger 1
   ("Kraken deposits work") is met; trigger 2 (Gate 1 at real costs) is unmet, so the project
   remains paused. No API key created, no VPS running. Funds stay parked on Kraken; no live
   trading. Trigger 1 reopened the decision. Decision: remain paused. No plumbing pilot until
