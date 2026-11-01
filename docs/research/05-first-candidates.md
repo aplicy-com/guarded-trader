@@ -1,10 +1,65 @@
 # First candidates under the cost-consistent Gate 1: C05, C01, C04 vs the random-entry null
 
+## Erratum (2026-11-01)
+
+**The random-entry null below did not draw independent per-candle entries, as ADR-0021
+specifies.** `research_harness.null.uniforms` turned candle timestamps into seconds with
+`astype("int64") // 1e9`, which assumes nanosecond timestamps. Freqtrade 2026.8 (pandas 3) gives
+millisecond dates. So every candle in a block of about 11.6 days got the same random draw: 27
+distinct draws per 300 daily candles, and about 70 candles per draw on 4h.
+
+The bug was found in research round 2 ([`08-round2-results.md`](08-round2-results.md),
+"Erratum"). It was fixed in commit `11299cd`, with regression test
+`test_null_uniforms_do_not_depend_on_datetime_resolution`.
+
+**Re-scored 2026-11-01 without touching the registry:**
+- Command: `HARNESS_STATE_RO=1 scripts/research-harness.sh run <Strategy> --recompute`.
+- The registry is mounted read-only and opened in SQLite read-only mode.
+- The run refuses unless each trial's recorded Sharpe, trade count and full daily-return series
+  are reproduced exactly. All four were.
+- Only the null changed: walk-forward and every other Gate 1 check came out identical.
+- 200 seeds, same calibration, same seeds. N is unchanged (26).
+
+| Candidate (trial) | Candidate Sharpe | Null median / p95, old → new | Percentile, old → new | MDD vs null median, old → new | Top-trade share vs null median, old → new | Null passes, old → new |
+|---|---|---|---|---|---|---|
+| Baseline4h (`4536361ffa38`) | −0.22 | −0.80 / −0.10 → −0.68 / −0.23 | 92nd → **95th** (above p95) | 83.7 % vs 90.5 % ✅ → vs 87.3 % ✅ | 24.3 % vs 10.6 % ❌ → vs 12.1 % ❌ | ❌ → ❌ |
+| C05 (`dab671223355`) | −0.14 | −0.41 / −0.04 → −0.28 / +0.09 | 86.5th → **70th** | 83.2 % vs 90.5 % ✅ → vs 86.5 % ✅ | 23.5 % vs 10.1 % ❌ → vs 13.7 % ❌ | ❌ → ❌ |
+| C01 (`59f2a1b1e63f`) | −0.57 | −0.64 / −0.33 → −0.58 / −0.32 | 65.5th → **52nd** | 91.8 % vs 88.7 % ❌ → vs 87.8 % ❌ | 16.9 % vs 16.6 % ❌ → vs 17.3 % ✅ | ❌ → ❌ |
+| C04 (`4b08ad68cc6a`) | −0.38 | −0.41 / −0.14 → −0.35 / −0.11 | 56th → **42.5th** | 38.0 % vs 37.9 % ❌ → vs 35.6 % ❌ | 9.5 % vs 9.6 % ✅ → vs 9.7 % ✅ | ❌ → ❌ |
+
+**Did any verdict change? No.**
+- The null verdict is unchanged for all four.
+- **Gate 1 still fails for all four**, on IS Sharpe, OOS/IS and the single-trade rule, regardless
+  of the null.
+
+Two sub-checks moved:
+- **Baseline4h's Sharpe** now clears the null's 95th percentile, by 0.013. It still fails on
+  top-trade concentration.
+- **C01's top-trade share** now passes. It still fails on drawdown.
+
+The reading of the body text changes in degree, not direction:
+- The EMA-cross entry: Baseline4h is a little stronger than reported. C05 is weaker, at the 70th
+  percentile, not the 86.5th.
+- The TSMOM entries (C01, C04) sit at the 42nd–52nd percentile, that is, no better than random
+  entry, as the text says.
+
+The body below is left as originally written.
+
+**Not re-scored:** the two NDAX-fee trials of [`06-ndax-feasibility.md`](06-ndax-feasibility.md)
+(`f2d85e2482d9`, `7d418e2c3ea6`, at 0.20 % + 0.10 %). Their null was affected in the same way.
+The fee change they ran under was reverted (commit `3038b97`), so they cannot be reproduced
+through `config.backtest-costs.json` as it stands. Re-scoring them would need that fee restored
+in a reviewed commit first.
+
+Old JSON reports predate a later metrics change. They lack `scale_downs`, and their
+`avg_*_profit_pct` differ in the tenth decimal place because trade stake became the entry-fill
+cost. Neither figure is a Gate 1 input.
+
 Date: 2026-10-14 (runs finished 2026-10-15 02:41 UTC).
 Gates: [`08-paper-exit-criteria.md`](../08-paper-exit-criteria.md) Gate 1 as amended by
 [ADR-0021](../05-adr/0021-cost-consistent-gate-1-and-random-entry-null.md). Data:
 [ADR-0020](../05-adr/0020-kraken-archive-for-backtest-history.md).
-Pre-registration: `services/research/candidates.json`, committed (622c904) before any registered
+Pre-registration: `services/research/candidates.json`, committed (beaece1) before any registered
 run. **No parameter was tuned.** Every number below is the first and only registered run of each
 candidate.
 

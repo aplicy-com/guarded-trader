@@ -203,9 +203,9 @@ the Kraken feather candles load at second resolution, so every candle in a seed 
   4h. The random-entry null table in [`05-first-candidates.md`](05-first-candidates.md)
   therefore did not use independent per-candle entries as ADR-0021 specifies. **Round 1's Gate 1
   verdicts do not depend on it:** every round-1 candidate also failed IS Sharpe, OOS/IS and the
-  single-trade rule. That document is left as the historical record. Re-scoring round 1's nulls
-  is a follow-up for the operator to decide on; it would not add trials, because it would be a
-  report rebuild like the one above.
+  single-trade rule. Round 1's nulls were re-scored the same way (read-only,
+  reproduce-exactly) on 2026-11-01; no verdict changed. See the erratum at the top of
+  [`05-first-candidates.md`](05-first-candidates.md).
 
 ## Reproducing
 
