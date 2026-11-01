@@ -41,29 +41,42 @@ written, as history.
 - Trial registry: N = 6 registered trials. Every one counts against future DSR.
 
 **Paused: live trading.**
-- The $20 pilot has not run. Funding the Kraken account by deposit has not worked (details:
-  TBD, operator to record).
+- The $20 pilot has not run. Funding the Kraken account by deposit did not work at first:
+  Interac e-Transfer failed, credit card declined, Scotiabank bill payment did not list Kraken.
+  An Interac e-Transfer succeeded on 2026-10-31 (CA$35 credited). The funds stay parked on
+  Kraken and are not traded.
 - NDAX was checked as a replacement venue and **rejected for live**
   ([ADR-0022](05-adr/0022-ndax-rejected-for-live.md)): the key's withdraw scope can't be
   verified through its API, and Freqtrade can't hold stops on the exchange for it.
-- The VPS is being stopped per [`06-runbooks/pause-and-resume.md`](06-runbooks/pause-and-resume.md).
-  No capital is on any exchange through this system. The research loop costs nothing while
-  paused (R6).
+- The VPS was deleted on 2026-10-31 per
+  [`06-runbooks/pause-and-resume.md`](06-runbooks/pause-and-resume.md).
+  No exchange API key has been created, so the system has no access to the funds on Kraken.
+  The research loop costs nothing while paused (R6).
 
 **Revisit triggers.** Either one reopens the project; neither by itself resumes trading:
-1. **Kraken deposits work for this account.** Then the $20 *plumbing* pilot (ADR-0019) can run
-   as designed. It proves the real-exchange path, not an edge: it trades a known no-edge
-   strategy and is expected to lose a little.
-2. **A candidate passes Gate 1 at real costs**: Kraken Tier-1 taker + slippage, or another
-   venue's verified fee **plus its measured spread**, on a venue that passes the same checks
-   ADR-0022 applied (verified no-withdraw key, exchange-held stops).
+1. **Kraken deposits work for this account.** **MET on 2026-10-31.** Then the $20 *plumbing*
+   pilot (ADR-0019) can run as designed. It proves the real-exchange path, not an edge: it
+   trades a known no-edge strategy and is expected to lose a little.
+2. **A candidate passes Gate 1 at real costs.** **Still unmet.** The test is Kraken Tier-1
+   taker + slippage, or another venue's verified fee **plus its measured spread**, on a venue
+   that passes the same checks ADR-0022 applied (verified no-withdraw key, exchange-held stops).
 
 Resuming means: write down which trigger fired, then follow `pause-and-resume.md` Part B, then
 the normal written-plan rule (`CLAUDE.md` §1) before anything touches the live path.
 
-**Pause record** (fill in at `pause-and-resume.md` step A10): date stopped: TBD; option
-(power off / server deleted): TBD; static IP kept: TBD; exchange keys deleted: TBD; local
-backup folder: TBD.
+**Status on 2026-10-31:** trigger 1 is met and trigger 2 is unmet, so the project remains
+paused. No API key created, no VPS running, no live trading.
+
+**Pause record** (filled in at `pause-and-resume.md` step A10): date stopped: 2026-10-31;
+option (power off / server deleted): server deleted; static IP kept: yes, Hetzner Primary IP
+retained for reuse (recorded privately);
+exchange keys deleted: none existed (no API key was created); off-site backups: B2 retained
+(30-day lifecycle); local backup folder: `~/Backups/ai-trading-agent/vps-pause-2026-10-31`.
+- 2026-10-31: Kraken Interac e-Transfer deposit succeeded (CA$35 credited). Revisit trigger 1
+  ("Kraken deposits work") is met; trigger 2 (Gate 1 at real costs) is unmet, so the project
+  remains paused. No API key created, no VPS running. Funds stay parked on Kraken; no live
+  trading. Trigger 1 reopened the decision. Decision: remain paused. No plumbing pilot until
+  trigger 2 is met.
 
 ## Phase 1 — Docs scaffold (this phase)
 
