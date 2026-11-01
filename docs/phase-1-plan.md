@@ -1,6 +1,6 @@
 # Phase 1 — Repo & Docs Scaffold
 
-**Repo:** `~/workspace/ai-trading-agent` · **Owner:** the operator (personal; transfer to Aplicy GitHub on success)
+**Repo:** `<repo-dir>` · **Owner:** the operator (personal; transfer to Aplicy GitHub on success)
 **Goal:** Every decision, risk and rule written down before a line of trading code exists. Docs-first, open-source-ready from day one.
 **Out of scope:** any code that talks to Kraken.
 
@@ -50,7 +50,7 @@ ai-trading-agent/
 - Zero risk-engine violations, zero unhandled halts
 - Every LLM proposal in the period is logged and replayable
 
-## 4. Claude Code prompt (paste as first message after `cd ~/workspace/ai-trading-agent`)
+## 4. Claude Code prompt (paste as first message after `cd <repo-dir>`)
 
 ```
 Read docs/research/01-research-review.md fully before doing anything.

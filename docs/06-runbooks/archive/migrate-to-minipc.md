@@ -56,8 +56,8 @@ noticed."
      `.gitignore`).
 3. On the **new host (mini-PC)**, clone the repo:
    ```
-   git clone <repo-url> ~/workspace/ai-trading-agent
-   cd ~/workspace/ai-trading-agent
+   git clone <repo-url> <repo-dir>
+   cd <repo-dir>
    ```
 4. Restore `.env` and any DB backups from step 2 onto the new host.
 5. Start the stack on the new host **in dry-run mode**, even if the old

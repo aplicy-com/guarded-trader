@@ -1,6 +1,6 @@
 # Phase 3 — VPS, Conductor, Research Loop, Paper Validation
 
-**Repo:** `~/workspace/ai-trading-agent` · **Status:** Draft for review · **Date:** 2026-10-04
+**Repo:** `<repo-dir>` · **Status:** Draft for review · **Date:** 2026-10-04
 **Goal:** Move off the Mac to a hardened VPS, build Conductor (our safety + control layer), add the LLM research loop behind deterministic gates, and take at least one candidate strategy through Gate 2 paper validation.
 **Out of scope:** real money (Phase 4), withdrawal-capable keys (never).
 

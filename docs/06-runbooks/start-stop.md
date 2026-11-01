@@ -35,7 +35,7 @@ meant). `make deploy` already uses the wrapper. To switch modes use only
 ## Starting the stack
 
 1. Open a terminal on the trading host.
-2. `cd` into the project directory (`~/workspace/ai-trading-agent`, or
+2. `cd` into the project directory (`<repo-dir>`, or
    wherever it's checked out on this host).
 3. Confirm you are on `main` and up to date:
    ```

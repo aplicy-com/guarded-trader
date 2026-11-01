@@ -64,9 +64,10 @@ exit
 Expected: `conductor: ok backups/<mode>/conductor/...` and `freqtrade: ok backups/<mode>/freqtrade/...`.
 
 **A4. Keep a dated local copy (the one that lasts).** On the Mac, from the repo, with a B2
-**read** key in your shell ([`restore-backup.md`](restore-backup.md) A2-A3):
+**read** key in your shell ([`restore-backup.md`](restore-backup.md) A2-A3).
+`BACKUP_DIR` is any local folder you choose, e.g. `~/Backups/guarded-trader`.
 ```
-P=~/Backups/ai-trading-agent/vps-pause-$(date -u +%Y-%m-%d)
+P=$BACKUP_DIR/vps-pause-$(date -u +%Y-%m-%d)
 mkdir -p "$P" && chmod 700 "$P"
 scripts/restore-test.sh --mode <mode> all --keep "$P/restored"
 ```
@@ -179,9 +180,9 @@ changes:
 
 | What | Where |
 |---|---|
-| Ledger + Freqtrade DB, verified copies | `~/Backups/ai-trading-agent/vps-pause-<date>/restored/` |
-| Insurance tarballs, Terraform state | `~/Backups/ai-trading-agent/vps-pause-<date>/` |
-| Research trial registry (the `N` for DSR) | `services/research/state/registry.sqlite`; dated copy in `~/Backups/ai-trading-agent/research-registry/` (see `services/research/README.md`) |
+| Ledger + Freqtrade DB, verified copies | `$BACKUP_DIR/vps-pause-<date>/restored/` |
+| Insurance tarballs, Terraform state | `$BACKUP_DIR/vps-pause-<date>/` |
+| Research trial registry (the `N` for DSR) | `services/research/state/registry.sqlite`; dated copy in `$BACKUP_DIR/research-registry/` (see `services/research/README.md`) |
 | Secrets (`.env` values, Hetzner token, keys) | Password manager |
 | B2 backups | Backblaze bucket, **gone 30 days after the last one** |
 
