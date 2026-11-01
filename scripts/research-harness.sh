@@ -10,6 +10,7 @@
 # (services/research/runs), plus an in-memory /tmp. It is removed when the run ends.
 # Resource caps (phase-3-plan 3B-1): HARNESS_CPUS, HARNESS_MEMORY, and a wall-clock limit of
 # HARNESS_TIMEOUT_S seconds after which the container is killed (default 1 hour).
+# HARNESS_STATE_RO=1 mounts the registry directory read-only (for `run ... --recompute`).
 set -euo pipefail
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
@@ -39,7 +40,7 @@ docker run --rm --name "$name" \
 	--read-only --tmpfs /tmp:rw,size=2g \
 	--cap-drop ALL --security-opt no-new-privileges \
 	-v "$repo:/repo:ro" \
-	-v "$state:/state" \
+	-v "$state:/state${HARNESS_STATE_RO:+:ro}" \
 	-v "$out:/out" \
 	-e PYTHONPATH=/repo/services/research/src \
 	-e PYTHONDONTWRITEBYTECODE=1 \

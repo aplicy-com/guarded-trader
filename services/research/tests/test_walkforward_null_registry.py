@@ -54,6 +54,15 @@ def test_null_uniforms_are_deterministic_and_window_independent():
     assert abs((big < 0.1).mean() - 0.1) < 0.01
 
 
+@pytest.mark.parametrize("unit", ["s", "ms", "us"])
+def test_null_uniforms_do_not_depend_on_datetime_resolution(unit):
+    ns = pd.Series(pd.date_range("2022-01-01", periods=300, freq="D", tz="UTC"))
+    coarse = ns.astype(f"datetime64[{unit}, UTC]")
+    a, b = null.uniforms("BTC/USD", ns, 4), null.uniforms("BTC/USD", coarse, 4)
+    assert np.array_equal(a, b)
+    assert len(set(b.tolist())) == 300  # one independent draw per candle
+
+
 def test_entry_rates_use_flat_bars():
     bar = pd.Timedelta("1D")
     trades = [{"pair": "BTC/USD", "open_date": "2024-01-01", "close_date": "2024-01-11"}]
@@ -117,3 +126,31 @@ def test_registry_requires_a_hypothesis(tmp_path):
 def test_sigma_trials_needs_two_scored():
     reg = Registry(":memory:")
     assert reg.sigma_trials() is None
+
+
+def test_readonly_registry_reads_recorded_results_and_cannot_write(tmp_path):
+    path = tmp_path / "r.sqlite"
+    reg = Registry(path)
+    args = dict(
+        strategy="S",
+        family="f",
+        hypothesis="h",
+        params={"a": 1},
+        canonical_timerange="x",
+        fee=0.009,
+        data_snapshot_id="d",
+        freqtrade_version="v",
+        source=b"src",
+    )
+    tid = reg.preregister(**args)
+    reg.record_result(tid, sharpe_daily=0.5, sharpe_period=0.03, n_trades=7, metrics={}, daily_returns=[0.1, -0.2])
+    reg.close()
+    ro = Registry.open_readonly(path)
+    from research_harness.registry import strategy_hash
+
+    rec = ro.recorded(strategy_hash(b"src", {"a": 1}, 0.009, "d", "v"))
+    assert rec["trial_id"] == tid and rec["sharpe_daily"] == 0.5 and rec["n_trades"] == 7
+    assert ro.recorded("nope") is None
+    with pytest.raises(sqlite3.OperationalError):
+        ro.preregister(**{**args, "source": b"other"})
+    assert ro.n_trials() == 1

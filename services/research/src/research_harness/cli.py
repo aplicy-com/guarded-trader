@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 from research_harness import dsr, metrics, null, walkforward
-from research_harness.registry import Registry
+from research_harness.registry import Registry, strategy_hash
 
 REPO = Path("/repo")
 STATE = Path("/state")
@@ -114,9 +114,18 @@ def run(args: argparse.Namespace) -> int:
     # 1. full canonical range
     full = h.session(canonical)
     fee = full.fee
-    registry = Registry(Path(":memory:") if args.no_register else args.registry)
-    trial_id = None
-    if not args.no_register:
+    recorded = None
+    if args.recompute:
+        # Report rebuild: the registry is opened read-only and must already hold this exact trial.
+        registry = Registry.open_readonly(args.registry)
+        digest = strategy_hash(source, spec["params"], fee, snapshot_id, version("freqtrade"))
+        recorded = registry.recorded(digest)
+        if recorded is None or recorded["sharpe_daily"] is None:
+            raise SystemExit(f"--recompute: no scored trial with hash {digest[:12]} for {args.strategy}")
+    else:
+        registry = Registry(Path(":memory:") if args.no_register else args.registry)
+    trial_id = recorded["trial_id"] if recorded else None
+    if not args.no_register and not args.recompute:
         trial_id = registry.preregister(
             strategy=args.strategy,
             family=spec["family"],
@@ -133,6 +142,16 @@ def run(args: argparse.Namespace) -> int:
 
     base = full.run()
     m_full, rets_full = h.score(full, base, c_start, c_end)
+    if recorded is not None:
+        same = (
+            recorded["sharpe_daily"] == m_full.sharpe_daily
+            and recorded["n_trades"] == m_full.n_trades
+            and json.loads(recorded["daily_returns_json"]) == [float(x) for x in rets_full.to_numpy()]
+        )
+        if not same:
+            raise SystemExit(f"--recompute: {args.strategy} no longer reproduces its recorded result; refusing")
+        report["recomputed_without_recording"] = True
+        log.info("recompute: recorded headline reproduced exactly for trial %s", trial_id)
     report["full"] = m_full.as_dict()
     report["full"]["freqtrade_final_balance"] = base.final_balance
     report["full"]["backtest_start"] = str(base.start)
@@ -237,7 +256,7 @@ def run(args: argparse.Namespace) -> int:
 
     # 5. record, then deflate against the registry including this trial
     sr_period = float(rets_full.mean() / rets_full.std(ddof=1)) if rets_full.std(ddof=1) > 0 else 0.0
-    if trial_id:
+    if trial_id and not args.recompute:
         registry.record_result(
             trial_id,
             sharpe_daily=m_full.sharpe_daily,
@@ -326,6 +345,12 @@ def main() -> int:
     r.add_argument("--registry", type=Path, default=STATE / "registry.sqlite")
     r.add_argument("--out", type=Path, default=OUT)
     r.add_argument("--no-register", action="store_true", help="dry harness check; writes no trial")
+    r.add_argument(
+        "--recompute",
+        action="store_true",
+        help="rebuild the report of an already-scored trial; registry read-only; refuses unless the recorded "
+        "Sharpe, trade count and daily returns are reproduced exactly",
+    )
     rr = sub.add_parser("registry", help="list trials; DSR against the current N")
     rr.add_argument("--registry", type=Path, default=STATE / "registry.sqlite")
     args = p.parse_args()
