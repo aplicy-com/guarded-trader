@@ -33,7 +33,7 @@ with a consistent SQLite snapshot (safe while nothing is writing), never a plain
 file in use:
 
 ```bash
-D=$BACKUP_DIR/research-registry; mkdir -p "$D"
+D="${BACKUP_DIR:?set BACKUP_DIR, e.g. ~/Backups/guarded-trader}/research-registry"; mkdir -p "$D"
 F="$D/registry-$(date -u +%Y-%m-%d).sqlite"
 sqlite3 -readonly services/research/state/registry.sqlite ".backup '$F'"
 sqlite3 -readonly "$F" "PRAGMA integrity_check; SELECT count(*) FROM trials;"
