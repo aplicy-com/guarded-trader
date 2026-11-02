@@ -6,7 +6,7 @@
 
 A safety-first framework for running a small crypto trading system in which an LLM may
 **research** strategies but can never **trade**. A deterministic engine
-([Freqtrade](https://www.freqtrade.io/)) places every order, inside hard risk limits enforced by
+([Freqtrade](https://www.freqtrade.io/en/stable/)) places every order, inside hard risk limits enforced by
 a second, independent service. Everything is written down first: requirements, risks,
 decisions, runbooks, and the results, including the bad ones.
 
