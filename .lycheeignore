@@ -1,0 +1,19 @@
+# Regexes that lychee skips. Keep this list to false positives only:
+# a page that is really gone should stay failing until its citation is fixed.
+
+# Loopback addresses in the quickstart; nothing listens on them in CI.
+^http://127\.0\.0\.1
+
+# CHANGELOG links that resolve once the v0.1.0 tag is pushed.
+^https://github\.com/aplicy-com/guarded-trader/compare/v0\.1\.0
+^https://github\.com/aplicy-com/guarded-trader/releases/tag/v0\.1\.0
+
+# Hosts that answer automated requests with 403 or 429.
+^https://(papers\.)?ssrn\.com/
+^https://www\.cmegroup\.com/
+^https://www\.theblock\.co/
+^https://[a-z]+\.substack\.com/
+^https://cepr\.org/
+^https://acfr\.aut\.ac\.nz/
+^https://www\.mdpi\.com/
+^https://dspace\.mit\.edu/
