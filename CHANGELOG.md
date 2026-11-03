@@ -9,6 +9,23 @@ releases contains a strategy that passes the project's own Gate 1.
 
 ## [Unreleased]
 
+### Added
+
+- CI: a weekly and per-change Markdown link check over the docs (thanks @coughlmao, #12).
+
+### Fixed
+
+- Research: the random-entry null assumed nanosecond timestamps and drew one random value per
+  block of about 11.6 days under pandas 3. It now draws per candle, and round 1 was re-scored
+  read-only: no null or Gate 1 verdict changed
+  ([erratum](docs/research/05-first-candidates.md#erratum-2026-11-01)).
+
+### Results recorded
+
+- Research round 2, four pre-registered low-turnover candidates at Kraken Tier-1 cost: none
+  passes Gate 1, all failing the 100-trade minimum, and their timing is not shown to be skill
+  ([report](docs/research/08-round2-results.md)).
+
 ## [0.1.0] - TBD (set when the tag is pushed)
 
 The first public release: the platform as built and drilled from September to October 2026,
