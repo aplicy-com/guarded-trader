@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "uv"
+    directory: "/services/conductor"
+    schedule:
+      interval: "weekly"
+    groups:
+      conductor-dependencies:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "uv"
+    directory: "/services/research"
+    schedule:
+      interval: "weekly"
+    groups:
+      research-dependencies:
+        update-types:
+          - "minor"
+          - "patch"
